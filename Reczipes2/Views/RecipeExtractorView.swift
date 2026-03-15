@@ -31,6 +31,7 @@ struct RecipeExtractorView: View {
     @State private var showBatchImageExtraction = false
     @State private var showImportLinks = false
     @State private var showManageLinks = false
+    // mashup moved to RecipeDetailView
     @State private var importResultMessage: String?
     @State private var showingImportResult = false
     @Environment(\.modelContext) private var modelContext
@@ -499,6 +500,8 @@ struct RecipeExtractorView: View {
                     )
                 }
                 .buttonStyle(.plain)
+                
+
             }
         }
         .padding()

@@ -109,7 +109,7 @@ struct ExtractionLoadingView: View {
             
             // Status messages
             VStack(spacing: 12) {
-                Text(extractionType.messages[safe: currentMessageIndex] ?? extractionType.messages[0])
+                Text(currentMessageIndex < extractionType.messages.count ? extractionType.messages[currentMessageIndex] : extractionType.messages[0])
                     .font(.headline)
                     .multilineTextAlignment(.center)
                     .foregroundStyle(.primary)
@@ -236,14 +236,6 @@ struct CompactExtractionLoadingView: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(extractionType.primaryColor.opacity(0.1))
         .cornerRadius(12)
-    }
-}
-
-// MARK: - Array Extension
-
-fileprivate extension Array {
-    subscript(safe index: Int) -> Element? {
-        indices.contains(index) ? self[index] : nil
     }
 }
 

@@ -38,6 +38,7 @@ struct RecipeDetailView: View {
     @State private var showingSafariView = false
     @State private var safariURL: URL?
     @State private var showingDataInspector = false
+    @State private var showingMashup = false
     
     // Diabetic analysis
     @State private var diabeticInfo: DiabeticInfo?
@@ -829,6 +830,15 @@ struct RecipeDetailView: View {
                     Label("Cooking Mode", systemImage: "frying.pan")
                 }
             }
+            
+            // Recipe Mashup button
+            ToolbarItem(placement: .primaryAction) {
+                Button {
+                    showingMashup = true
+                } label: {
+                    Label("Recipe Mashup", systemImage: "arrow.triangle.merge")
+                }
+            }
 //            
 //            // Share button (for email, text, etc.)
 //            ToolbarItem(placement: .primaryAction) {
@@ -901,6 +911,12 @@ struct RecipeDetailView: View {
             NavigationStack {
                 CookingModeView(recipe: recipe)
             }
+        }
+        .sheet(isPresented: $showingMashup) {
+            RecipeMashupView(
+                baseRecipe: recipe,
+                apiKey: APIKeyHelper.getAPIKey() ?? ""
+            )
         }
         .sheet(isPresented: $showingAllergenDetail) {
             if let score = allergenScore {
