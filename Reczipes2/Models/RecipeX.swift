@@ -408,6 +408,36 @@ extension RecipeX {
     var yield: String? {
         return recipeYield
     }
+
+    // MARK: - Repair Detection
+
+    /// Whether this recipe is missing ingredients or instructions and needs repair
+    var needsRepair: Bool {
+        let missingIngredients = ingredientSectionsData == nil || ingredientSections.isEmpty
+        let missingInstructions = instructionSectionsData == nil || instructionSections.isEmpty
+        return missingIngredients || missingInstructions
+    }
+
+    /// Whether we have a source (URL or image) to attempt re-extraction
+    var canBeRepaired: Bool {
+        guard needsRepair else { return false }
+        // Can repair if we have a source URL or image data
+        if let ref = reference, !ref.isEmpty, URL(string: ref) != nil { return true }
+        if imageData != nil { return true }
+        return false
+    }
+
+    /// Description of what's missing for display purposes
+    var missingDataDescription: String {
+        var missing: [String] = []
+        if ingredientSectionsData == nil || ingredientSections.isEmpty {
+            missing.append("ingredients")
+        }
+        if instructionSectionsData == nil || instructionSections.isEmpty {
+            missing.append("instructions")
+        }
+        return missing.joined(separator: " & ")
+    }
 }
 
 // MARK: - Image Management

@@ -19,6 +19,8 @@ struct RecipeExtractorView: View {
     @State private var imageToCrop: UIImage?
     @State private var showImageComparison = false
     @State private var showingSaveConfirmation = false
+    @State private var showingDuplicateWarning = false
+    @State private var duplicateMatchCount = 0
     @State private var showURLInput = false
     @State private var showWebImagePicker = false
     @State private var selectedWebImageURLs: [String] = []
@@ -180,6 +182,26 @@ struct RecipeExtractorView: View {
                         Text("\"\(String(describing: recipe.title))\" has been added to your recipe collection.")
                     }
                 }
+            }
+            .alert("Possible Duplicate", isPresented: $showingDuplicateWarning) {
+                Button("Keep Both") {
+                    showingSaveConfirmation = true
+                }
+                Button("View Duplicates") {
+                    dismiss()
+                    NotificationCenter.default.post(name: NSNotification.Name("ShowDuplicateDetector"), object: nil)
+                }
+                Button("Undo Save", role: .destructive) {
+                    if let recipe = viewModel.extractedRecipe {
+                        modelContext.delete(recipe)
+                        try? modelContext.save()
+                        logInfo("Undid duplicate recipe save: \(recipe.safeTitle)", category: "storage")
+                    }
+                    viewModel.reset()
+                    extractionSource = .none
+                }
+            } message: {
+                Text("This recipe matches \(duplicateMatchCount) existing recipe\(duplicateMatchCount == 1 ? "" : "s") in your collection (same URL, title, or content). You can keep both, review duplicates, or undo the save.")
             }
             .sheet(isPresented: $showImagePicker) {
                 ImagePicker(
@@ -1208,9 +1230,54 @@ struct RecipeExtractorView: View {
             logDebug("Recipe imageData size (after save): \(recipe.imageData?.count ?? 0) bytes", category: "storage")
             logDebug("Recipe has \(recipe.imageCount) image(s)", category: "storage")
             
+            // Check for potential duplicates before showing confirmation
+            let savedTitle = recipe.safeTitle
+            let savedRef = recipe.reference ?? ""
+            let savedFingerprint = recipe.contentFingerprint ?? ""
+            let savedID = recipe.id
+
+            let allDescriptor = FetchDescriptor<RecipeX>()
+            let allRecipes = (try? modelContext.fetch(allDescriptor)) ?? []
+
+            let normalizedTitle = DuplicateRecipeDetectorView.normalizeTitle(savedTitle)
+            let normalizedRef = savedRef.lowercased()
+                .replacingOccurrences(of: "http://", with: "https://")
+                .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+
+            let matches = allRecipes.filter { existing in
+                guard existing.id != savedID else { return false }
+
+                // Exact fingerprint match
+                if !savedFingerprint.isEmpty,
+                   let fp = existing.contentFingerprint, fp == savedFingerprint {
+                    return true
+                }
+
+                // Same source URL
+                if !normalizedRef.isEmpty, let ref = existing.reference, !ref.isEmpty {
+                    let existingNorm = ref.lowercased()
+                        .replacingOccurrences(of: "http://", with: "https://")
+                        .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
+                    if existingNorm == normalizedRef { return true }
+                }
+
+                // Similar title
+                if !normalizedTitle.isEmpty {
+                    let existingNorm = DuplicateRecipeDetectorView.normalizeTitle(existing.title ?? "")
+                    if existingNorm == normalizedTitle { return true }
+                }
+
+                return false
+            }
+
             // Small delay to ensure SwiftData propagates the change
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                showingSaveConfirmation = true
+                if !matches.isEmpty {
+                    duplicateMatchCount = matches.count
+                    showingDuplicateWarning = true
+                } else {
+                    showingSaveConfirmation = true
+                }
             }
         } catch {
             logError("Failed to save recipe: \(error)", category: "storage")

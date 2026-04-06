@@ -28,6 +28,7 @@ struct ContentView: View {
     @State private var filterMode: RecipeFilterMode = .none
     @State private var showOnlySafe = false
     @State private var isProcessingFilter = false
+    @State private var triggerRepairForRecipe: RecipeX?  // triggers auto-repair in detail view
     @State private var cachedAllRecipes: [any RecipeDisplayProtocol] = [] // Cache for all recipes (both types)
     @State private var cachedFilteredRecipes: [any RecipeDisplayProtocol] = []
     @State private var cachedAllergenScores: [UUID: RecipeAllergenScore] = [:]
@@ -344,6 +345,61 @@ struct ContentView: View {
     private func handleOnAppear() {
         restoreSelectedRecipe()
         refreshRecipeCache()
+
+        // Auto-clean duplicates in background after recipes load
+        Task {
+            // Small delay so the list renders first
+            try? await Task.sleep(for: .seconds(2))
+            await autoCleanDuplicates()
+        }
+    }
+
+    /// Silently removes duplicate recipes so the user only ever sees unique entries.
+    /// Skips the scan entirely when the recipe count hasn't changed since the last
+    /// clean run, avoiding unnecessary DB pressure on every onAppear.
+    private func autoCleanDuplicates() async {
+        let allRecipes = savedRecipes  // already @Query'd
+        guard allRecipes.count > 1 else {
+            DuplicateScanTracker.recordCleanScan(recipeCount: allRecipes.count)
+            return
+        }
+
+        // Skip if nothing has changed since the last clean scan
+        if DuplicateScanTracker.shouldSkipScan(currentCount: allRecipes.count) {
+            logInfo("⏭️ Skipping launch duplicate scan — recipe count unchanged (\(allRecipes.count))", category: "dedup")
+            return
+        }
+
+        DuplicateScanTracker.recordScanRan()
+
+        // Reuse the shared detection logic
+        let clusters = DuplicateRecipeDetectorView.buildDuplicateClusters(from: allRecipes)
+
+        guard !clusters.isEmpty else {
+            DuplicateScanTracker.recordCleanScan(recipeCount: allRecipes.count)
+            logInfo("✅ Launch duplicate scan clean — will skip until count changes", category: "dedup")
+            return
+        }
+
+        var deletedCount = 0
+        for cluster in clusters {
+            for dupe in cluster.duplicatesToDelete {
+                logInfo("🗑️ Auto-removing duplicate: '\(dupe.safeTitle)' (ID: \(String(describing: dupe.id)))", category: "dedup")
+                modelContext.delete(dupe)
+                deletedCount += 1
+            }
+        }
+
+        if deletedCount > 0 {
+            do {
+                try modelContext.save()
+                logInfo("✅ Auto-cleaned \(deletedCount) duplicate recipe(s) on launch", category: "dedup")
+                DuplicateScanTracker.recordCleanScan(recipeCount: allRecipes.count - deletedCount)
+                refreshRecipeCache()
+            } catch {
+                logError("❌ Failed to auto-clean duplicates: \(error)", category: "dedup")
+            }
+        }
     }
     
     @Sendable
@@ -432,8 +488,13 @@ struct ContentView: View {
     @ViewBuilder
     private func selectedRecipeDetailView(_ recipe: any RecipeDisplayProtocol) -> some View {
         if let recipeX = recipe as? RecipeX {
-            RecipeDetailView(recipe: recipeX)
-                .id("\(String(describing: recipeX.id))-\(recipeX.imageName ?? "no-image")")
+            RecipeDetailView(recipe: recipeX, autoRepair: triggerRepairForRecipe?.id == recipeX.id)
+                .id("\(String(describing: recipeX.id))-\(recipeX.imageName ?? "no-image")-\(triggerRepairForRecipe?.id == recipeX.id ? "repair" : "")")
+                .onDisappear {
+                    if triggerRepairForRecipe?.id == recipeX.id {
+                        triggerRepairForRecipe = nil
+                    }
+                }
         } else if let cachedRecipe = recipe as? CachedSharedRecipe {
             CachedRecipeDetailView(cachedRecipe: cachedRecipe)
                 .id("\(cachedRecipe.id)-\(cachedRecipe.imageName ?? "no-image")")
@@ -707,17 +768,38 @@ struct ContentView: View {
             }
             
             VStack(alignment: .leading, spacing: 4) {
-                Text(recipe.displayTitle)
-                    .font(.headline)
-                    .foregroundStyle(.primary)
-                
+                HStack(spacing: 6) {
+                    Text(recipe.displayTitle)
+                        .font(.headline)
+                        .foregroundStyle(.primary)
+
+                    // Red "Fix" badge for recipes with missing data
+                    if let recipeX = recipe as? RecipeX, recipeX.needsRepair {
+                        Button {
+                            triggerRepairForRecipe = recipeX
+                            selectedRecipe = recipeX
+                            selectedRecipeID = recipeX.displayID
+                        } label: {
+                            Text("Fix")
+                                .font(.caption2)
+                                .fontWeight(.bold)
+                                .foregroundStyle(.white)
+                                .padding(.horizontal, 6)
+                                .padding(.vertical, 2)
+                                .background(Color.red)
+                                .clipShape(Capsule())
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
+
                 if let headerNotes = recipe.headerNotes {
                     Text(headerNotes)
                         .font(.caption)
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                 }
-                
+
                 // Show who shared this recipe if it's a shared recipe
                 if recipe.isSharedRecipe, let sharedBy = recipe.sharedByUserName {
                     HStack(spacing: 4) {
@@ -729,7 +811,7 @@ struct ContentView: View {
                             .foregroundStyle(.secondary)
                     }
                 }
-                
+
                 // Show books this recipe is in (only for RecipeX)
                 if let recipeX = recipe as? RecipeX, !booksContaining(recipeX).isEmpty {
                     HStack(spacing: 4) {
@@ -742,7 +824,7 @@ struct ContentView: View {
                     }
                 }
             }
-            
+
             Spacer()
             
             // Combined badge (shows allergen, diabetes, or both based on filter mode)

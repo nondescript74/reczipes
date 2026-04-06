@@ -39,22 +39,30 @@ struct RecipeDetailView: View {
     @State private var safariURL: URL?
     @State private var showingDataInspector = false
     @State private var showingMashup = false
-    
+
     // Diabetic analysis
     @State private var diabeticInfo: DiabeticInfo?
     @State private var isLoadingDiabeticInfo = false
     @State private var analysisProgress: Double = 0.0
     @State private var showPendingAnalysisAlert = false
-    
+
+    // Repair support
+    let autoRepair: Bool
+    @StateObject private var repairService: RecipeRepairService
+    @State private var repairCompleted = false
+
     private let remindersService = RemindersService()
-    
+
     // FODMAP analysis - now uses RecipeX directly
     private var fodmapAnalysis: RecipeFODMAPSubstitutions {
         FODMAPSubstitutionDatabase.shared.analyzeRecipe(recipe)
     }
-    
-    init(recipe: RecipeX) {
+
+    init(recipe: RecipeX, autoRepair: Bool = false) {
         self.recipe = recipe
+        self.autoRepair = autoRepair
+        let apiKey = APIKeyHelper.getAPIKey() ?? ""
+        _repairService = StateObject(wrappedValue: RecipeRepairService(apiKey: apiKey))
     }
     
     // Active allergen profile
@@ -284,9 +292,25 @@ struct RecipeDetailView: View {
             Label("Ingredients", systemImage: "list.bullet")
                 .font(.title2)
                 .fontWeight(.bold)
-            
-            ForEach(recipe.ingredientSections) { section in
-                ingredientSectionView(section)
+
+            if recipe.ingredientSections.isEmpty {
+                if repairService.isRepairing {
+                    repairSpinner(label: "Retrieving ingredients...")
+                } else if repairCompleted {
+                    Text("Could not retrieve ingredients from source.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .italic()
+                } else {
+                    Text("No ingredients available")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .italic()
+                }
+            } else {
+                ForEach(recipe.ingredientSections) { section in
+                    ingredientSectionView(section)
+                }
             }
         }
     }
@@ -338,11 +362,51 @@ struct RecipeDetailView: View {
             Label("Instructions", systemImage: "list.number")
                 .font(.title2)
                 .fontWeight(.bold)
-            
-            ForEach(recipe.instructionSections) { section in
-                instructionSectionView(section)
+
+            if recipe.instructionSections.isEmpty {
+                if repairService.isRepairing {
+                    repairSpinner(label: "Retrieving instructions...")
+                } else if repairCompleted {
+                    Text("Could not retrieve instructions from source.")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .italic()
+                } else {
+                    Text("No instructions available")
+                        .font(.subheadline)
+                        .foregroundStyle(.secondary)
+                        .italic()
+                }
+            } else {
+                ForEach(recipe.instructionSections) { section in
+                    instructionSectionView(section)
+                }
             }
         }
+    }
+
+    /// Animated spinner shown while repair is in progress
+    @ViewBuilder
+    private func repairSpinner(label: String) -> some View {
+        HStack(spacing: 12) {
+            ProgressView()
+            VStack(alignment: .leading, spacing: 2) {
+                Text(label)
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                if repairService.repairPhase == .fetchingSource {
+                    Text("Fetching from source...")
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                } else if repairService.repairPhase == .extracting {
+                    Text("Extracting recipe data...")
+                        .font(.caption)
+                        .foregroundStyle(.tertiary)
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .center)
+        .padding(.vertical, 24)
     }
     
     @ViewBuilder
@@ -969,12 +1033,19 @@ struct RecipeDetailView: View {
 //        }
         .onAppear {
             checkForPendingAnalysis()
-            
+
             // Auto-load diabetic analysis if profile has diabetes concern
             if let profile = activeProfile, profile.hasDiabetesConcern, diabeticInfo == nil, !isLoadingDiabeticInfo {
                 Task {
                     await loadDiabeticInfo()
                 }
+            }
+        }
+        .task(id: autoRepair) {
+            // Auto-repair when triggered from the "Fix" badge
+            if autoRepair && recipe.needsRepair && !repairService.isRepairing {
+                await repairService.repair(recipe, in: modelContext)
+                repairCompleted = true
             }
         }
         .trackTask(
