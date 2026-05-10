@@ -39,17 +39,12 @@ func addCurrentVersionToHistory(modelContext: ModelContext) async {
     
     // ⚠️ UPDATE THIS ARRAY WITH YOUR NEW CHANGES ⚠️
     let currentVersionChanges: [String] = [
-        "• ✨ Added: Comprehensive Logging Settings with user control over performance",
-        "• ⚡️ Performance: Users can now disable logging for maximum speed (Settings → Diagnostics → Logging Settings)",
-        "• 🎯 Enhanced: Granular logging control with 11 categories (Network, Recipe, CloudKit, etc.)",
-        "• 🔧 Added: 5 logging levels from 'Off' to 'All (Debug Mode)' with performance indicators",
-        "• 📊 Added: Log file viewer with share and clear options",
-        "• 🎯 Added: Quick preset buttons for common scenarios (Disable All, Balanced, Full Logging)",
-        "• ⚡️ Performance: Default setting optimized for minimal overhead (Errors Only + essential categories)",
-        "• 🔧 Fixed: Similar recipes search now uses correct web search tool (web_search_20250305)",
-        "• 💾 Enhanced: Recipes are now auto-saved before validation or similar recipe search",
-        "• 🛡️ Safety: Recipe data is preserved even if enhancement features fail or timeout",
-        "• 📊 Added: Visual indicator showing when recipe has been auto-saved during enhancement"
+        "• 🌐 Enhanced: Web extraction now preserves embedded recipe data in scripts and keeps head+tail content for large pages",
+        "• 🤖 Added: Auto-search similar recipes when ingredients or instructions are missing (URL and image extractions)",
+        "• 🧩 Added: Apply ingredients, instructions, or notes from similar recipes directly to the extracted recipe",
+        "• 🔗 Improved: Reference field now records original source and any supplemental ingredient/instruction sources",
+        "• ⏳ Added: Spinner and banner to show when similar recipe search is in progress",
+        "• 🎨 UI: Reduced extractor option button sizes to fit on smaller iPhone screens"
     ]
     
     // Only add if there are changes

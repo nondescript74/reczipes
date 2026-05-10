@@ -22,6 +22,7 @@ class RecipeExtractorViewModel: ObservableObject {
     @Published var usePreprocessing = true
     @Published var recipeURL: String = ""
     @Published var extractedImageURLs: [String] = [] // Image URLs from web extraction
+    @Published var similarRecipePrompt: String?
     
     private let apiClient: ClaudeAPIClient
     private let imagePreprocessor = ImagePreprocessor()
@@ -204,10 +205,13 @@ class RecipeExtractorViewModel: ObservableObject {
             selectedImage = nil // Clear image when extracting from URL
             processedImage = nil
             extractedImageURLs = [] // Clear previous image URLs
+            similarRecipePrompt = nil
         }
         
         logInfo("Starting URL extraction from: \(url)", category: "extraction")
         
+        var shouldFindSimilarRecipes = false
+
         do {
             // Fetch web content
             let htmlContent = try await webExtractor.fetchWebContent(from: url)
@@ -222,8 +226,12 @@ class RecipeExtractorViewModel: ObservableObject {
             // Limit content size to avoid token limits (approximately 100k characters)
             let contentToSend: String
             if cleanedContent.count > 50_000 {
-                logWarning("Content too large (\(cleanedContent.count) chars), truncating to 50k characters", category: "extraction")
-                contentToSend = String(cleanedContent.prefix(50_000))
+                logWarning("Content too large (\(cleanedContent.count) chars), truncating to head+tail 50k characters", category: "extraction")
+                let headCount = 40_000
+                let tailCount = 10_000
+                let head = String(cleanedContent.prefix(headCount))
+                let tail = String(cleanedContent.suffix(tailCount))
+                contentToSend = head + "\n\n=== TRUNCATED TAIL CONTENT ===\n\n" + tail
             } else {
                 contentToSend = cleanedContent
             }
@@ -234,8 +242,24 @@ class RecipeExtractorViewModel: ObservableObject {
             let recipe = try await apiClient.extractRecipe(from: contentToSend)
             
             // Add the source URL to the reference field if not already present
-            if recipe.reference == nil || recipe.reference?.isEmpty == true {
-                recipe.reference = url
+            if let existingReference = recipe.reference, !existingReference.isEmpty {
+                if !existingReference.contains(url) {
+                    recipe.reference = existingReference + "\n\nOriginal Source: " + url
+                }
+            } else {
+                recipe.reference = "Original Source: " + url
+            }
+            
+            shouldFindSimilarRecipes = recipe.needsRepair
+            if recipe.needsRepair {
+                let missing = recipe.missingDataDescription
+                await MainActor.run {
+                    self.similarRecipePrompt = "Missing \(missing). Looking for similar recipes to fill the gaps."
+                }
+            } else {
+                await MainActor.run {
+                    self.similarRecipePrompt = nil
+                }
             }
             
             // Store image URLs separately in the viewmodel property
@@ -269,6 +293,11 @@ class RecipeExtractorViewModel: ObservableObject {
             isLoading = false
             logInfo("URL extraction complete, isLoading set to false", category: "extraction")
         }
+
+        if shouldFindSimilarRecipes {
+            logInfo("Recipe missing ingredients or instructions - searching for similar recipes", category: "enhancement")
+            await findSimilarRecipes(count: 3, modelContext: nil)
+        }
     }
     
     /// Extract recipe from the selected image
@@ -279,6 +308,7 @@ class RecipeExtractorViewModel: ObservableObject {
             errorMessage = nil
             extractedRecipe = nil // Clear any previous recipe
             selectedImage = image
+            similarRecipePrompt = nil
         }
         
         logInfo("Starting image extraction, isLoading set to true", category: "extraction")
@@ -297,6 +327,8 @@ class RecipeExtractorViewModel: ObservableObject {
             }
         }
         
+        var shouldFindSimilarRecipes = false
+
         do {
             // Reduce image size to 10-20KB max before sending to Claude
             // Since we're only extracting text, we don't need high resolution
@@ -311,6 +343,18 @@ class RecipeExtractorViewModel: ObservableObject {
                 from: imageData,
                 usePreprocessing: usePreprocessing
             )
+
+            shouldFindSimilarRecipes = recipe.needsRepair
+            if recipe.needsRepair {
+                let missing = recipe.missingDataDescription
+                await MainActor.run {
+                    self.similarRecipePrompt = "Missing \(missing). Looking for similar recipes to fill the gaps."
+                }
+            } else {
+                await MainActor.run {
+                    self.similarRecipePrompt = nil
+                }
+            }
             
             await MainActor.run {
                 self.extractedRecipe = recipe
@@ -332,6 +376,11 @@ class RecipeExtractorViewModel: ObservableObject {
             isLoading = false
             logInfo("Image extraction complete, isLoading set to false", category: "extraction")
         }
+
+        if shouldFindSimilarRecipes {
+            logInfo("Image extraction missing ingredients or instructions - searching for similar recipes", category: "enhancement")
+            await findSimilarRecipes(count: 3, modelContext: nil)
+        }
     }
     
     /// Clear all current data
@@ -343,6 +392,7 @@ class RecipeExtractorViewModel: ObservableObject {
         isLoading = false
         recipeURL = ""
         extractedImageURLs = []
+        similarRecipePrompt = nil
         validationResult = nil
         similarRecipes = []
         showingValidation = false

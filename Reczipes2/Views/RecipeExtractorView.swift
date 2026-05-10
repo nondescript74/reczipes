@@ -341,27 +341,27 @@ struct RecipeExtractorView: View {
     // MARK: - View Components
     
     private var sourceSelectionSection: some View {
-        VStack(spacing: 16) {
+        VStack(spacing: 8) {
             Text("Choose how to extract your recipe")
-                .font(.headline)
+                .font(.subheadline)
                 .multilineTextAlignment(.center)
             
-            VStack(spacing: 16) {
+            VStack(spacing: 8) {
                 // Row 1: Camera and Library
-                HStack(spacing: 20) {
+                HStack(spacing: 8) {
                     Button {
                         extractionSource = .camera
                         showCamera = true
                     } label: {
-                        VStack(spacing: 8) {
+                        VStack(spacing: 4) {
                             Image(systemName: "camera.fill")
-                                .font(.system(size: 40))
+                                .font(.system(size: 18))
                             Text("Camera")
-                                .font(.caption)
+                                .font(.system(size: 11))
                                 .fontWeight(.medium)
                         }
                         .frame(maxWidth: .infinity)
-                        .padding()
+                        .padding(6)
                         .background(extractionSource == .camera ? Color.blue.opacity(0.2) : Color.blue.opacity(0.1))
                         .cornerRadius(12)
                         .overlay(
@@ -375,15 +375,15 @@ struct RecipeExtractorView: View {
                         extractionSource = .library
                         showImagePicker = true
                     } label: {
-                        VStack(spacing: 8) {
+                        VStack(spacing: 4) {
                             Image(systemName: "photo.on.rectangle")
-                                .font(.system(size: 40))
+                                .font(.system(size: 18))
                             Text("Library")
-                                .font(.caption)
+                                .font(.system(size: 11))
                                 .fontWeight(.medium)
                         }
                         .frame(maxWidth: .infinity)
-                        .padding()
+                        .padding(6)
                         .background(extractionSource == .library ? Color.blue.opacity(0.2) : Color.blue.opacity(0.1))
                         .cornerRadius(12)
                         .overlay(
@@ -399,18 +399,18 @@ struct RecipeExtractorView: View {
                     extractionSource = .url
                     showURLInput = true
                 } label: {
-                    VStack(spacing: 8) {
+                    VStack(spacing: 4) {
                         Image(systemName: "globe")
-                            .font(.system(size: 40))
+                            .font(.system(size: 18))
                         Text("Web URL")
-                            .font(.caption)
+                            .font(.system(size: 11))
                             .fontWeight(.medium)
                         Text("Extract from a recipe website")
-                            .font(.caption2)
+                            .font(.system(size: 10))
                             .foregroundStyle(.secondary)
                     }
                     .frame(maxWidth: .infinity)
-                    .padding()
+                    .padding(6)
                     .background(extractionSource == .url ? Color.blue.opacity(0.2) : Color.blue.opacity(0.1))
                     .cornerRadius(12)
                     .overlay(
@@ -426,18 +426,18 @@ struct RecipeExtractorView: View {
                         extractionSource = .batch
                         showBatchExtraction = true
                     } label: {
-                        VStack(spacing: 8) {
+                        VStack(spacing: 4) {
                             Image(systemName: "square.stack.3d.up.fill")
-                                .font(.system(size: 36))
+                                .font(.system(size: 18))
                             Text("Batch Extract URLs")
-                                .font(.caption)
+                                .font(.system(size: 11))
                                 .fontWeight(.medium)
                             Text("Extract from saved links")
-                                .font(.caption2)
+                                .font(.system(size: 10))
                                 .foregroundStyle(.secondary)
                         }
                         .frame(maxWidth: .infinity)
-                        .padding()
+                        .padding(6)
                         .background(extractionSource == .batch ? Color.purple.opacity(0.2) : Color.purple.opacity(0.1))
                         .cornerRadius(12)
                         .overlay(
@@ -450,18 +450,18 @@ struct RecipeExtractorView: View {
                     Button {
                         showManageLinks = true
                     } label: {
-                        VStack(spacing: 8) {
+                        VStack(spacing: 4) {
                             Image(systemName: "list.bullet.rectangle")
-                                .font(.system(size: 36))
+                                .font(.system(size: 18))
                             Text("Manage Links")
-                                .font(.caption)
+                                .font(.system(size: 11))
                                 .fontWeight(.medium)
                             Text("View & delete links")
-                                .font(.caption2)
+                                .font(.system(size: 10))
                                 .foregroundStyle(.secondary)
                         }
                         .frame(maxWidth: .infinity)
-                        .padding()
+                        .padding(6)
                         .background(Color.teal.opacity(0.1))
                         .cornerRadius(12)
                         .overlay(
@@ -477,18 +477,18 @@ struct RecipeExtractorView: View {
                     extractionSource = .batchImages
                     showBatchImageExtraction = true
                 } label: {
-                    VStack(spacing: 8) {
+                    VStack(spacing: 4) {
                         Image(systemName: "photo.stack.fill")
-                            .font(.system(size: 40))
+                            .font(.system(size: 18))
                         Text("Batch Extract Images")
-                            .font(.caption)
+                            .font(.system(size: 11))
                             .fontWeight(.medium)
                         Text("Extract multiple recipes from Photos library")
-                            .font(.caption2)
+                            .font(.system(size: 10))
                             .foregroundStyle(.secondary)
                     }
                     .frame(maxWidth: .infinity)
-                    .padding()
+                    .padding(6)
                     .background(extractionSource == .batchImages ? Color.orange.opacity(0.2) : Color.orange.opacity(0.1))
                     .cornerRadius(12)
                     .overlay(
@@ -502,18 +502,18 @@ struct RecipeExtractorView: View {
                 Button {
                     showImportLinks = true
                 } label: {
-                    VStack(spacing: 8) {
+                    VStack(spacing: 4) {
                         Image(systemName: "square.and.arrow.down")
-                            .font(.system(size: 40))
+                            .font(.system(size: 18))
                         Text("Import Recipe Links")
-                            .font(.caption)
+                            .font(.system(size: 11))
                             .fontWeight(.medium)
                         Text("Import links from JSON to batch extract later")
-                            .font(.caption2)
+                            .font(.system(size: 10))
                             .foregroundStyle(.secondary)
                     }
                     .frame(maxWidth: .infinity)
-                    .padding()
+                    .padding(6)
                     .background(Color.green.opacity(0.1))
                     .cornerRadius(12)
                     .overlay(
@@ -698,6 +698,31 @@ struct RecipeExtractorView: View {
     private func extractedRecipeSection(recipe: RecipeX) -> some View {
         VStack(alignment: .leading, spacing: 16) {
             recipeSuccessHeader
+
+            if let prompt = viewModel.similarRecipePrompt {
+                HStack(alignment: .top, spacing: 8) {
+                    Image(systemName: "sparkles")
+                        .foregroundColor(.orange)
+                    Text(prompt)
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                .padding(10)
+                .background(Color.orange.opacity(0.1))
+                .cornerRadius(8)
+            }
+
+            if viewModel.isFindingSimilar {
+                HStack(spacing: 8) {
+                    ProgressView()
+                    Text("Finding similar recipes...")
+                        .font(.caption)
+                        .foregroundColor(.secondary)
+                }
+                .padding(10)
+                .background(Color.gray.opacity(0.1))
+                .cornerRadius(8)
+            }
             
             recipeDebugInfo(recipe: recipe)
             

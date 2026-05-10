@@ -125,6 +125,9 @@ class WebRecipeExtractor {
             }
         }
         
+        // Preserve other script-embedded recipe data (often used by news sites or JS apps)
+        let embeddedRecipeScripts = extractEmbeddedRecipeScripts(from: html)
+        
         // Remove OTHER script tags (JavaScript) but NOT JSON-LD
         cleaned = cleaned.replacingOccurrences(
             of: "<script(?![^>]*type=[\"']application/ld\\+json[\"'])[^>]*>.*?</script>",
@@ -146,6 +149,8 @@ class WebRecipeExtractor {
             options: [.regularExpression, .caseInsensitive]
         )
         
+        var prefixSections: [String] = []
+
         // If we found JSON-LD data, prepend it prominently for Claude
         if !jsonLDScripts.isEmpty {
             let structuredDataSection = """
@@ -155,8 +160,25 @@ class WebRecipeExtractor {
             === END STRUCTURED DATA ===
             
             """
-            cleaned = structuredDataSection + cleaned
+            prefixSections.append(structuredDataSection)
             logInfo("🧹 ✅ Added \(jsonLDScripts.count) JSON-LD structured data block(s) to top of content", category: "extraction")
+        }
+
+        // If we found embedded recipe data, prepend it after JSON-LD for Claude
+        if !embeddedRecipeScripts.isEmpty {
+            let embeddedDataSection = """
+
+            === EMBEDDED RECIPE DATA (Script/JSON) ===
+            \(embeddedRecipeScripts.joined(separator: "\n\n"))
+            === END EMBEDDED RECIPE DATA ===
+
+            """
+            prefixSections.append(embeddedDataSection)
+            logInfo("🧹 ✅ Added \(embeddedRecipeScripts.count) embedded recipe script block(s) to top of content", category: "extraction")
+        }
+
+        if !prefixSections.isEmpty {
+            cleaned = prefixSections.joined() + cleaned
         }
         
         // Replace common HTML entities
@@ -355,6 +377,51 @@ class WebRecipeExtractor {
             }
         }
         return nil
+    }
+
+    // Extract script blocks that likely contain embedded recipe data (non-JSON-LD)
+    private func extractEmbeddedRecipeScripts(from html: String) -> [String] {
+        let scriptPattern = "<script([^>]*)>(.*?)</script>"
+        guard let regex = try? NSRegularExpression(pattern: scriptPattern, options: [.caseInsensitive, .dotMatchesLineSeparators]) else {
+            return []
+        }
+
+        let keywords = [
+            "\"recipeIngredient\"",
+            "\"recipeInstructions\"",
+            "\"recipeYield\"",
+            "\"recipeCategory\"",
+            "\"recipeCuisine\"",
+            "\"@type\":\"Recipe\"",
+            "\"@type\": \"Recipe\""
+        ]
+
+        let nsString = html as NSString
+        let matches = regex.matches(in: html, range: NSRange(location: 0, length: nsString.length))
+        var embeddedScripts: [String] = []
+
+        for match in matches {
+            guard match.numberOfRanges > 2 else { continue }
+            let scriptAttributes = nsString.substring(with: match.range(at: 1))
+            let scriptContent = nsString.substring(with: match.range(at: 2))
+
+            // Skip JSON-LD here (handled separately)
+            if scriptAttributes.range(of: "application/ld+json", options: .caseInsensitive) != nil {
+                continue
+            }
+
+            if keywords.contains(where: { scriptContent.range(of: $0, options: .caseInsensitive) != nil }) {
+                let trimmed = scriptContent.trimmingCharacters(in: .whitespacesAndNewlines)
+                if trimmed.isEmpty { continue }
+
+                // Cap very large scripts to avoid huge payloads
+                let maxScriptLength = 20_000
+                let capped = trimmed.count > maxScriptLength ? String(trimmed.prefix(maxScriptLength)) : trimmed
+                embeddedScripts.append(capped)
+            }
+        }
+
+        return embeddedScripts
     }
 
     /// Remove HTML tags from a string

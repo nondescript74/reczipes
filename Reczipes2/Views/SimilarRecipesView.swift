@@ -55,7 +55,7 @@ struct SimilarRecipesView: View {
             }
             .sheet(isPresented: $showingRecipeDetail) {
                 if let recipe = selectedRecipe {
-                    SimilarRecipeDetailView(recipe: recipe)
+                    SimilarRecipeDetailView(recipe: recipe, originalRecipe: originalRecipe)
                 }
             }
         }
@@ -83,6 +83,14 @@ struct SimilarRecipesView: View {
                 .foregroundColor(.secondary)
                 .multilineTextAlignment(.center)
                 .padding(.top, 4)
+
+            if originalRecipe.needsRepair {
+                Text("Your recipe is missing \(originalRecipe.missingDataDescription). Choose a similar recipe below to add the missing details.")
+                    .font(.caption)
+                    .foregroundColor(.orange)
+                    .multilineTextAlignment(.center)
+                    .padding(.top, 4)
+            }
         }
         .frame(maxWidth: .infinity)
         .padding()
@@ -322,9 +330,15 @@ struct SimilarRecipeCard: View {
 
 struct SimilarRecipeDetailView: View {
     let recipe: SimilarRecipe
+    let originalRecipe: RecipeX
     
     @Environment(\.dismiss) private var dismiss
     @Environment(\.openURL) private var openURL
+    @Environment(\.modelContext) private var modelContext
+    
+    @State private var appliedIngredients = false
+    @State private var appliedInstructions = false
+    @State private var appliedNotes = false
     
     var body: some View {
         NavigationStack {
@@ -423,6 +437,74 @@ struct SimilarRecipeDetailView: View {
                         .cornerRadius(12)
                         
                         Divider()
+
+                        // Apply suggestions
+                        VStack(alignment: .leading, spacing: 12) {
+                            Text("Add to Your Recipe")
+                                .font(.title2)
+                                .fontWeight(.bold)
+
+                            Text("Use this recipe as a source for missing ingredients, instructions, or notes.")
+                                .font(.caption)
+                                .foregroundColor(.secondary)
+
+                            HStack(spacing: 12) {
+                                Button {
+                                    applyIngredients()
+                                } label: {
+                                    HStack {
+                                        Image(systemName: appliedIngredients ? "checkmark.circle.fill" : "plus.circle")
+                                        Text(appliedIngredients ? "Ingredients Added" : "Add Ingredients")
+                                    }
+                                    .font(.subheadline)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 10)
+                                    .background(Color.green.opacity(appliedIngredients ? 0.2 : 0.1))
+                                    .foregroundColor(.green)
+                                    .cornerRadius(8)
+                                }
+                                .disabled(appliedIngredients || recipe.ingredients.isEmpty)
+                                .buttonStyle(.plain)
+
+                                Button {
+                                    applyInstructions()
+                                } label: {
+                                    HStack {
+                                        Image(systemName: appliedInstructions ? "checkmark.circle.fill" : "plus.circle")
+                                        Text(appliedInstructions ? "Instructions Added" : "Add Instructions")
+                                    }
+                                    .font(.subheadline)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 10)
+                                    .background(Color.blue.opacity(appliedInstructions ? 0.2 : 0.1))
+                                    .foregroundColor(.blue)
+                                    .cornerRadius(8)
+                                }
+                                .disabled(appliedInstructions || recipe.instructions.isEmpty)
+                                .buttonStyle(.plain)
+                            }
+
+                            if let description = recipe.description, !description.isEmpty {
+                                Button {
+                                    applyNotes(from: description)
+                                } label: {
+                                    HStack {
+                                        Image(systemName: appliedNotes ? "checkmark.circle.fill" : "plus.circle")
+                                        Text(appliedNotes ? "Notes Added" : "Add Notes")
+                                    }
+                                    .font(.subheadline)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 10)
+                                    .background(Color.orange.opacity(appliedNotes ? 0.2 : 0.1))
+                                    .foregroundColor(.orange)
+                                    .cornerRadius(8)
+                                }
+                                .disabled(appliedNotes)
+                                .buttonStyle(.plain)
+                            }
+                        }
+
+                        Divider()
                         
                         // Ingredients
                         VStack(alignment: .leading, spacing: 12) {
@@ -479,6 +561,100 @@ struct SimilarRecipeDetailView: View {
                     }
                 }
             }
+        }
+    }
+
+    // MARK: - Apply Actions
+
+    private func applyIngredients() {
+        guard !recipe.ingredients.isEmpty else { return }
+
+        let parsedIngredients = recipe.ingredients.compactMap { parseIngredientLine($0) }
+        guard !parsedIngredients.isEmpty else { return }
+
+        let sectionTitle = "Suggested Ingredients (\(recipe.source))"
+        let newSection = IngredientSection(title: sectionTitle, ingredients: parsedIngredients)
+
+        var sections = originalRecipe.ingredientSections
+        if sections.isEmpty {
+            sections = [newSection]
+        } else {
+            sections.append(newSection)
+        }
+
+        if let data = try? JSONEncoder().encode(sections) {
+            originalRecipe.updateIngredients(data)
+            appendReferenceLabel("Ingredients source", recipe: recipe)
+            originalRecipe.updateContentFingerprint()
+            try? modelContext.save()
+            appliedIngredients = true
+        }
+    }
+
+    private func applyInstructions() {
+        guard !recipe.instructions.isEmpty else { return }
+
+        let steps = recipe.instructions.enumerated().map { index, step in
+            InstructionStep(stepNumber: index + 1, text: step)
+        }
+        let sectionTitle = "Suggested Instructions (\(recipe.source))"
+        let newSection = InstructionSection(title: sectionTitle, steps: steps)
+
+        var sections = originalRecipe.instructionSections
+        if sections.isEmpty {
+            sections = [newSection]
+        } else {
+            sections.append(newSection)
+        }
+
+        if let data = try? JSONEncoder().encode(sections) {
+            originalRecipe.updateInstructions(data)
+            appendReferenceLabel("Instructions source", recipe: recipe)
+            originalRecipe.updateContentFingerprint()
+            try? modelContext.save()
+            appliedInstructions = true
+        }
+    }
+
+    private func applyNotes(from description: String) {
+        let trimmed = description.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+
+        var notes = originalRecipe.notes
+        notes.append(RecipeNote(type: .general, text: trimmed))
+
+        if let data = try? JSONEncoder().encode(notes) {
+            originalRecipe.notesData = data
+            appendReferenceLabel("Notes source", recipe: recipe)
+            originalRecipe.markAsModified()
+            originalRecipe.updateContentFingerprint()
+            try? modelContext.save()
+            appliedNotes = true
+        }
+    }
+
+    private func parseIngredientLine(_ line: String) -> Ingredient? {
+        let cleaned = line.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !cleaned.isEmpty else { return nil }
+
+        let parts = cleaned.split(separator: " ", maxSplits: 2).map { String($0) }
+        if parts.count >= 3 {
+            return Ingredient(quantity: parts[0], unit: parts[1], name: parts[2])
+        }
+        if parts.count == 2 {
+            return Ingredient(quantity: parts[0], name: parts[1])
+        }
+        return Ingredient(name: cleaned)
+    }
+
+    private func appendReferenceLabel(_ label: String, recipe: SimilarRecipe) {
+        let entry = "\(label): \(recipe.source) - \(recipe.sourceURL)"
+        if let currentRef = originalRecipe.reference, !currentRef.isEmpty {
+            if !currentRef.contains(entry) {
+                originalRecipe.reference = currentRef + "\n" + entry
+            }
+        } else {
+            originalRecipe.reference = entry
         }
     }
 }
