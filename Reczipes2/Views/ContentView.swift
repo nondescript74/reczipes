@@ -22,6 +22,7 @@ struct ContentView: View {
     @State private var selectedRecipeID: UUID?
     @State private var showingDebug = false
     @State private var showingRecipeExtractor = false
+    @State private var showingCreateRecipe = false
     @State private var showingAllergenProfiles = false
     @State private var showingImport = false
     @State private var showingSearch = false
@@ -515,6 +516,9 @@ struct ContentView: View {
         .sheet(isPresented: $showingRecipeExtractor) {
             RecipeExtractorView(apiKey: getAPIKey())
         }
+        .sheet(isPresented: $showingCreateRecipe) {
+            CreateRecipeView()
+        }
     }
     
     private var emptyStateContent: some View {
@@ -688,10 +692,20 @@ struct ContentView: View {
                 }
                 
                 ToolbarItem(placement: .navigationBarTrailing) {
-                    Button {
-                        showingRecipeExtractor = true
+                    Menu {
+                        Button {
+                            showingCreateRecipe = true
+                        } label: {
+                            Label("Create Recipe", systemImage: "doc.badge.plus")
+                        }
+                        
+                        Button {
+                            showingRecipeExtractor = true
+                        } label: {
+                            Label("Extract from Image", systemImage: "camera")
+                        }
                     } label: {
-                        Label("Extract Recipe", systemImage: "plus.circle")
+                        Label("Add Recipe", systemImage: "plus")
                     }
                 }
 #else
@@ -708,16 +722,29 @@ struct ContentView: View {
                 }
                 
                 ToolbarItem(placement: .primaryAction) {
-                    Button {
-                        showingRecipeExtractor = true
+                    Menu {
+                        Button {
+                            showingCreateRecipe = true
+                        } label: {
+                            Label("Create Recipe", systemImage: "doc.badge.plus")
+                        }
+                        
+                        Button {
+                            showingRecipeExtractor = true
+                        } label: {
+                            Label("Extract from Image", systemImage: "camera")
+                        }
                     } label: {
-                        Label("Extract Recipe", systemImage: "plus.circle")
+                        Label("Add Recipe", systemImage: "plus")
                     }
                 }
 #endif
             }
             .sheet(isPresented: $showingRecipeExtractor) {
                 RecipeExtractorView(apiKey: getAPIKey())
+            }
+            .sheet(isPresented: $showingCreateRecipe) {
+                CreateRecipeView()
             }
             .sheet(isPresented: $showingAllergenProfiles) {
                 AllergenProfileView()

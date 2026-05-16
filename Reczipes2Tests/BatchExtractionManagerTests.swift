@@ -513,7 +513,7 @@ struct BatchExtractionManagerTests {
         
         let manager = BatchExtractionManager.shared
         
-        await withTaskGroup(of: Void.self) { group in
+        await withDiscardingTaskGroup { group in
             for _ in 0..<10 {
                 group.addTask { @MainActor in
                     manager.pause()
@@ -541,7 +541,7 @@ struct BatchExtractionManagerTests {
         manager.successCount = 5
         manager.failureCount = 5
         
-        await withTaskGroup(of: Void.self) { group in
+        await withDiscardingTaskGroup { group in
             for _ in 0..<10 {
                 group.addTask { @MainActor in
                     manager.reset()
