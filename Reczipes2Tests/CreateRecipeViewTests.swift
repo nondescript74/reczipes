@@ -473,9 +473,9 @@ struct CreateRecipeViewIntegrationTests {
     func testCompleteRecipeCreation() async throws {
         // Simulate a complete recipe creation
         let title = "Chocolate Chip Cookies"
-        _ = "Best cookies ever!" // headerNotes
-        _ = "24 cookies" // recipeYield
-        _ = "Grandma's recipe" // reference
+//        _ = "Best cookies ever!" // headerNotes
+//        _ = "24 cookies" // recipeYield
+//        _ = "Grandma's recipe" // reference
         
         // Ingredients
         let ingredientSections = [
