@@ -1,0 +1,30 @@
+{
+  "configurations" : [
+    {
+      "id" : "B13B8E24-C918-4EC0-91C3-17E66060BC73",
+      "name" : "Test Scheme Action",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "performanceAntipatternCheckerEnabled" : true,
+    "targetForVariableExpansion" : {
+      "containerPath" : "container:Reczipes2.xcodeproj",
+      "identifier" : "F8C80F432EE246D200AA52E7",
+      "name" : "Reczipes2"
+    }
+  },
+  "testTargets" : [
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:Reczipes2.xcodeproj",
+        "identifier" : "F8C80F522EE246D300AA52E7",
+        "name" : "Reczipes2Tests"
+      }
+    }
+  ],
+  "version" : 1
+}

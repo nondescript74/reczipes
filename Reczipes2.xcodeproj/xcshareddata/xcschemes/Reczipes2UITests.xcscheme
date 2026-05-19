@@ -14,7 +14,7 @@
       shouldUseLaunchSchemeArgsEnv = "YES">
       <TestPlans>
          <TestPlanReference
-            reference = "container:Reczipes2Tests.xctestplan"
+            reference = "container:TestPlan.xctestplan"
             default = "YES">
          </TestPlanReference>
       </TestPlans>
@@ -24,9 +24,9 @@
             parallelizable = "YES">
             <BuildableReference
                BuildableIdentifier = "primary"
-               BlueprintIdentifier = "F8C80F522EE246D300AA52E7"
-               BuildableName = "Reczipes2Tests.xctest"
-               BlueprintName = "Reczipes2Tests"
+               BlueprintIdentifier = "F8C80F5C2EE246D300AA52E7"
+               BuildableName = "Reczipes2UITests.xctest"
+               BlueprintName = "Reczipes2UITests"
                ReferencedContainer = "container:Reczipes2.xcodeproj">
             </BuildableReference>
          </TestableReference>

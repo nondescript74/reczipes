@@ -1,0 +1,25 @@
+{
+  "configurations" : [
+    {
+      "id" : "E9C80F26-61A0-4B24-9683-F062EA5193AD",
+      "name" : "Configuration 1",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "codeCoverage" : false,
+    "testTimeoutsEnabled" : true
+  },
+  "testTargets" : [
+    {
+      "target" : {
+        "containerPath" : "container:Reczipes2.xcodeproj",
+        "identifier" : "F8C80F522EE246D300AA52E7",
+        "name" : "Reczipes2Tests"
+      }
+    }
+  ],
+  "version" : 1
+}

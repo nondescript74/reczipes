@@ -1,0 +1,25 @@
+{
+  "configurations" : [
+    {
+      "id" : "5CD33C68-517A-47E6-80C9-8BA89239CA05",
+      "name" : "Test Scheme Action",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "performanceAntipatternCheckerEnabled" : true
+  },
+  "testTargets" : [
+    {
+      "parallelizable" : true,
+      "target" : {
+        "containerPath" : "container:Reczipes2.xcodeproj",
+        "identifier" : "F8C80F5C2EE246D300AA52E7",
+        "name" : "Reczipes2UITests"
+      }
+    }
+  ],
+  "version" : 1
+}

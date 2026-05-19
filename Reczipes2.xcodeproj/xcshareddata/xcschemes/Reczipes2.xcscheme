@@ -20,6 +20,20 @@
                ReferencedContainer = "container:Reczipes2.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
+         <BuildActionEntry
+            buildForTesting = "YES"
+            buildForRunning = "NO"
+            buildForProfiling = "NO"
+            buildForArchiving = "NO"
+            buildForAnalyzing = "NO">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "F8053DED2F33DB15006A5E34"
+               BuildableName = "Reczipes2ClipTests.xctest"
+               BlueprintName = "Reczipes2ClipTests"
+               ReferencedContainer = "container:Reczipes2.xcodeproj">
+            </BuildableReference>
+         </BuildActionEntry>
       </BuildActionEntries>
    </BuildAction>
    <TestAction
@@ -48,6 +62,17 @@
                BlueprintIdentifier = "F8C80F5C2EE246D300AA52E7"
                BuildableName = "Reczipes2UITests.xctest"
                BlueprintName = "Reczipes2UITests"
+               ReferencedContainer = "container:Reczipes2.xcodeproj">
+            </BuildableReference>
+         </TestableReference>
+         <TestableReference
+            skipped = "NO"
+            parallelizable = "YES">
+            <BuildableReference
+               BuildableIdentifier = "primary"
+               BlueprintIdentifier = "F8053DED2F33DB15006A5E34"
+               BuildableName = "Reczipes2ClipTests.xctest"
+               BlueprintName = "Reczipes2ClipTests"
                ReferencedContainer = "container:Reczipes2.xcodeproj">
             </BuildableReference>
          </TestableReference>
