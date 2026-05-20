@@ -22,7 +22,6 @@ class RecipeExtractorViewModel: ObservableObject {
     @Published var usePreprocessing = true
     @Published var recipeURL: String = ""
     @Published var extractedImageURLs: [String] = [] // Image URLs from web extraction
-    @Published var similarRecipePrompt: String?
     
     private let apiClient: ClaudeAPIClient
     private let imagePreprocessor = ImagePreprocessor()
@@ -38,10 +37,7 @@ class RecipeExtractorViewModel: ObservableObject {
     
     @Published var showingValidation = false
     @Published var validationResult: RecipeValidationResult?
-    @Published var showingSimilarRecipes = false
-    @Published var similarRecipes: [SimilarRecipe] = []
     @Published var isValidating = false
-    @Published var isFindingSimilar = false
     @Published var isRecipeSaved = false  // Track if recipe has been auto-saved
     @Published var savedRecipeID: UUID?   // Reference to saved recipe
     
@@ -205,12 +201,9 @@ class RecipeExtractorViewModel: ObservableObject {
             selectedImage = nil // Clear image when extracting from URL
             processedImage = nil
             extractedImageURLs = [] // Clear previous image URLs
-            similarRecipePrompt = nil
         }
         
         logInfo("Starting URL extraction from: \(url)", category: "extraction")
-        
-        var shouldFindSimilarRecipes = false
 
         do {
             // Fetch web content
@@ -250,22 +243,6 @@ class RecipeExtractorViewModel: ObservableObject {
                 recipe.reference = "Original Source: " + url
             }
             
-            shouldFindSimilarRecipes = recipe.needsRepair
-            if recipe.needsRepair {
-                let missing = recipe.missingDataDescription
-                await MainActor.run {
-                    self.similarRecipePrompt = "Missing \(missing). Looking for similar recipes to fill the gaps."
-                }
-            } else {
-                await MainActor.run {
-                    self.similarRecipePrompt = nil
-                }
-            }
-            
-            // Store image URLs separately in the viewmodel property
-            // They will be moved to the reference field when the recipe is saved
-            // DO NOT add them to notes - that causes clutter
-            
             await MainActor.run {
                 self.extractedRecipe = recipe
                 self.extractedImageURLs = imageURLs // Store image URLs separately for view access
@@ -293,11 +270,6 @@ class RecipeExtractorViewModel: ObservableObject {
             isLoading = false
             logInfo("URL extraction complete, isLoading set to false", category: "extraction")
         }
-
-        if shouldFindSimilarRecipes {
-            logInfo("Recipe missing ingredients or instructions - searching for similar recipes", category: "enhancement")
-            await findSimilarRecipes(count: 3, modelContext: nil)
-        }
     }
     
     /// Extract recipe from the selected image
@@ -308,7 +280,6 @@ class RecipeExtractorViewModel: ObservableObject {
             errorMessage = nil
             extractedRecipe = nil // Clear any previous recipe
             selectedImage = image
-            similarRecipePrompt = nil
         }
         
         logInfo("Starting image extraction, isLoading set to true", category: "extraction")
@@ -327,8 +298,6 @@ class RecipeExtractorViewModel: ObservableObject {
             }
         }
         
-        var shouldFindSimilarRecipes = false
-
         do {
             // Reduce image size to 10-20KB max before sending to Claude
             // Since we're only extracting text, we don't need high resolution
@@ -337,25 +306,13 @@ class RecipeExtractorViewModel: ObservableObject {
                 throw ClaudeAPIError.invalidResponse
             }
             logInfo("Image size after reduction: \(imageData.count) bytes (~\(imageData.count / 1024)KB)", category: "extraction")
-            
+
             logInfo("Calling Claude API for image extraction...", category: "extraction")
             let recipe = try await apiClient.extractRecipe(
                 from: imageData,
                 usePreprocessing: usePreprocessing
             )
 
-            shouldFindSimilarRecipes = recipe.needsRepair
-            if recipe.needsRepair {
-                let missing = recipe.missingDataDescription
-                await MainActor.run {
-                    self.similarRecipePrompt = "Missing \(missing). Looking for similar recipes to fill the gaps."
-                }
-            } else {
-                await MainActor.run {
-                    self.similarRecipePrompt = nil
-                }
-            }
-            
             await MainActor.run {
                 self.extractedRecipe = recipe
                 logInfo("Recipe extraction successful", category: "extraction")
@@ -376,11 +333,6 @@ class RecipeExtractorViewModel: ObservableObject {
             isLoading = false
             logInfo("Image extraction complete, isLoading set to false", category: "extraction")
         }
-
-        if shouldFindSimilarRecipes {
-            logInfo("Image extraction missing ingredients or instructions - searching for similar recipes", category: "enhancement")
-            await findSimilarRecipes(count: 3, modelContext: nil)
-        }
     }
     
     /// Clear all current data
@@ -392,13 +344,9 @@ class RecipeExtractorViewModel: ObservableObject {
         isLoading = false
         recipeURL = ""
         extractedImageURLs = []
-        similarRecipePrompt = nil
         validationResult = nil
-        similarRecipes = []
         showingValidation = false
-        showingSimilarRecipes = false
         isValidating = false
-        isFindingSimilar = false
         isRecipeSaved = false
         savedRecipeID = nil
     }
@@ -545,43 +493,6 @@ class RecipeExtractorViewModel: ObservableObject {
         logInfo("Validation corrections applied successfully", category: "enhancement")
     }
     
-    /// Finds similar recipes on the web
-    func findSimilarRecipes(count: Int = 5, modelContext: ModelContext? = nil) async {
-        guard let recipe = extractedRecipe,
-              let service = enhancementService else { return }
-        
-        // Auto-save before searching to preserve state
-        if let context = modelContext {
-            await autoSaveBeforeEnhancement(modelContext: context)
-        }
-        
-        await MainActor.run {
-            isFindingSimilar = true
-            errorMessage = nil
-            similarRecipes = []
-        }
-        
-        logInfo("Searching for \(count) similar recipes", category: "enhancement")
-        
-        do {
-            let recipes = try await service.findSimilarRecipes(recipe, count: count)
-            
-            await MainActor.run {
-                self.similarRecipes = recipes
-                self.showingSimilarRecipes = true
-                logInfo("Found \(recipes.count) similar recipes", category: "enhancement")
-            }
-        } catch {
-            await MainActor.run {
-                self.errorMessage = "Failed to find similar recipes: \(error.localizedDescription)"
-                logError("Similar recipes search error: \(error.localizedDescription)", category: "enhancement")
-            }
-        }
-        
-        await MainActor.run {
-            isFindingSimilar = false
-        }
-    }
     
     /// Enhanced extraction workflow for images - includes validation and similar recipe search
     func extractRecipeWithEnhancement(from image: UIImage) async {

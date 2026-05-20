@@ -124,106 +124,8 @@ class RecipeEnhancementService {
         }
     }
     
-    // MARK: - Similar Recipe Search
-    
-    /// Searches for similar recipes on the web
-    /// - Parameter recipe: The recipe to find similar recipes for
-    /// - Returns: Array of similar recipes found online
-    func findSimilarRecipes(_ recipe: RecipeX, count: Int = 5) async throws -> [SimilarRecipe] {
-        logInfo("Searching for \(count) similar recipes to: \(recipe.safeTitle)", category: "enhancement")
-        
-        let systemPrompt = """
-        You are a recipe research assistant with web search access. Search the web for \(count) real recipes from popular recipe websites like AllRecipes, Food Network, Bon Appétit, NYT Cooking, Serious Eats, etc.
-        
-        For each recipe found, extract all available details including: title, website name and URL, image URL, description, ingredients, instructions, timing, servings, and cuisine type.
-        """
-        
-        // Extract key information from the recipe
-        let recipeInfo = buildRecipeSearchQuery(recipe)
-        
-        let userPrompt = """
-        Search the web for \(count) recipes for: \(recipeInfo)
-        
-        Find real recipes from popular recipe websites. For each recipe, provide complete details in this JSON format:
-        
-        [
-          {
-            "title": "Recipe Title",
-            "source": "Website Name",
-            "sourceURL": "https://example.com/recipe",
-            "imageURL": "https://example.com/image.jpg",
-            "description": "Brief description of the recipe",
-            "ingredients": [
-              "1 cup flour",
-              "2 eggs",
-              "..."
-            ],
-            "instructions": [
-              "Preheat oven to 350°F",
-              "Mix ingredients",
-              "..."
-            ],
-            "prepTime": "15 minutes",
-            "cookTime": "30 minutes",
-            "totalTime": "45 minutes",
-            "servings": "Serves 4",
-            "cuisine": "Italian",
-            "matchScore": 0.85,
-            "matchReasons": [
-              "Uses same main protein (beef)",
-              "Similar East Indian spice profile",
-              "Comparable cooking method (curry)"
-            ]
-          }
-        ]
-        
-        IMPORTANT:
-        - Use web search to find REAL recipes from actual websites
-        - Include complete ingredient lists and instructions
-        - Match score: 1.0 = very similar, 0.7 = moderately similar, 0.5 = loosely similar
-        - If you cannot find the exact recipe, search for similar alternatives based on:
-          * Same cuisine type (e.g., if "Mani flatbread" isn't found, search for other Indian flatbreads like naan, roti, paratha)
-          * Similar ingredients or cooking methods
-          * Related dishes from the same culinary tradition
-        - Only return an empty array [] if you truly cannot find ANY related recipes
-        - Return ONLY valid JSON array with no markdown formatting or explanatory text
-        """
-        
-        let recipesJSON = try await apiClient.callClaude(
-            systemPrompt: systemPrompt,
-            userPrompt: userPrompt,
-            maxTokens: 8192,
-            enableWebSearch: true
-        )
-        
-        logInfo("Received similar recipes response", category: "enhancement")
-        logDebug("Raw response length: \(recipesJSON.count) characters", category: "enhancement")
-        logDebug("Raw response preview: \(String(recipesJSON.prefix(500)))", category: "enhancement")
-        
-        // Extract JSON from response (remove markdown code blocks if present)
-        let cleanedJSON = extractJSON(from: recipesJSON)
-        logDebug("Cleaned JSON length: \(cleanedJSON.count) characters", category: "enhancement")
-        logDebug("Cleaned JSON preview: \(String(cleanedJSON.prefix(500)))", category: "enhancement")
-        
-        // Parse the similar recipes
-        guard let jsonData = cleanedJSON.data(using: .utf8) else {
-            logError("Failed to convert cleaned JSON to data", category: "enhancement")
-            throw EnhancementError.invalidResponse
-        }
-        
-        do {
-            let recipes = try JSONDecoder().decode([SimilarRecipe].self, from: jsonData)
-            logInfo("Found \(recipes.count) similar recipes", category: "enhancement")
-            return recipes
-        } catch {
-            logError("Failed to decode similar recipes: \(error)", category: "enhancement")
-            logDebug("Cleaned JSON: \(cleanedJSON)", category: "enhancement")
-            throw EnhancementError.noRecipesFound
-        }
-    }
-    
     // MARK: - Helper Methods
-    
+
     private func buildRecipeJSON(_ recipe: RecipeX) -> String {
         var json = [String: Any]()
         
@@ -309,34 +211,18 @@ class RecipeEnhancementService {
         return cleaned
     }
     
-    private func buildRecipeSearchQuery(_ recipe: RecipeX) -> String {
-        var query = ""
-        
-        // Title (primary search term)
-        query += "\(recipe.safeTitle)"
-        
-        // Cuisine (helps narrow down)
-        if let cuisine = recipe.cuisine, !cuisine.isEmpty {
-            query += " (\(cuisine) cuisine)"
-        }
-        
-        return query
-    }
 }
 
 // MARK: - Errors
 
 enum EnhancementError: Error, LocalizedError {
     case invalidResponse
-    case noRecipesFound
     case validationFailed
-    
+
     var errorDescription: String? {
         switch self {
         case .invalidResponse:
             return "Invalid response from enhancement service"
-        case .noRecipesFound:
-            return "No similar recipes found"
         case .validationFailed:
             return "Recipe validation failed"
         }

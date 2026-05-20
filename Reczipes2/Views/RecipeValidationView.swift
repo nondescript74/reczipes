@@ -14,7 +14,6 @@ struct RecipeValidationView: View {
     let validationResult: RecipeValidationResult
     let onApplyCorrections: (RecipeValidationResult) -> Void
     let onSkipValidation: () -> Void
-    let onFindSimilarRecipes: () -> Void
     
     @Environment(\.dismiss) private var dismiss
     @State private var showingDetails = false
@@ -241,14 +240,14 @@ struct RecipeValidationView: View {
     
     private var actionButtonsSection: some View {
         VStack(spacing: 12) {
-            // Apply corrections and find similar recipes
+            // Apply corrections
             Button {
                 onApplyCorrections(validationResult)
-                onFindSimilarRecipes()
+                dismiss()
             } label: {
                 HStack {
                     Image(systemName: "wand.and.stars")
-                    Text("Apply Corrections & Find Similar Recipes")
+                    Text("Apply Corrections")
                 }
                 .frame(maxWidth: .infinity)
                 .padding()
@@ -257,26 +256,7 @@ struct RecipeValidationView: View {
                 .cornerRadius(12)
             }
             .buttonStyle(.plain)
-            
-            // Skip validation, just find similar recipes
-            if validationResult.isValid {
-                Button {
-                    onSkipValidation()
-                    onFindSimilarRecipes()
-                } label: {
-                    HStack {
-                        Image(systemName: "magnifyingglass")
-                        Text("Skip Validation & Find Similar Recipes")
-                    }
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.green)
-                    .foregroundColor(.white)
-                    .cornerRadius(12)
-                }
-                .buttonStyle(.plain)
-            }
-            
+
             // Skip everything
             Button {
                 onSkipValidation()

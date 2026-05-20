@@ -314,23 +314,6 @@ struct RecipeExtractorView: View {
                         },
                         onSkipValidation: {
                             viewModel.showingValidation = false
-                        },
-                        onFindSimilarRecipes: {
-                            viewModel.showingValidation = false
-                            Task {
-                                await viewModel.findSimilarRecipes(modelContext: modelContext)
-                            }
-                        }
-                    )
-                }
-            }
-            .sheet(isPresented: $viewModel.showingSimilarRecipes) {
-                if let recipe = viewModel.extractedRecipe {
-                    SimilarRecipesView(
-                        originalRecipe: recipe,
-                        similarRecipes: viewModel.similarRecipes,
-                        onDismiss: {
-                            viewModel.showingSimilarRecipes = false
                         }
                     )
                 }
@@ -699,31 +682,6 @@ struct RecipeExtractorView: View {
         VStack(alignment: .leading, spacing: 16) {
             recipeSuccessHeader
 
-            if let prompt = viewModel.similarRecipePrompt {
-                HStack(alignment: .top, spacing: 8) {
-                    Image(systemName: "sparkles")
-                        .foregroundColor(.orange)
-                    Text(prompt)
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-                .padding(10)
-                .background(Color.orange.opacity(0.1))
-                .cornerRadius(8)
-            }
-
-            if viewModel.isFindingSimilar {
-                HStack(spacing: 8) {
-                    ProgressView()
-                    Text("Finding similar recipes...")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                }
-                .padding(10)
-                .background(Color.gray.opacity(0.1))
-                .cornerRadius(8)
-            }
-            
             recipeDebugInfo(recipe: recipe)
             
             extractionSummary(recipe: recipe)
@@ -953,64 +911,36 @@ struct RecipeExtractorView: View {
                 .cornerRadius(6)
             }
             
-            Text("Get AI-powered suggestions to improve content placement and discover similar recipes from top recipe websites.")
+            Text("Get AI-powered suggestions to improve content placement.")
                 .font(.caption)
                 .foregroundColor(.secondary)
                 .frame(maxWidth: .infinity, alignment: .leading)
-            
-            HStack(spacing: 12) {
-                // Validate & Enhance button
-                Button {
-                    Task {
-                        await viewModel.validateRecipe(modelContext: modelContext)
-                    }
-                } label: {
-                    HStack {
-                        if viewModel.isValidating {
-                            ProgressView()
-                                .tint(.white)
-                                .scaleEffect(0.8)
-                        } else {
-                            Image(systemName: "wand.and.stars")
-                        }
-                        Text(viewModel.isValidating ? "Validating..." : "Validate Content")
-                    }
-                    .font(.subheadline)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.purple)
-                    .foregroundColor(.white)
-                    .cornerRadius(10)
+
+            // Validate & Enhance button
+            Button {
+                Task {
+                    await viewModel.validateRecipe(modelContext: modelContext)
                 }
-                .disabled(viewModel.isValidating || viewModel.isFindingSimilar)
-                .buttonStyle(.plain)
-                
-                // Find Similar Recipes button
-                Button {
-                    Task {
-                        await viewModel.findSimilarRecipes(modelContext: modelContext)
+            } label: {
+                HStack {
+                    if viewModel.isValidating {
+                        ProgressView()
+                            .tint(.white)
+                            .scaleEffect(0.8)
+                    } else {
+                        Image(systemName: "wand.and.stars")
                     }
-                } label: {
-                    HStack {
-                        if viewModel.isFindingSimilar {
-                            ProgressView()
-                                .tint(.white)
-                                .scaleEffect(0.8)
-                        } else {
-                            Image(systemName: "magnifyingglass")
-                        }
-                        Text(viewModel.isFindingSimilar ? "Searching..." : "Find Similar")
-                    }
-                    .font(.subheadline)
-                    .frame(maxWidth: .infinity)
-                    .padding()
-                    .background(Color.orange)
-                    .foregroundColor(.white)
-                    .cornerRadius(10)
+                    Text(viewModel.isValidating ? "Validating..." : "Validate Content")
                 }
-                .disabled(viewModel.isValidating || viewModel.isFindingSimilar)
-                .buttonStyle(.plain)
+                .font(.subheadline)
+                .frame(maxWidth: .infinity)
+                .padding()
+                .background(Color.purple)
+                .foregroundColor(.white)
+                .cornerRadius(10)
             }
+            .disabled(viewModel.isValidating)
+            .buttonStyle(.plain)
         }
         .padding()
         .background(Color.purple.opacity(0.1))
