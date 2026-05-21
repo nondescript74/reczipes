@@ -18,8 +18,7 @@ struct MealDetailView: View {
 
     @State private var showingEditor = false
     @State private var selectedRecipe: RecipeX?
-    @State private var searchURL: URL?
-    @State private var showSafari = false
+    @State private var searchingCourse: CourseSearchContext?
 
     private var courses: [MealCourse] { meal.courses }
 
@@ -74,11 +73,14 @@ struct MealDetailView: View {
                         }
                 }
             }
-            .sheet(isPresented: $showSafari) {
-                if let url = searchURL {
-                    SafariView(url: url, entersReaderIfAvailable: false)
-                        .ignoresSafeArea()
-                }
+            .sheet(item: $searchingCourse) { context in
+                CourseSearchView(
+                    courseName: context.courseName,
+                    recipes: recipes,
+                    onRecipeSelected: { recipe in
+                        linkRecipe(recipe, toCourseID: context.courseID)
+                    }
+                )
             }
         }
     }
@@ -121,7 +123,7 @@ struct MealDetailView: View {
                 }
                 Spacer()
                 Button {
-                    openWebSearch(for: course.name)
+                    startSearch(for: course)
                 } label: {
                     Image(systemName: "magnifyingglass")
                 }
@@ -135,18 +137,26 @@ struct MealDetailView: View {
         return recipes.first { $0.id == id }
     }
 
-    private func openWebSearch(for query: String) {
-        let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty,
-              let encoded = "\(trimmed) recipe".addingPercentEncoding(
-                withAllowedCharacters: .urlQueryAllowed
-              ),
-              let url = URL(string: "https://www.google.com/search?q=\(encoded)") else {
-            return
-        }
-        searchURL = url
-        showSafari = true
+    private func startSearch(for course: MealCourse) {
+        let trimmed = course.name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return }
+        searchingCourse = CourseSearchContext(courseID: course.id, courseName: trimmed)
     }
+
+    private func linkRecipe(_ recipe: RecipeX, toCourseID id: UUID) {
+        var updated = meal.courses
+        guard let index = updated.firstIndex(where: { $0.id == id }) else { return }
+        updated[index].recipeID = recipe.id
+        updated[index].recipeTitle = recipe.title
+        meal.setCourses(updated)
+        try? modelContext.save()
+    }
+}
+
+private struct CourseSearchContext: Identifiable {
+    let courseID: UUID
+    let courseName: String
+    var id: UUID { courseID }
 }
 
 #Preview {

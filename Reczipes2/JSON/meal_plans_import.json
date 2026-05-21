@@ -1,0 +1,131 @@
+{
+  "version": 1,
+  "source": "Reminders - Meal Plans",
+  "description": "Meal ideas imported from a Reminders list. Each item is a meal whose courses may match recipes in the user's library by name; unmatched courses become placeholders.",
+  "meals": [
+    {
+      "name": "Fried chicken, pilau",
+      "cuisine": "East African",
+      "courses": ["Fried chicken", "Pilau"]
+    },
+    {
+      "name": "Steak",
+      "cuisine": null,
+      "courses": ["Steak"]
+    },
+    {
+      "name": "Beef stir fry, rice, salad",
+      "cuisine": "Asian",
+      "courses": ["Beef stir fry", "Rice", "Salad"]
+    },
+    {
+      "name": "Kung pao chicken",
+      "cuisine": "Chinese",
+      "courses": ["Kung pao chicken", "Steamed rice"]
+    },
+    {
+      "name": "Hamburgers, potatoes",
+      "cuisine": "American",
+      "courses": ["Hamburgers", "Potatoes"]
+    },
+    {
+      "name": "Fried chicken cutlets",
+      "cuisine": null,
+      "courses": ["Fried chicken cutlets"]
+    },
+    {
+      "name": "Pizza with toppings",
+      "cuisine": "Italian",
+      "courses": ["Pizza", "Side salad"]
+    },
+    {
+      "name": "Roasted root vegetables",
+      "cuisine": null,
+      "courses": ["Roasted root vegetables"]
+    },
+    {
+      "name": "Roasted potatoes",
+      "cuisine": null,
+      "courses": ["Roasted potatoes"]
+    },
+    {
+      "name": "Spinach curry",
+      "cuisine": "Indian",
+      "courses": ["Spinach curry", "Basmati rice", "Naan"]
+    },
+    {
+      "name": "Meat loaf tater casserole",
+      "cuisine": "American",
+      "notes": "Sunday",
+      "courses": ["Meat loaf tater casserole"]
+    },
+    {
+      "name": "Mushroom soup",
+      "cuisine": null,
+      "courses": ["Mushroom soup"]
+    },
+    {
+      "name": "Tempura",
+      "cuisine": "Japanese",
+      "courses": ["Tempura", "Steamed rice", "Dipping sauce"]
+    },
+    {
+      "name": "Squash soup",
+      "cuisine": null,
+      "courses": ["Squash soup"]
+    },
+    {
+      "name": "Devil in the eggs",
+      "cuisine": null,
+      "courses": ["Deviled eggs"]
+    },
+    {
+      "name": "Braised ch thighs and cabbage",
+      "cuisine": null,
+      "courses": ["Braised chicken thighs", "Cabbage"]
+    },
+    {
+      "name": "Mishkaki",
+      "cuisine": "East African",
+      "courses": ["Mishkaki", "Ugali", "Kachumbari"]
+    },
+    {
+      "name": "Fried rice",
+      "cuisine": "Chinese",
+      "courses": ["Fried rice"]
+    },
+    {
+      "name": "Marinated flank steak",
+      "cuisine": null,
+      "courses": ["Marinated flank steak"]
+    },
+    {
+      "name": "Chicken fingers",
+      "cuisine": "American",
+      "courses": ["Chicken fingers", "Fries"]
+    },
+    {
+      "name": "Butter chicken",
+      "cuisine": "Indian",
+      "courses": ["Butter chicken", "Basmati rice", "Naan"]
+    },
+    {
+      "name": "Chicken scarparello",
+      "cuisine": "Italian-American",
+      "notes": "For Sunday. Use frozen sausage.",
+      "courses": ["Chicken scarparello", "Crusty bread"]
+    },
+    {
+      "name": "Fajitas",
+      "description": "Beef and peppers",
+      "cuisine": "Mexican",
+      "courses": ["Fajitas", "Tortillas", "Salsa"]
+    },
+    {
+      "name": "Make chicken broth",
+      "description": "Really good stuff",
+      "cuisine": null,
+      "courses": ["Chicken broth"]
+    }
+  ]
+}

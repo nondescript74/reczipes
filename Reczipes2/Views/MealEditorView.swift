@@ -23,8 +23,7 @@ struct MealEditorView: View {
     @State private var courses: [MealCourse]
 
     @State private var pickingRecipeForCourseID: UUID?
-    @State private var searchURL: URL?
-    @State private var showSafari = false
+    @State private var searchingCourse: CourseSearchContext?
 
     init(meal: Meal? = nil) {
         self.meal = meal
@@ -118,11 +117,14 @@ struct MealEditorView: View {
                     pickingRecipeForCourseID = nil
                 }
             }
-            .sheet(isPresented: $showSafari) {
-                if let url = searchURL {
-                    SafariView(url: url, entersReaderIfAvailable: false)
-                        .ignoresSafeArea()
-                }
+            .sheet(item: $searchingCourse) { context in
+                CourseSearchView(
+                    courseName: context.courseName,
+                    recipes: allRecipes,
+                    onRecipeSelected: { recipe in
+                        linkRecipe(recipe, toCourseID: context.courseID)
+                    }
+                )
             }
         }
     }
@@ -162,15 +164,8 @@ struct MealEditorView: View {
             ? (course.searchQuery ?? "")
             : course.name
         let trimmed = query.trimmingCharacters(in: .whitespacesAndNewlines)
-        guard !trimmed.isEmpty,
-              let encoded = "\(trimmed) recipe".addingPercentEncoding(
-                withAllowedCharacters: .urlQueryAllowed
-              ),
-              let url = URL(string: "https://www.google.com/search?q=\(encoded)") else {
-            return
-        }
-        searchURL = url
-        showSafari = true
+        guard !trimmed.isEmpty else { return }
+        searchingCourse = CourseSearchContext(courseID: course.id, courseName: trimmed)
     }
 
     // MARK: - Save
@@ -275,6 +270,12 @@ private struct CourseRow: View {
 
 private struct CoursePickerContext: Identifiable {
     let courseID: UUID
+    var id: UUID { courseID }
+}
+
+private struct CourseSearchContext: Identifiable {
+    let courseID: UUID
+    let courseName: String
     var id: UUID { courseID }
 }
 

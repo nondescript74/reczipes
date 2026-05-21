@@ -17,6 +17,7 @@ struct UserContentBackupView: View {
     // CloudKit-compatible models
     @Query private var recipes: [RecipeX]
     @Query private var books: [Book]
+    @Query private var meals: [Meal]
     
     @State private var selectedTab: ContentType = .recipes
     @State private var isExporting = false
@@ -37,84 +38,86 @@ struct UserContentBackupView: View {
     enum ContentType {
         case recipes
         case books
+        case meals
     }
     
     var body: some View {
-        NavigationStack {
-            VStack(spacing: 0) {
-                // Tab picker
-                Picker("Content Type", selection: $selectedTab) {
-                    Text("Recipes (\(recipes.count))").tag(ContentType.recipes)
-                    Text("Books (\(books.count))").tag(ContentType.books)
-                }
-                .pickerStyle(.segmented)
-                .padding()
-                
-                // Content
-                Group {
-                    switch selectedTab {
-                    case .recipes:
-                        recipeBackupView
-                    case .books:
-                        booksBackupView
-                    }
+        VStack(spacing: 0) {
+            // Tab picker
+            Picker("Content Type", selection: $selectedTab) {
+                Text("Recipes (\(recipes.count))").tag(ContentType.recipes)
+                Text("Books (\(books.count))").tag(ContentType.books)
+                Text("Meals (\(meals.count))").tag(ContentType.meals)
+            }
+            .pickerStyle(.segmented)
+            .padding()
+
+            // Content
+            Group {
+                switch selectedTab {
+                case .recipes:
+                    recipeBackupView
+                case .books:
+                    booksBackupView
+                case .meals:
+                    MealImportView()
                 }
             }
-            .navigationTitle("User Content Import/Export")
-            .navigationBarTitleDisplayMode(.inline)
-            .toolbar {
-                ToolbarItem(placement: .cancellationAction) {
-                    Button("Done") {
-                        dismiss()
-                    }
+        }
+        .navigationTitle("User Content Import/Export")
+        .navigationBarTitleDisplayMode(.inline)
+        .toolbar {
+            ToolbarItem(placement: .primaryAction) {
+                Button("Done") {
+                    AppStateManager.shared.currentTab = .recipes
                 }
             }
-            .onAppear {
-                loadAvailableBackups()
-            }
-            .fileImporter(
-                isPresented: $showImportPicker,
-                allowedContentTypes: selectedTab == .recipes 
-                    ? [.reczipesBackup] 
-                    : [.bookBackup],
-                allowsMultipleSelection: false
-            ) { result in
-                Task {
-                    if selectedTab == .recipes {
-                        await handleRecipeImport(result: result)
-                    } else {
-                        await handleBookImport(result: result)
-                    }
+        }
+        .onAppear {
+            loadAvailableBackups()
+        }
+        .fileImporter(
+            isPresented: $showImportPicker,
+            allowedContentTypes: selectedTab == .recipes
+                ? [.reczipesBackup]
+                : [.bookBackup],
+            allowsMultipleSelection: false
+        ) { result in
+            Task {
+                if selectedTab == .recipes {
+                    await handleRecipeImport(result: result)
+                } else {
+                    await handleBookImport(result: result)
                 }
             }
-            .alert("Export Successful", isPresented: $showExportSuccess) {
-                Button("Share") {
-                    showShareSheet = true
-                }
-                Button("Done", role: .cancel) { }
-            } message: {
-                Text(exportSuccessMessage)
+        }
+        .alert("Export Successful", isPresented: $showExportSuccess) {
+            Button("Share") {
+                showShareSheet = true
             }
-            .alert("Import Successful", isPresented: $showImportSuccess) {
-                Button("OK") { }
-            } message: {
-                if let result = importResult {
-                    Text(result)
-                }
+            Button("Done", role: .cancel) { }
+        } message: {
+            Text(exportSuccessMessage)
+        }
+        .alert("Import Successful", isPresented: $showImportSuccess) {
+            Button("OK") { }
+        } message: {
+            if let result = importResult {
+                Text(result)
             }
-            .alert("Error", isPresented: .constant(errorMessage != nil)) {
-                Button("OK") {
-                    errorMessage = nil
-                }
-            } message: {
-                if let error = errorMessage {
-                    Text(error)
-                }
+        }
+        .alert("Error", isPresented: .constant(errorMessage != nil)) {
+            Button("OK") {
+                errorMessage = nil
             }
-            .sheet(isPresented: $showShareSheet) {
-                if let url = exportedURL {
-                    ShareSheet(items: [url])
-                }
+        } message: {
+            if let error = errorMessage {
+                Text(error)
+            }
+        }
+        .sheet(isPresented: $showShareSheet) {
+            if let url = exportedURL {
+                ShareSheet(items: [url])
             }
         }
     }
@@ -456,6 +459,8 @@ struct UserContentBackupView: View {
             return "Backup created with \(recipes.count) recipes. Share it to save somewhere safe."
         case .books:
             return "Book backup created successfully. You can now share it with others."
+        case .meals:
+            return "Meal import complete."
         }
     }
     

@@ -62,7 +62,13 @@ class AppStateManager: ObservableObject {
             saveActiveTask(activeTask)
         }
     }
-    
+
+    /// URL queued for extraction from another part of the app (e.g.,
+    /// the smart course-search sheet). The Extract tab consumes and
+    /// clears this when it appears, pre-filling its URL field.
+    /// Transient — not persisted across launches.
+    @Published var pendingExtractURL: String?
+
     // MARK: - Scene Phase Tracking
     
     @Published var lastActiveDate: Date?

@@ -281,6 +281,10 @@ struct RecipeExtractorView: View {
             }
             .onAppear {
                 checkForPendingExtraction()
+                consumePendingExtractURL()
+            }
+            .onChange(of: appState.pendingExtractURL) { _, _ in
+                consumePendingExtractURL()
             }
             .trackTask(
                 type: .extraction,
@@ -1250,6 +1254,21 @@ struct RecipeExtractorView: View {
             logInfo("Found pending extraction task with progress: \(task.progress)", category: "state")
             showPendingExtractionAlert = true
         }
+    }
+
+    /// Consume a URL queued by another part of the app (e.g., the
+    /// smart course-search "Send to Extract" action). Pre-fills the
+    /// URL field, selects the URL source, and clears the queued value
+    /// so it doesn't trigger again on the next appear.
+    private func consumePendingExtractURL() {
+        guard let pending = appState.pendingExtractURL,
+              !pending.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
+            return
+        }
+        viewModel.recipeURL = pending
+        extractionSource = .url
+        showURLInput = true
+        appState.pendingExtractURL = nil
     }
     
     private func resumeExtraction() {
