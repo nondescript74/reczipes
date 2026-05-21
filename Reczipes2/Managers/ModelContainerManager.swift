@@ -181,6 +181,7 @@ class ModelContainerManager: ObservableObject {
                 CachedSharedRecipe.self,
                 CloudKitRecipePreview.self,
                 VersionHistoryRecord.self,
+                Meal.self,                      // Meals (groupings of recipes)
                 migrationPlan: Reczipes2MigrationPlan.self,
                 configurations: cloudKitConfiguration
             )
@@ -249,6 +250,7 @@ class ModelContainerManager: ObservableObject {
                             CachedSharedRecipe.self,
                             CloudKitRecipePreview.self,
                             VersionHistoryRecord.self,
+                            Meal.self,                      // Meals (groupings of recipes)
                             migrationPlan: Reczipes2MigrationPlan.self,
                             configurations: cloudKitConfiguration
                         )
@@ -348,6 +350,7 @@ class ModelContainerManager: ObservableObject {
                             CachedSharedRecipe.self,
                             CloudKitRecipePreview.self,
                             VersionHistoryRecord.self,
+                            Meal.self,                      // Meals (groupings of recipes)
                             migrationPlan: Reczipes2MigrationPlan.self,
                             configurations: cloudKitConfiguration
                         )
@@ -391,6 +394,7 @@ class ModelContainerManager: ObservableObject {
                 CachedSharedRecipe.self,
                 CloudKitRecipePreview.self,
                 VersionHistoryRecord.self,
+                Meal.self,                      // Meals (groupings of recipes)
                 migrationPlan: Reczipes2MigrationPlan.self,
                 configurations: localConfiguration
             )
@@ -461,6 +465,7 @@ class ModelContainerManager: ObservableObject {
                             CachedSharedRecipe.self,
                             CloudKitRecipePreview.self,
                             VersionHistoryRecord.self,
+                            Meal.self,                      // Meals (groupings of recipes)
                             migrationPlan: Reczipes2MigrationPlan.self,
                             configurations: localConfiguration
                         )

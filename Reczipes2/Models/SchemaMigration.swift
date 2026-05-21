@@ -301,6 +301,7 @@ enum SchemaV4: VersionedSchema {
             SharedRecipeBook.self,      
             SharingPreferences.self,
             VersionHistoryRecord.self,
+            Meal.self,
         ]
     }
     

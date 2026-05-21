@@ -15,6 +15,7 @@ enum AppTab: String, Codable, CaseIterable {
     case extract
     case settings
     case cooking
+    case meals
 }
 
 /// Tracks the state of long-running operations

@@ -533,6 +533,12 @@ struct MainTabView: View {
                     Label("Books", systemImage: "books.vertical.fill")
                 }
                 .tag(AppTab.books)
+            // Meals tab — group recipes into a complete meal
+            MealsView()
+                .tabItem {
+                    Label("Meals", systemImage: "fork.knife.circle.fill")
+                }
+                .tag(AppTab.meals)
             // NEW: Cooking Mode tab
             CookingView()
                 .tabItem {
