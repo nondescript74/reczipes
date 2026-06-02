@@ -199,13 +199,13 @@ struct RecipeBookEditorView: View {
         do {
             guard let data = try await photoItem.loadTransferable(type: Data.self),
                   let uiImage = UIImage(data: data) else {
-                logError("Failed to load image data", category: "book")
+                AppLog.error("Failed to load image data", category: .recipe)
                 return
             }
             
             // Compress the image using centralized utility (slightly larger for book covers)
             guard let jpegData = ImageCompressionUtility.compressForBookCover(uiImage) else {
-                logError("Failed to compress image", category: "book")
+                AppLog.error("Failed to compress image", category: .recipe)
                 return
             }
 
@@ -222,9 +222,9 @@ struct RecipeBookEditorView: View {
                 }
             }
 
-            logInfo("Prepared book cover image: \(imageName) - Size: \(ImageCompressionUtility.formatSize(jpegData.count))", category: "book")
+            AppLog.info("Prepared book cover image: \(imageName) - Size: \(ImageCompressionUtility.formatSize(jpegData.count))", category: .recipe)
         } catch {
-            logError("Error loading image: \(error)", category: "book")
+            AppLog.error("Error loading image: \(error)", category: .recipe)
         }
     }
     
@@ -247,7 +247,7 @@ struct RecipeBookEditorView: View {
             book.color = colorHex
             book.dateModified = Date()
             
-            logInfo("Updated book: \(String(describing: book.name))", category: "book")
+            AppLog.info("Updated book: \(String(describing: book.name))", category: .recipe)
         } else {
             // Create new book
             let newBook = Book(
@@ -259,14 +259,14 @@ struct RecipeBookEditorView: View {
             )
             modelContext.insert(newBook)
             
-            logInfo("Created new book: \(String(describing: newBook.name))", category: "book")
+            AppLog.info("Created new book: \(String(describing: newBook.name))", category: .recipe)
         }
         
         do {
             try modelContext.save()
             dismiss()
         } catch {
-            logError("Failed to save book: \(error)", category: "book")
+            AppLog.error("Failed to save book: \(error)", category: .recipe)
         }
     }
 }

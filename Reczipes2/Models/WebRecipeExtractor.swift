@@ -16,8 +16,8 @@ class WebRecipeExtractor {
     /// - Parameter urlString: The URL of the recipe webpage
     /// - Returns: The HTML content as a string
     func fetchWebContent(from urlString: String) async throws -> String {
-        logInfo("🌐 ========== WEB CONTENT FETCH START ==========", category: "network")
-        logInfo("🌐 URL: \(urlString)", category: "network")
+        AppLog.info("🌐 ========== WEB CONTENT FETCH START ==========", category: .network)
+        AppLog.info("🌐 URL: \(urlString)", category: .network)
         
         // Create operation ID for retry tracking
         let operationID = "web-fetch-\(urlString.hashValue)"
@@ -42,23 +42,23 @@ class WebRecipeExtractor {
         // Clean HTML tags from URL string (defense-in-depth)
         let cleanedURLString = cleanHTMLTags(from: urlString)
         if cleanedURLString != urlString {
-            logInfo("🌐 ⚠️ Removed HTML tags from URL", category: "network")
-            logInfo("🌐 Cleaned URL: \(cleanedURLString)", category: "network")
+            AppLog.info("🌐 ⚠️ Removed HTML tags from URL", category: .network)
+            AppLog.info("🌐 Cleaned URL: \(cleanedURLString)", category: .network)
         }
         
         // Validate URL
         guard let url = URL(string: cleanedURLString) else {
-            logError("🌐 ❌ Invalid URL format", category: "network")
+            AppLog.error("🌐 ❌ Invalid URL format", category: .network)
             throw WebExtractionError.invalidURL
         }
         
         // Ensure it's an HTTP(S) URL
         guard let scheme = url.scheme, ["http", "https"].contains(scheme.lowercased()) else {
-            logError("🌐 ❌ URL must use HTTP or HTTPS protocol", category: "network")
+            AppLog.error("🌐 ❌ URL must use HTTP or HTTPS protocol", category: .network)
             throw WebExtractionError.invalidURL
         }
         
-        logInfo("🌐 Creating URL request...", category: "network")
+        AppLog.info("🌐 Creating URL request...", category: .network)
         var request = URLRequest(url: url)
         request.httpMethod = "GET"
         request.timeoutInterval = 30
@@ -66,25 +66,25 @@ class WebRecipeExtractor {
         // Set a user agent to avoid being blocked by some sites
         request.setValue("Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1", forHTTPHeaderField: "User-Agent")
         
-        logInfo("🌐 Fetching webpage...", category: "network")
+        AppLog.info("🌐 Fetching webpage...", category: .network)
         let (data, response) = try await URLSession.shared.data(for: request)
         
         guard let httpResponse = response as? HTTPURLResponse else {
-            logError("🌐 ❌ Invalid response type", category: "network")
+            AppLog.error("🌐 ❌ Invalid response type", category: .network)
             throw WebExtractionError.networkError
         }
         
-        logInfo("🌐 HTTP Status: \(httpResponse.statusCode)", category: "network")
+        AppLog.info("🌐 HTTP Status: \(httpResponse.statusCode)", category: .network)
         
         guard httpResponse.statusCode == 200 else {
-            logError("🌐 ❌ HTTP error: \(httpResponse.statusCode)", category: "network")
+            AppLog.error("🌐 ❌ HTTP error: \(httpResponse.statusCode)", category: .network)
             throw WebExtractionError.httpError(statusCode: httpResponse.statusCode)
         }
         
         // Detect encoding from response
         var encoding = String.Encoding.utf8
         if let encodingName = httpResponse.textEncodingName {
-            logInfo("🌐 Detected encoding: \(encodingName)", category: "network")
+            AppLog.info("🌐 Detected encoding: \(encodingName)", category: .network)
             let cfEncoding = CFStringConvertIANACharSetNameToEncoding(encodingName as CFString)
             if cfEncoding != kCFStringEncodingInvalidId {
                 encoding = String.Encoding(rawValue: CFStringConvertEncodingToNSStringEncoding(cfEncoding))
@@ -92,13 +92,13 @@ class WebRecipeExtractor {
         }
         
         guard let htmlContent = String(data: data, encoding: encoding) else {
-            logError("🌐 ❌ Failed to decode HTML content", category: "network")
+            AppLog.error("🌐 ❌ Failed to decode HTML content", category: .network)
             throw WebExtractionError.decodingError
         }
         
-        logInfo("🌐 ✅ Successfully fetched HTML content", category: "network")
-        logInfo("🌐 Content length: \(htmlContent.count) characters", category: "network")
-        logInfo("🌐 ========== WEB CONTENT FETCH END ==========", category: "network")
+        AppLog.info("🌐 ✅ Successfully fetched HTML content", category: .network)
+        AppLog.info("🌐 Content length: \(htmlContent.count) characters", category: .network)
+        AppLog.info("🌐 ========== WEB CONTENT FETCH END ==========", category: .network)
         
         return htmlContent
     }
@@ -106,7 +106,7 @@ class WebRecipeExtractor {
     /// Clean HTML content by removing unwanted tags while preserving structured data
     /// This provides a cleaner input for the LLM while keeping JSON-LD recipe data
     func cleanHTML(_ html: String) -> String {
-        logInfo("🧹 Cleaning HTML content...", category: "extraction")
+        AppLog.info("🧹 Cleaning HTML content...", category: .extraction)
         var cleaned = html
         
         // PRESERVE JSON-LD structured data - it contains the recipe!
@@ -120,7 +120,7 @@ class WebRecipeExtractor {
                 if match.numberOfRanges > 1 {
                     let jsonContent = nsString.substring(with: match.range(at: 1))
                     jsonLDScripts.append(jsonContent)
-                    logInfo("🧹 📦 Preserved JSON-LD structured data (\(jsonContent.count) chars)", category: "extraction")
+                    AppLog.info("🧹 📦 Preserved JSON-LD structured data (\(jsonContent.count) chars)", category: .extraction)
                 }
             }
         }
@@ -161,7 +161,7 @@ class WebRecipeExtractor {
             
             """
             prefixSections.append(structuredDataSection)
-            logInfo("🧹 ✅ Added \(jsonLDScripts.count) JSON-LD structured data block(s) to top of content", category: "extraction")
+            AppLog.info("🧹 ✅ Added \(jsonLDScripts.count) JSON-LD structured data block(s) to top of content", category: .extraction)
         }
 
         // If we found embedded recipe data, prepend it after JSON-LD for Claude
@@ -174,7 +174,7 @@ class WebRecipeExtractor {
 
             """
             prefixSections.append(embeddedDataSection)
-            logInfo("🧹 ✅ Added \(embeddedRecipeScripts.count) embedded recipe script block(s) to top of content", category: "extraction")
+            AppLog.info("🧹 ✅ Added \(embeddedRecipeScripts.count) embedded recipe script block(s) to top of content", category: .extraction)
         }
 
         if !prefixSections.isEmpty {
@@ -220,8 +220,8 @@ class WebRecipeExtractor {
             options: .regularExpression
         )
         
-        logInfo("🧹 ✅ HTML cleaned and tags stripped", category: "extraction")
-        logInfo("🧹 Cleaned length: \(cleaned.count) characters", category: "extraction")
+        AppLog.info("🧹 ✅ HTML cleaned and tags stripped", category: .extraction)
+        AppLog.info("🧹 Cleaned length: \(cleaned.count) characters", category: .extraction)
         
         return cleaned
     }
@@ -231,7 +231,7 @@ class WebRecipeExtractor {
     /// - Parameter html: The HTML content
     /// - Returns: Array of image URLs found in the content
     func extractImageURLs(from html: String) -> [String] {
-        logInfo("🖼️ Extracting image URLs from HTML...", category: "extraction")
+        AppLog.info("🖼️ Extracting image URLs from HTML...", category: .extraction)
         var imageURLs: [String] = []
         
         // 1. Try to extract from JSON-LD structured data (most reliable)
@@ -293,7 +293,7 @@ class WebRecipeExtractor {
             let nsString = html as NSString
             let matches = imgRegex.matches(in: html, range: NSRange(location: 0, length: nsString.length))
 
-            logInfo("🖼️ Found \(matches.count) img tags to process", category: "extraction")
+            AppLog.info("🖼️ Found \(matches.count) img tags to process", category: .extraction)
 
             // Process all img tags (removed arbitrary 10 image limit)
             for match in matches {
@@ -354,9 +354,9 @@ class WebRecipeExtractor {
             return cleanURL
         }
         
-        logInfo("🖼️ ✅ Found \(imageURLs.count) image URL(s)", category: "extraction")
+        AppLog.info("🖼️ ✅ Found \(imageURLs.count) image URL(s)", category: .extraction)
         for (index, url) in imageURLs.prefix(5).enumerated() {
-            logInfo("🖼️   [\(index + 1)] \(url)", category: "extraction")
+            AppLog.info("🖼️   [\(index + 1)] \(url)", category: .extraction)
         }
         
         return imageURLs

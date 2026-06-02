@@ -44,7 +44,9 @@ enum MealImportManager {
     static let bundledResourceName = "meal_plans_import"
 
     /// Highest schema version this manager knows how to read.
-    static let supportedVersion = 1
+    /// - v1: course list is `[String]` of names, matched to recipes by title.
+    /// - v2: adds `courseDetails` carrying full recipe linkage.
+    static let supportedVersion = 2
 
     // MARK: - Loaders
 
@@ -103,7 +105,12 @@ enum MealImportManager {
         // Title -> recipe id lookup. If multiple recipes share a
         // title we keep the first; the user can rebind later.
         var recipeByTitle: [String: RecipeX] = [:]
+        // recipeID -> recipe lookup for v2 courseDetails resolution.
+        var recipeByID: [UUID: RecipeX] = [:]
         for recipe in existingRecipes {
+            if let id = recipe.id {
+                recipeByID[id] = recipe
+            }
             guard let title = recipe.title, !title.isEmpty else { continue }
             let key = normalize(title)
             if recipeByTitle[key] == nil {
@@ -125,26 +132,29 @@ enum MealImportManager {
                 continue
             }
 
-            var mealCourses: [MealCourse] = []
-            for courseName in entry.effectiveCourses {
-                let trimmed = courseName.trimmingCharacters(in: .whitespacesAndNewlines)
-                guard !trimmed.isEmpty else { continue }
+            let mealCourses: [MealCourse]
+            let counts: (linked: Int, unlinked: Int)
 
-                if let match = recipeByTitle[normalize(trimmed)] {
-                    mealCourses.append(MealCourse(
-                        name: trimmed,
-                        recipeID: match.id,
-                        recipeTitle: match.title
-                    ))
-                    linkedCourses += 1
-                } else {
-                    mealCourses.append(MealCourse(
-                        name: trimmed,
-                        searchQuery: trimmed
-                    ))
-                    unlinkedCourses += 1
-                }
+            if let details = entry.courseDetails, !details.isEmpty {
+                // v2 path: trust the exported course detail. Validate
+                // recipeIDs against the live store; downgrade stale
+                // links to placeholders so we never produce a dangling
+                // reference.
+                (mealCourses, counts) = buildCoursesFromDetails(
+                    details,
+                    recipeByID: recipeByID,
+                    recipeByTitle: recipeByTitle
+                )
+            } else {
+                // v1 path: match course names against recipe titles.
+                (mealCourses, counts) = buildCoursesFromNames(
+                    entry.effectiveCourses,
+                    recipeByTitle: recipeByTitle
+                )
             }
+
+            linkedCourses += counts.linked
+            unlinkedCourses += counts.unlinked
 
             let descriptionText = combinedDescription(
                 description: entry.description,
@@ -171,6 +181,97 @@ enum MealImportManager {
             linkedCourseCount: linkedCourses,
             unlinkedCourseCount: unlinkedCourses
         )
+    }
+
+    // MARK: - Course Builders
+
+    /// v1 path — match course-name strings against recipe titles.
+    private static func buildCoursesFromNames(
+        _ names: [String],
+        recipeByTitle: [String: RecipeX]
+    ) -> ([MealCourse], (linked: Int, unlinked: Int)) {
+        var courses: [MealCourse] = []
+        var linked = 0
+        var unlinked = 0
+
+        for courseName in names {
+            let trimmed = courseName.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmed.isEmpty else { continue }
+
+            if let match = recipeByTitle[normalize(trimmed)] {
+                courses.append(MealCourse(
+                    name: trimmed,
+                    recipeID: match.id,
+                    recipeTitle: match.title
+                ))
+                linked += 1
+            } else {
+                courses.append(MealCourse(
+                    name: trimmed,
+                    searchQuery: trimmed
+                ))
+                unlinked += 1
+            }
+        }
+        return (courses, (linked, unlinked))
+    }
+
+    /// v2 path — trust the exported `MealCourseExport` detail and
+    /// reattach to a live recipe by ID. If the recipeID no longer
+    /// exists (recipe was deleted between export and import), fall
+    /// back to a title match; if that also fails, downgrade to a
+    /// placeholder using `recipeTitle` (or the course name) as the
+    /// search query.
+    private static func buildCoursesFromDetails(
+        _ details: [MealCourseExport],
+        recipeByID: [UUID: RecipeX],
+        recipeByTitle: [String: RecipeX]
+    ) -> ([MealCourse], (linked: Int, unlinked: Int)) {
+        var courses: [MealCourse] = []
+        var linked = 0
+        var unlinked = 0
+
+        for detail in details {
+            let trimmedName = detail.name.trimmingCharacters(in: .whitespacesAndNewlines)
+            guard !trimmedName.isEmpty else { continue }
+
+            // 1. Try the exported recipeID first.
+            if let id = detail.recipeID, let recipe = recipeByID[id] {
+                courses.append(MealCourse(
+                    name: trimmedName,
+                    recipeID: recipe.id,
+                    recipeTitle: recipe.title
+                ))
+                linked += 1
+                continue
+            }
+
+            // 2. Fall back to title match if the recipeID is stale.
+            let fallbackTitle = detail.recipeTitle?.trimmingCharacters(in: .whitespacesAndNewlines)
+                ?? trimmedName
+            if !fallbackTitle.isEmpty,
+               let match = recipeByTitle[normalize(fallbackTitle)] {
+                courses.append(MealCourse(
+                    name: trimmedName,
+                    recipeID: match.id,
+                    recipeTitle: match.title
+                ))
+                linked += 1
+                continue
+            }
+
+            // 3. Preserve any explicit search query; otherwise seed
+            //    one from the recipeTitle hint or the course name.
+            let query = detail.searchQuery?.trimmingCharacters(in: .whitespacesAndNewlines).nilIfEmpty
+                ?? fallbackTitle.nilIfEmpty
+                ?? trimmedName
+            courses.append(MealCourse(
+                name: trimmedName,
+                searchQuery: query
+            ))
+            unlinked += 1
+        }
+        return (courses, (linked, unlinked))
     }
 
     // MARK: - Helpers

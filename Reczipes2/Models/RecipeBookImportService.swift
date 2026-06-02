@@ -133,7 +133,7 @@ class RecipeBookImportService {
     /// - Parameter url: URL to the .recipebook file
     /// - Returns: Information about the book to be imported
     func previewBook(from url: URL) async throws -> BookExportPackage {
-        logInfo("Previewing recipe book from: \(url.lastPathComponent)", category: "book-import")
+        AppLog.info("Previewing recipe book from: \(url.lastPathComponent)", category: .batch)
         
         // Create temporary extraction directory
         let tempDir = FileManager.default.temporaryDirectory
@@ -148,7 +148,7 @@ class RecipeBookImportService {
         do {
             try RecipeBookExportService.extractZipArchive(from: url, to: tempDir)
         } catch {
-            logError("Failed to extract book for preview: \(error)", category: "book-import")
+            AppLog.error("Failed to extract book for preview: \(error)", category: .batch)
             throw ImportError.extractionFailed(error)
         }
         
@@ -156,7 +156,7 @@ class RecipeBookImportService {
         let jsonURL = tempDir.appendingPathComponent("book.json")
         
         guard FileManager.default.fileExists(atPath: jsonURL.path) else {
-            logError("book.json not found in archive", category: "book-import")
+            AppLog.error("book.json not found in archive", category: .batch)
             throw ImportError.invalidFile
         }
         
@@ -173,12 +173,12 @@ class RecipeBookImportService {
                 throw ImportError.unsupportedVersion(exportPackage.version)
             }
             
-            logInfo("Preview loaded: \(exportPackage.book.name) - \(exportPackage.summary)", category: "book-import")
+            AppLog.info("Preview loaded: \(exportPackage.book.name) - \(exportPackage.summary)", category: .batch)
             return exportPackage
         } catch let error as ImportError {
             throw error
         } catch {
-            logError("Failed to decode book metadata: \(error)", category: "book-import")
+            AppLog.error("Failed to decode book metadata: \(error)", category: .batch)
             throw ImportError.decodingFailed(error)
         }
     }
@@ -210,7 +210,7 @@ class RecipeBookImportService {
         modelContext: ModelContext,
         importMode: BookImportMode = .keepBoth
     ) async throws -> BookImportResult {
-        logInfo("Starting import with mode: \(importMode.description)", category: "book-import")
+        AppLog.info("Starting import with mode: \(importMode.description)", category: .batch)
         
         // First, preview the book to get its metadata
         let exportPackage = try await previewBook(from: url)
@@ -232,7 +232,7 @@ class RecipeBookImportService {
                 wasReplaced = true
                 // Delete existing book and all its recipes
                 modelContext.delete(existing)
-                logInfo("Deleted existing book: \(existing.name ?? "Untitled")", category: "book-import")
+                AppLog.info("Deleted existing book: \(existing.name ?? "Untitled")", category: .batch)
             }
             
             // Import as original book
@@ -289,9 +289,9 @@ class RecipeBookImportService {
         // Save context
         do {
             try modelContext.save()
-            logInfo("Successfully saved imported book: \(importedBook.name ?? "Untitled")", category: "book-import")
+            AppLog.info("Successfully saved imported book: \(importedBook.name ?? "Untitled")", category: .batch)
         } catch {
-            logError("Failed to save imported book: \(error)", category: "book-import")
+            AppLog.error("Failed to save imported book: \(error)", category: .batch)
             throw ImportError.saveFailed(error)
         }
         
@@ -480,7 +480,7 @@ class RecipeBookImportService {
                 mainImageData = imageData
                 mainImageName = createNewID ? "\(recipeID.uuidString).jpg" : imageName
                 imagesAssigned += 1
-                logDebug("Assigned main image data (\(imageData.count / 1024)KB) to recipe: \(recipeModel.title)", category: "book-import")
+                AppLog.debug("Assigned main image data (\(imageData.count / 1024)KB) to recipe: \(recipeModel.title)", category: .batch)
             }
             
             // Assign additional images data
@@ -502,7 +502,7 @@ class RecipeBookImportService {
                 if !additionalImages.isEmpty {
                     additionalImagesData = try? encoder.encode(additionalImages)
                     additionalImageNames = newAdditionalNames
-                    logDebug("Assigned \(additionalImages.count) additional images to recipe: \(recipeModel.title)", category: "book-import")
+                    AppLog.debug("Assigned \(additionalImages.count) additional images to recipe: \(recipeModel.title)", category: .batch)
                 }
             }
             
@@ -558,7 +558,7 @@ class RecipeBookImportService {
             if let imageData = imageDataMap[imageName] {
                 recipe.imageData = imageData
                 imagesAssigned += 1
-                logDebug("Updated main image data (\(imageData.count / 1024)KB) for recipe: \(recipe.title ?? "Untitled")", category: "book-import")
+                AppLog.debug("Updated main image data (\(imageData.count / 1024)KB) for recipe: \(recipe.title ?? "Untitled")", category: .batch)
             }
         }
         
@@ -578,7 +578,7 @@ class RecipeBookImportService {
             if !additionalImagesData.isEmpty {
                 if let encoded = try? encoder.encode(additionalImagesData) {
                     recipe.additionalImagesData = encoded
-                    logDebug("Updated \(additionalImagesData.count) additional images for recipe: \(recipe.title ?? "Untitled")", category: "book-import")
+                    AppLog.debug("Updated \(additionalImagesData.count) additional images for recipe: \(recipe.title ?? "Untitled")", category: .batch)
                 }
             }
         }
@@ -603,16 +603,16 @@ class RecipeBookImportService {
                 do {
                     let imageData = try Data(contentsOf: sourceURL)
                     imageDataMap[entry.fileName] = imageData
-                    logDebug("Loaded image data: \(entry.fileName) (\(imageData.count / 1024)KB)", category: "book-import")
+                    AppLog.debug("Loaded image data: \(entry.fileName) (\(imageData.count / 1024)KB)", category: .batch)
                 } catch {
-                    logWarning("Failed to load image \(entry.fileName): \(error)", category: "book-import")
+                    AppLog.warning("Failed to load image \(entry.fileName): \(error)", category: .batch)
                 }
             } else {
-                logWarning("Source image not found: \(entry.fileName)", category: "book-import")
+                AppLog.warning("Source image not found: \(entry.fileName)", category: .batch)
             }
         }
         
-        logInfo("Loaded \(imageDataMap.count) images from archive", category: "book-import")
+        AppLog.info("Loaded \(imageDataMap.count) images from archive", category: .batch)
         return imageDataMap
     }
     

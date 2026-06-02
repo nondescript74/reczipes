@@ -130,7 +130,7 @@ class RecipeMashupViewModel: ObservableObject {
         
         // Skip extraction if this is a local recipe (already loaded)
         if sources[index].isLocalRecipe {
-            logInfo("Mashup: Source is a local recipe, skipping extraction", category: "mashup")
+            AppLog.info("Mashup: Source is a local recipe, skipping extraction", category: .recipe)
             return
         }
         
@@ -165,10 +165,10 @@ class RecipeMashupViewModel: ObservableObject {
             sources[index].extractedRecipe = recipe
             sources[index].errorMessage = nil
             
-            logInfo("Mashup: Extracted recipe '\(recipe.safeTitle)' from \(url)", category: "mashup")
+            AppLog.info("Mashup: Extracted recipe '\(recipe.safeTitle)' from \(url)", category: .recipe)
         } catch {
             sources[index].errorMessage = "Extraction failed: \(error.localizedDescription)"
-            logError("Mashup extraction error for source \(index): \(error)", category: "mashup")
+            AppLog.error("Mashup extraction error for source \(index): \(error)", category: .recipe)
         }
         
         sources[index].isExtracting = false
@@ -303,7 +303,7 @@ class RecipeMashupViewModel: ObservableObject {
         
         showingSyntheticRecipe = true
         
-        logInfo("Mashup: Built synthetic recipe '\(title)' from \(sectionSources.count) sections", category: "mashup")
+        AppLog.info("Mashup: Built synthetic recipe '\(title)' from \(sectionSources.count) sections", category: .recipe)
     }
     
     func reset() {

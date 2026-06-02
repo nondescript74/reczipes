@@ -28,9 +28,14 @@ struct MealImportView: View {
     @State private var errorMessage: String?
     @State private var bundledPreview: MealImportPackage?
 
+    // Export state — populated when the user generates an export file
+    // so the ShareLink has a stable URL to point at.
+    @State private var pendingExport: MealExportResult?
+
     var body: some View {
         List {
             currentStatusSection
+            exportSection
             bundledImportSection
             fileImportSection
             howItWorksSection
@@ -80,6 +85,49 @@ struct MealImportView: View {
                 Text("Recipes")
                 Spacer()
                 Text("\(recipes.count)").bold()
+            }
+        }
+    }
+
+    private var exportSection: some View {
+        Section {
+            if let pendingExport {
+                VStack(alignment: .leading, spacing: 6) {
+                    HStack {
+                        Image(systemName: "checkmark.circle.fill")
+                            .foregroundStyle(.green)
+                        Text("Export ready")
+                            .font(.body)
+                    }
+                    Text(pendingExport.summary)
+                        .font(.caption)
+                        .foregroundStyle(.secondary)
+                    ShareLink(
+                        item: pendingExport.url,
+                        preview: SharePreview(
+                            pendingExport.url.lastPathComponent,
+                            image: Image(systemName: "fork.knife")
+                        )
+                    ) {
+                        Label("Share or Save File", systemImage: "square.and.arrow.up")
+                    }
+                    .buttonStyle(.bordered)
+                }
+            } else {
+                Button {
+                    generateExport()
+                } label: {
+                    Label("Export All Meals to JSON", systemImage: "square.and.arrow.up.on.square")
+                }
+                .disabled(meals.isEmpty)
+            }
+        } header: {
+            Text("Export")
+        } footer: {
+            if meals.isEmpty {
+                Text("No meals to export yet. Add or import some meals first.")
+            } else {
+                Text("Generates a JSON file containing all \(meals.count) meal\(meals.count == 1 ? "" : "s") in your library, including each course's recipe link. The file can be re-imported here to restore your meals.")
             }
         }
     }
@@ -175,9 +223,21 @@ struct MealImportView: View {
 
     // MARK: - Actions
 
+    private func generateExport() {
+        do {
+            let result = try MealExportManager.writeExport(for: meals)
+            pendingExport = result
+        } catch {
+            errorMessage = error.localizedDescription
+        }
+    }
+
     private func importBundled() async {
         isImporting = true
         defer { isImporting = false }
+        // A successful import grows the library; any cached export
+        // URL is now stale — force the user to regenerate.
+        pendingExport = nil
 
         do {
             let package = try MealImportManager.loadBundledPackage()
@@ -197,6 +257,8 @@ struct MealImportView: View {
         Task {
             isImporting = true
             defer { isImporting = false }
+            // Invalidate cached export — see `importBundled`.
+            pendingExport = nil
 
             do {
                 let urls = try result.get()

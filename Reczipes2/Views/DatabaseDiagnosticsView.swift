@@ -202,7 +202,7 @@ struct DatabaseDiagnosticsView: View {
     
     private func performHealthCheck() async {
         isRunningCheck = true
-        logInfo("🔍 User-initiated health check", category: "storage")
+        AppLog.info("🔍 User-initiated health check", category: .storage)
         
         let isHealthy = await ModelContainerManager.shared.verifyContainerHealth()
         
@@ -210,7 +210,7 @@ struct DatabaseDiagnosticsView: View {
         let schemaVersion = SchemaVersionManager.versionString(SchemaVersionManager.currentVersion)
         
         if isHealthy {
-            logInfo("✅ Health check passed", category: "storage")
+            AppLog.info("✅ Health check passed", category: .storage)
             alertTitle = "✅ Health Check Passed"
             alertMessage = """
             Container Status: Healthy
@@ -220,7 +220,7 @@ struct DatabaseDiagnosticsView: View {
             Your database is functioning correctly with no issues detected.
             """
         } else {
-            logWarning("⚠️ Health check failed", category: "storage")
+            AppLog.warning("⚠️ Health check failed", category: .storage)
             alertTitle = "⚠️ Health Issues Detected"
             alertMessage = """
             Container Status: Warning
@@ -237,7 +237,7 @@ struct DatabaseDiagnosticsView: View {
     
     private func logFullDiagnostics() async {
         isRunningCheck = true
-        logInfo("📊 User-initiated full diagnostics", category: "storage")
+        AppLog.info("📊 User-initiated full diagnostics", category: .storage)
         
         await ModelContainerManager.shared.logDiagnosticInfo()
         let stats = DatabaseRecoveryLogger.shared.getRecoveryStatistics()

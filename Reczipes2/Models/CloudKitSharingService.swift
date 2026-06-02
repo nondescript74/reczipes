@@ -51,7 +51,7 @@ class CloudKitSharingService: ObservableObject {
                     }
                 }
             }
-            logInfo("Sync interval changed to \(Int(syncInterval)) seconds", category: "sharing")
+            AppLog.info("Sync interval changed to \(Int(syncInterval)) seconds", category: .sharing)
         }
     }
     
@@ -92,30 +92,30 @@ class CloudKitSharingService: ObservableObject {
             case .available:
                 isCloudKitAvailable = true
                 await fetchUserIdentity()
-                logInfo("CloudKit available for sharing", category: "sharing")
+                AppLog.info("CloudKit available for sharing", category: .sharing)
                 
             case .noAccount:
                 isCloudKitAvailable = false
-                logWarning("No iCloud account - sharing disabled", category: "sharing")
+                AppLog.warning("No iCloud account - sharing disabled", category: .sharing)
                 
             case .restricted:
                 isCloudKitAvailable = false
-                logWarning("CloudKit restricted - sharing disabled", category: "sharing")
+                AppLog.warning("CloudKit restricted - sharing disabled", category: .sharing)
                 
             case .couldNotDetermine:
                 isCloudKitAvailable = false
-                logWarning("CloudKit status unknown - sharing disabled", category: "sharing")
+                AppLog.warning("CloudKit status unknown - sharing disabled", category: .sharing)
                 
             case .temporarilyUnavailable:
                 isCloudKitAvailable = false
-                logWarning("CloudKit temporarily unavailable", category: "sharing")
+                AppLog.warning("CloudKit temporarily unavailable", category: .sharing)
                 
             @unknown default:
                 isCloudKitAvailable = false
             }
         } catch {
             isCloudKitAvailable = false
-            logError("Failed to check CloudKit status: \(error)", category: "sharing")
+            AppLog.error("Failed to check CloudKit status: \(error)", category: .sharing)
         }
     }
     
@@ -129,9 +129,9 @@ class CloudKitSharingService: ObservableObject {
             // Fall back to UserDefaults for backwards compatibility
             await fetchUserDisplayName()
             
-            logInfo("User ID: \(currentUserID ?? "unknown"), Name: \(currentUserName ?? "not set")", category: "sharing")
+            AppLog.info("User ID: \(currentUserID ?? "unknown"), Name: \(currentUserName ?? "not set")", category: .sharing)
         } catch {
-            logError("Failed to fetch user identity: \(error)", category: "sharing")
+            AppLog.error("Failed to fetch user identity: \(error)", category: .sharing)
         }
     }
     
@@ -152,7 +152,7 @@ class CloudKitSharingService: ObservableObject {
             currentUserName = nil
             UserDefaults.standard.removeObject(forKey: "userDisplayName")
         }
-        logInfo("Updated user display name: \(currentUserName ?? "not set")", category: "sharing")
+        AppLog.info("Updated user display name: \(currentUserName ?? "not set")", category: .sharing)
     }
     
     
@@ -162,11 +162,11 @@ class CloudKitSharingService: ObservableObject {
             throw SharingError.notAuthenticated
         }
         
-        logInfo("📋 Fetching all CloudKit recipes for current user...", category: "sharing")
+        AppLog.info("📋 Fetching all CloudKit recipes for current user...", category: .sharing)
         
         // 1. Fetch all local tracking records first
         let allTracking = try modelContext.fetch(FetchDescriptor<SharedRecipe>())
-        logInfo("📋 Found \(allTracking.count) local tracking records", category: "sharing")
+        AppLog.info("📋 Found \(allTracking.count) local tracking records", category: .sharing)
         
         // 2. Fetch CloudKit records with record IDs
         let allCloudKitRecords = try await fetchAllCloudKitRecords(type: CloudKitRecordType.sharedRecipe)
@@ -175,7 +175,7 @@ class CloudKitSharingService: ObservableObject {
             return sharedBy == currentUserID
         }
         
-        logInfo("📋 Found \(myCloudKitRecords.count) of my recipes in CloudKit", category: "sharing")
+        AppLog.info("📋 Found \(myCloudKitRecords.count) of my recipes in CloudKit", category: .sharing)
         
         // 3. Build lookup for tracking by both recipeID and cloudRecordID
         var trackingByRecipeID: [UUID: SharedRecipe] = [:]
@@ -200,7 +200,7 @@ class CloudKitSharingService: ObservableObject {
                   let jsonData = recipeData.data(using: .utf8),
                   let cloudRecipe = try? JSONDecoder().decode(CloudKitRecipe.self, from: jsonData),
                   let sharedDate = record["sharedDate"] as? Date else {
-                logWarning("📋 Skipping invalid CloudKit record: \(record.recordID.recordName)", category: "sharing")
+                AppLog.warning("📋 Skipping invalid CloudKit record: \(record.recordID.recordName)", category: .sharing)
                 continue
             }
             
@@ -225,14 +225,14 @@ class CloudKitSharingService: ObservableObject {
             if let cloudRecordID = tracking.cloudRecordID,
                !foundCloudRecordIDs.contains(cloudRecordID),
                tracking.sharedByUserID == currentUserID {
-                logWarning("📋 Found orphaned tracking record for '\(tracking.recipeTitle)' - CloudKit record was deleted", category: "sharing")
+                AppLog.warning("📋 Found orphaned tracking record for '\(tracking.recipeTitle)' - CloudKit record was deleted", category: .sharing)
                 orphanedTrackingRecords.append(tracking)
             }
         }
         
         // Clean up orphaned tracking records
         if !orphanedTrackingRecords.isEmpty {
-            logInfo("📋 Cleaning up \(orphanedTrackingRecords.count) orphaned tracking records...", category: "sharing")
+            AppLog.info("📋 Cleaning up \(orphanedTrackingRecords.count) orphaned tracking records...", category: .sharing)
             for tracking in orphanedTrackingRecords {
                 modelContext.delete(tracking)
             }
@@ -247,25 +247,25 @@ class CloudKitSharingService: ObservableObject {
             return lhs.sharedDate > rhs.sharedDate // Newest first
         }
         
-        logInfo("📋 Status: \(statuses.filter { $0.isTracked }.count) tracked, \(statuses.filter { $0.isOrphaned }.count) orphaned", category: "sharing")
-        logInfo("📋 Cleaned up \(orphanedTrackingRecords.count) stale tracking records", category: "sharing")
+        AppLog.info("📋 Status: \(statuses.filter { $0.isTracked }.count) tracked, \(statuses.filter { $0.isOrphaned }.count) orphaned", category: .sharing)
+        AppLog.info("📋 Cleaned up \(orphanedTrackingRecords.count) stale tracking records", category: .sharing)
         
         return CloudKitRecipeManagerData(recipes: statuses)
     }
 
     /// Delete a single recipe from CloudKit by record ID
     func deleteRecipeFromCloudKit(cloudRecordID: String) async throws {
-        logInfo("🗑️ Deleting recipe from CloudKit: \(cloudRecordID)", category: "sharing")
+        AppLog.info("🗑️ Deleting recipe from CloudKit: \(cloudRecordID)", category: .sharing)
         
         let recordID = CKRecord.ID(recordName: cloudRecordID)
         try await publicDatabase.deleteRecord(withID: recordID)
         
-        logInfo("✅ Recipe deleted from CloudKit", category: "sharing")
+        AppLog.info("✅ Recipe deleted from CloudKit", category: .sharing)
     }
 
     /// Re-track an orphaned recipe (restore local tracking)
     func reTrackRecipe(recipe: CloudKitRecipe, cloudRecordID: String, modelContext: ModelContext) throws {
-        logInfo("🔄 Re-tracking orphaned recipe: \(recipe.title)", category: "sharing")
+        AppLog.info("🔄 Re-tracking orphaned recipe: \(recipe.title)", category: .sharing)
         
         // Check if tracking already exists
         let recipeIDToFind = recipe.id
@@ -278,7 +278,7 @@ class CloudKitSharingService: ObservableObject {
         if let existingRecord = existing.first {
             // Reactivate existing record
             existingRecord.isActive = true
-            logInfo("✅ Reactivated existing tracking record", category: "sharing")
+            AppLog.info("✅ Reactivated existing tracking record", category: .sharing)
         } else {
             // Create new tracking record
             let tracking = SharedRecipe(
@@ -291,7 +291,7 @@ class CloudKitSharingService: ObservableObject {
                 recipeImageName: recipe.imageName
             )
             modelContext.insert(tracking)
-            logInfo("✅ Created new tracking record", category: "sharing")
+            AppLog.info("✅ Created new tracking record", category: .sharing)
         }
         
         try modelContext.save()
@@ -299,7 +299,7 @@ class CloudKitSharingService: ObservableObject {
 
     /// Delete all orphaned recipes from CloudKit
     func deleteAllOrphanedRecipes(orphanedStatuses: [CloudKitRecipeStatus]) async throws {
-        logInfo("🗑️ Deleting \(orphanedStatuses.count) orphaned recipes from CloudKit...", category: "sharing")
+        AppLog.info("🗑️ Deleting \(orphanedStatuses.count) orphaned recipes from CloudKit...", category: .sharing)
         
         var successCount = 0
         var failCount = 0
@@ -309,12 +309,12 @@ class CloudKitSharingService: ObservableObject {
                 try await deleteRecipeFromCloudKit(cloudRecordID: status.cloudRecordID)
                 successCount += 1
             } catch {
-                logError("❌ Failed to delete '\(status.recipe.title)': \(error)", category: "sharing")
+                AppLog.error("❌ Failed to delete '\(status.recipe.title)': \(error)", category: .sharing)
                 failCount += 1
             }
         }
         
-        logInfo("✅ Deleted \(successCount) orphaned recipes, \(failCount) failures", category: "sharing")
+        AppLog.info("✅ Deleted \(successCount) orphaned recipes, \(failCount) failures", category: .sharing)
     }
     
     // MARK: - CloudKit Recipe Book Manager
@@ -325,23 +325,23 @@ class CloudKitSharingService: ObservableObject {
             throw SharingError.notAuthenticated
         }
         
-        logInfo("📚 Fetching all CloudKit recipe books for current user...", category: "sharing")
+        AppLog.info("📚 Fetching all CloudKit recipe books for current user...", category: .sharing)
         
         // 1. Fetch all recipe book records from CloudKit
         let allRecords = try await fetchAllCloudKitRecords(type: CloudKitRecordType.sharedRecipeBook)
-        logInfo("📚 Found \(allRecords.count) total recipe book records in CloudKit", category: "sharing")
+        AppLog.info("📚 Found \(allRecords.count) total recipe book records in CloudKit", category: .sharing)
         
         // 2. Filter to only current user's books
         let myCloudKitRecords = allRecords.filter { record in
             guard let sharedBy = record["sharedBy"] as? String else { return false }
             return sharedBy == currentUserID
         }
-        logInfo("📚 Found \(myCloudKitRecords.count) recipe books belonging to current user", category: "sharing")
+        AppLog.info("📚 Found \(myCloudKitRecords.count) recipe books belonging to current user", category: .sharing)
         
         // 3. Fetch all local tracking records
         let allTrackingDescriptor = FetchDescriptor<SharedRecipeBook>()
         let allTracking = (try? modelContext.fetch(allTrackingDescriptor)) ?? []
-        logInfo("📚 Found \(allTracking.count) local SharedRecipeBook tracking records", category: "sharing")
+        AppLog.info("📚 Found \(allTracking.count) local SharedRecipeBook tracking records", category: .sharing)
         
         // Build lookup dictionaries
         var trackingByBookID: [UUID: SharedRecipeBook] = [:]
@@ -365,7 +365,7 @@ class CloudKitSharingService: ObservableObject {
                   let jsonData = bookData.data(using: .utf8),
                   let cloudBook = try? JSONDecoder().decode(CloudKitRecipeBook.self, from: jsonData),
                   let sharedDate = record["sharedDate"] as? Date else {
-                logWarning("📚 Skipping invalid CloudKit record: \(record.recordID.recordName)", category: "sharing")
+                AppLog.warning("📚 Skipping invalid CloudKit record: \(record.recordID.recordName)", category: .sharing)
                 continue
             }
             
@@ -385,8 +385,8 @@ class CloudKitSharingService: ObservableObject {
             statuses.append(status)
         }
         
-        logInfo("📚 Built \(statuses.count) status objects", category: "sharing")
-        logInfo("📚 Tracked: \(statuses.filter { $0.isTracked }.count), Orphaned: \(statuses.filter { $0.isOrphaned }.count)", category: "sharing")
+        AppLog.info("📚 Built \(statuses.count) status objects", category: .sharing)
+        AppLog.info("📚 Tracked: \(statuses.filter { $0.isTracked }.count), Orphaned: \(statuses.filter { $0.isOrphaned }.count)", category: .sharing)
         
         return CloudKitRecipeBookManagerData(books: statuses)
     }
@@ -397,16 +397,16 @@ class CloudKitSharingService: ObservableObject {
         
         do {
             _ = try await publicDatabase.deleteRecord(withID: recordID)
-            logInfo("🗑️ Deleted recipe book from CloudKit: \(cloudRecordID)", category: "sharing")
+            AppLog.info("🗑️ Deleted recipe book from CloudKit: \(cloudRecordID)", category: .sharing)
         } catch {
-            logError("❌ Failed to delete recipe book from CloudKit: \(error)", category: "sharing")
+            AppLog.error("❌ Failed to delete recipe book from CloudKit: \(error)", category: .sharing)
             throw SharingError.uploadFailed(error)
         }
     }
     
     /// Re-track an orphaned recipe book
     func reTrackRecipeBook(book: CloudKitRecipeBook, cloudRecordID: String, modelContext: ModelContext) throws {
-        logInfo("🔄 Re-tracking recipe book: \(book.name)", category: "sharing")
+        AppLog.info("🔄 Re-tracking recipe book: \(book.name)", category: .sharing)
         
         // Check if tracking already exists
         let cloudRecordIDToFind = cloudRecordID
@@ -419,7 +419,7 @@ class CloudKitSharingService: ObservableObject {
         if let existing = try? modelContext.fetch(existingDescriptor).first {
             // Reactivate existing tracking
             existing.isActive = true
-            logInfo("✅ Reactivated existing tracking record", category: "sharing")
+            AppLog.info("✅ Reactivated existing tracking record", category: .sharing)
         } else {
             // Create new tracking record
             let tracking = SharedRecipeBook(
@@ -433,7 +433,7 @@ class CloudKitSharingService: ObservableObject {
                 coverImageName: book.coverImageName
             )
             modelContext.insert(tracking)
-            logInfo("✅ Created new tracking record", category: "sharing")
+            AppLog.info("✅ Created new tracking record", category: .sharing)
         }
         
         try modelContext.save()
@@ -441,7 +441,7 @@ class CloudKitSharingService: ObservableObject {
     
     /// Delete all orphaned recipe books from CloudKit
     func deleteAllOrphanedRecipeBooks(orphanedStatuses: [CloudKitRecipeBookStatus]) async throws {
-        logInfo("🗑️ Deleting \(orphanedStatuses.count) orphaned recipe books from CloudKit...", category: "sharing")
+        AppLog.info("🗑️ Deleting \(orphanedStatuses.count) orphaned recipe books from CloudKit...", category: .sharing)
         
         var successCount = 0
         var failCount = 0
@@ -451,12 +451,12 @@ class CloudKitSharingService: ObservableObject {
                 try await deleteRecipeBookFromCloudKit(cloudRecordID: status.cloudRecordID)
                 successCount += 1
             } catch {
-                logError("❌ Failed to delete '\(status.book.name)': \(error)", category: "sharing")
+                AppLog.error("❌ Failed to delete '\(status.book.name)': \(error)", category: .sharing)
                 failCount += 1
             }
         }
         
-        logInfo("✅ Deleted \(successCount) orphaned recipe books, \(failCount) failures", category: "sharing")
+        AppLog.info("✅ Deleted \(successCount) orphaned recipe books, \(failCount) failures", category: .sharing)
     }
     
     // MARK: - Share Recipe
@@ -484,11 +484,11 @@ class CloudKitSharingService: ObservableObject {
             do {
                 let recordID = CKRecord.ID(recordName: cloudRecordID)
                 _ = try await publicDatabase.record(for: recordID)
-                logInfo("Recipe '\(recipe.safeTitle)' is already shared (verified in CloudKit)", category: "sharing")
+                AppLog.info("Recipe '\(recipe.safeTitle)' is already shared (verified in CloudKit)", category: .sharing)
                 return cloudRecordID
             } catch {
                 // Record doesn't exist in CloudKit anymore - clean up and reshare
-                logWarning("CloudKit record missing for tracked share - will reshare", category: "sharing")
+                AppLog.warning("CloudKit record missing for tracked share - will reshare", category: .sharing)
                 modelContext.delete(existingShared)
                 try? modelContext.save()
             }
@@ -510,7 +510,7 @@ class CloudKitSharingService: ObservableObject {
                cloudRecipe.id == recipe.safeID {
                 // Found duplicate - delete it
                 _ = try? await publicDatabase.deleteRecord(withID: record.recordID)
-                logInfo("Deleted duplicate CloudKit record for recipe '\(recipe.safeTitle)'", category: "sharing")
+                AppLog.info("Deleted duplicate CloudKit record for recipe '\(recipe.safeTitle)'", category: .sharing)
             }
         }
         
@@ -566,8 +566,8 @@ class CloudKitSharingService: ObservableObject {
         modelContext.insert(sharedRecipe)
         try modelContext.save()
         
-        logInfo("Shared recipe: \(recipe.safeTitle)", category: "sharing")
-        logInfo("Community share successful", category: "analytics")
+        AppLog.info("Shared recipe: \(recipe.safeTitle)", category: .sharing)
+        AppLog.info("Community share successful", category: .analytics)
         
         return savedRecord.recordID.recordName
     }
@@ -592,11 +592,11 @@ class CloudKitSharingService: ObservableObject {
         )
         
         if let existingShared = try? modelContext.fetch(existingDescriptor).first {
-            logInfo("Book '\(String(describing: book.name))' is already shared", category: "sharing")
+            AppLog.info("Book '\(String(describing: book.name))' is already shared", category: .sharing)
             return existingShared.cloudRecordID ?? "Already shared"
         }
         
-        logInfo("📚 Sharing recipe book '\(String(describing: book.name))' with \(book.recipeIDs?.count ?? 0) recipes...", category: "sharing")
+        AppLog.info("📚 Sharing recipe book '\(String(describing: book.name))' with \(book.recipeIDs?.count ?? 0) recipes...", category: .sharing)
         
         // Fetch recipe previews for all recipes in the book
         var recipePreviews: [RecipePreviewData] = []
@@ -615,7 +615,7 @@ class CloudKitSharingService: ObservableObject {
             
             guard let recipes = try? modelContext.fetch(recipeDescriptor),
                   let recipe = recipes.first else {
-                logWarning("Recipe \(recipeID) not found locally, skipping preview", category: "sharing")
+                AppLog.warning("Recipe \(recipeID) not found locally, skipping preview", category: .sharing)
                 continue
             }
             
@@ -627,12 +627,12 @@ class CloudKitSharingService: ObservableObject {
             
             // If recipe is not shared yet, share it now so we have a cloudRecordID
             if cloudRecordID == nil {
-                logInfo("  📤 Recipe '\(recipe.safeTitle)' not yet shared, sharing now...", category: "sharing")
+                AppLog.info("  📤 Recipe '\(recipe.safeTitle)' not yet shared, sharing now...", category: .sharing)
                 do {
                     cloudRecordID = try await shareRecipe(recipe, modelContext: modelContext)
-                    logInfo("  ✅ Shared recipe '\(recipe.safeTitle)' with CloudKit ID: \(cloudRecordID ?? "unknown")", category: "sharing")
+                    AppLog.info("  ✅ Shared recipe '\(recipe.safeTitle)' with CloudKit ID: \(cloudRecordID ?? "unknown")", category: .sharing)
                 } catch {
-                    logError("  ❌ Failed to share recipe '\(recipe.safeTitle)': \(error)", category: "sharing")
+                    AppLog.error("  ❌ Failed to share recipe '\(recipe.safeTitle)': \(error)", category: .sharing)
                     // Continue anyway - preview will be created without cloudRecordID (read-only)
                 }
             }
@@ -661,10 +661,10 @@ class CloudKitSharingService: ObservableObject {
                 recipeCloudRecordIDs[recipe.safeID] = cloudRecordID
             }
             
-            logInfo("  ✅ Added preview for '\(recipe.safeTitle)'\(thumbnailBase64 != nil ? " (with thumbnail)" : "")", category: "sharing")
+            AppLog.info("  ✅ Added preview for '\(recipe.safeTitle)'\(thumbnailBase64 != nil ? " (with thumbnail)" : "")", category: .sharing)
         }
         
-        logInfo("📚 Created \(recipePreviews.count) recipe previews", category: "sharing")
+        AppLog.info("📚 Created \(recipePreviews.count) recipe previews", category: .sharing)
         
         // Create CloudKit record
         let record = CKRecord(recordType: CloudKitRecordType.sharedRecipeBook)
@@ -696,18 +696,18 @@ class CloudKitSharingService: ObservableObject {
         let previewsJsonData = try encoder.encode(recipePreviews)
         record["recipePreviews"] = String(data: previewsJsonData, encoding: .utf8)
         
-        logInfo("📚 Uploading cover image...", category: "sharing")
+        AppLog.info("📚 Uploading cover image...", category: .sharing)
         
         // Upload cover image if exists (file on disk or inline coverImageData)
         do {
             try await uploadImage(named: book.coverImageName, imageData: book.coverImageData, to: record, fieldName: "coverImage")
-            logInfo("  ✅ Uploaded cover image", category: "sharing")
+            AppLog.info("  ✅ Uploaded cover image", category: .sharing)
         } catch {
-            logWarning("  ⚠️ Failed to upload cover image: \(error)", category: "sharing")
+            AppLog.warning("  ⚠️ Failed to upload cover image: \(error)", category: .sharing)
         }
         
         // Save to public database
-        logInfo("📚 Saving to CloudKit Public Database...", category: "sharing")
+        AppLog.info("📚 Saving to CloudKit Public Database...", category: .sharing)
         let savedRecord = try await publicDatabase.save(record)
         
         // Track locally
@@ -724,8 +724,8 @@ class CloudKitSharingService: ObservableObject {
         modelContext.insert(sharedBook)
         try modelContext.save()
         
-        logInfo("✅ Shared recipe book: \(String(describing: book.name)) with \(recipePreviews.count) recipe previews", category: "sharing")
-        logInfo("Community share successful", category: "analytics")
+        AppLog.info("✅ Shared recipe book: \(String(describing: book.name)) with \(recipePreviews.count) recipe previews", category: .sharing)
+        AppLog.info("Community share successful", category: .analytics)
         
         return savedRecord.recordID.recordName
     }
@@ -741,8 +741,8 @@ class CloudKitSharingService: ObservableObject {
                 _ = try await shareRecipe(recipe, modelContext: modelContext)
                 successful += 1
             } catch {
-                logError("Failed to share recipe '\(recipe.safeTitle)': \(error)", category: "sharing")
-                logError("Community share failed: \(error)", category: "analytics")
+                AppLog.error("Failed to share recipe '\(recipe.safeTitle)': \(error)", category: .sharing)
+                AppLog.error("Community share failed: \(error)", category: .analytics)
                 failed += 1
             }
         }
@@ -763,8 +763,8 @@ class CloudKitSharingService: ObservableObject {
                 _ = try await shareRecipeBook(book, modelContext: modelContext)
                 successful += 1
             } catch {
-                logError("Failed to share book '\(String(describing: book.name))': \(error)", category: "sharing")
-                logError("Community share failed: \(error)", category: "analytics")
+                AppLog.error("Failed to share book '\(String(describing: book.name))': \(error)", category: .sharing)
+                AppLog.error("Community share failed: \(error)", category: .analytics)
                 failed += 1
             }
         }
@@ -788,7 +788,7 @@ class CloudKitSharingService: ObservableObject {
         let recipes = try modelContext.fetch(sharedRecipesDescriptor)
         let books = try modelContext.fetch(sharedBooksDescriptor)
         
-        logInfo("Clearing \(recipes.count) cached shared recipes and \(books.count) cached books", category: "sharing")
+        AppLog.info("Clearing \(recipes.count) cached shared recipes and \(books.count) cached books", category: .sharing)
         
         // Note: Only delete tracking records for recipes shared by OTHERS
         // Keep our own shared recipe tracking
@@ -801,7 +801,7 @@ class CloudKitSharingService: ObservableObject {
         }
         
         try modelContext.save()
-        logInfo("Shared content cache cleared - next fetch will be fresh from CloudKit", category: "sharing")
+        AppLog.info("Shared content cache cleared - next fetch will be fresh from CloudKit", category: .sharing)
     }
     
     
@@ -810,13 +810,13 @@ class CloudKitSharingService: ObservableObject {
             throw SharingError.cloudKitUnavailable()
         }
         
-        logInfo("Starting fetchSharedRecipes with limit: \(limit), excludeCurrentUser: \(excludeCurrentUser)", category: "sharing")
+        AppLog.info("Starting fetchSharedRecipes with limit: \(limit), excludeCurrentUser: \(excludeCurrentUser)", category: .sharing)
         
         // Build predicate: exclude current user's recipes if requested
         let predicate: NSPredicate
         if excludeCurrentUser, let currentUserID = currentUserID {
             predicate = NSPredicate(format: "sharedBy != %@", currentUserID)
-            logInfo("Filtering out recipes from current user: \(currentUserID)", category: "sharing")
+            AppLog.info("Filtering out recipes from current user: \(currentUserID)", category: .sharing)
         } else {
             predicate = NSPredicate(value: true)
         }
@@ -831,7 +831,7 @@ class CloudKitSharingService: ObservableObject {
         var batchNumber = 1
         
         repeat {
-            logInfo("Fetching batch #\(batchNumber) from CloudKit...", category: "sharing")
+            AppLog.info("Fetching batch #\(batchNumber) from CloudKit...", category: .sharing)
             let results: (matchResults: [(CKRecord.ID, Result<CKRecord, Error>)], queryCursor: CKQueryOperation.Cursor?)
             
             if let cursor = cursor {
@@ -858,29 +858,29 @@ class CloudKitSharingService: ObservableObject {
                                let assetURL = imageAsset.fileURL,
                                let data = try? Data(contentsOf: assetURL) {
                                 recipe.imageData = data
-                                logInfo("  📷 Downloaded mainImage for '\(recipe.title)' (\(data.count) bytes)", category: "sharing")
+                                AppLog.info("  📷 Downloaded mainImage for '\(recipe.title)' (\(data.count) bytes)", category: .sharing)
                             }
                             allRecipes.append(recipe)
                             successCount += 1
                         } else {
-                            logWarning("Failed to decode recipe data from record: \(record.recordID.recordName)", category: "sharing")
+                            AppLog.warning("Failed to decode recipe data from record: \(record.recordID.recordName)", category: .sharing)
                             failureCount += 1
                         }
                     } else {
-                        logWarning("Record missing recipeData field: \(record.recordID.recordName)", category: "sharing")
+                        AppLog.warning("Record missing recipeData field: \(record.recordID.recordName)", category: .sharing)
                         failureCount += 1
                     }
                 case .failure(let error):
-                    logError("Failed to fetch shared recipe: \(error)", category: "sharing")
+                    AppLog.error("Failed to fetch shared recipe: \(error)", category: .sharing)
                     failureCount += 1
                 }
             }
-            logInfo("Batch decoded: \(successCount) success, \(failureCount) failures", category: "sharing")
+            AppLog.info("Batch decoded: \(successCount) success, \(failureCount) failures", category: .sharing)
             
             // Update cursor for next iteration
             cursor = results.queryCursor
             
-            logInfo("Batch #\(batchNumber) complete: \(allRecipes.count) total recipes so far, cursor: \(cursor != nil ? "has more" : "end")", category: "sharing")
+            AppLog.info("Batch #\(batchNumber) complete: \(allRecipes.count) total recipes so far, cursor: \(cursor != nil ? "has more" : "end")", category: .sharing)
             batchNumber += 1
             
             // Stop if we've reached the limit or no more results
@@ -895,7 +895,7 @@ class CloudKitSharingService: ObservableObject {
             recipe1.sharedDate > recipe2.sharedDate
         }
         
-        logInfo("✅ Fetched \(allRecipes.count) shared recipes total (using cursor pagination)", category: "sharing")
+        AppLog.info("✅ Fetched \(allRecipes.count) shared recipes total (using cursor pagination)", category: .sharing)
         return allRecipes
     }
     
@@ -908,7 +908,7 @@ class CloudKitSharingService: ObservableObject {
         let predicate: NSPredicate
         if excludeCurrentUser, let currentUserID = currentUserID {
             predicate = NSPredicate(format: "sharedBy != %@", currentUserID)
-            logInfo("Filtering out recipe books from current user: \(currentUserID)", category: "sharing")
+            AppLog.info("Filtering out recipe books from current user: \(currentUserID)", category: .sharing)
         } else {
             predicate = NSPredicate(value: true)
         }
@@ -944,7 +944,7 @@ class CloudKitSharingService: ObservableObject {
                         }
                     }
                 case .failure(let error):
-                    logError("Failed to fetch shared book: \(error)", category: "sharing")
+                    AppLog.error("Failed to fetch shared book: \(error)", category: .sharing)
                 }
             }
             
@@ -963,7 +963,7 @@ class CloudKitSharingService: ObservableObject {
             book1.sharedDate > book2.sharedDate
         }
         
-        logInfo("Fetched \(allBooks.count) shared recipe books (using cursor pagination)", category: "sharing")
+        AppLog.info("Fetched \(allBooks.count) shared recipe books (using cursor pagination)", category: .sharing)
         return allBooks
     }
     
@@ -990,7 +990,7 @@ class CloudKitSharingService: ObservableObject {
             try modelContext.save()
         }
         
-        logInfo("Unshared recipe with ID: \(cloudRecordID)", category: "sharing")
+        AppLog.info("Unshared recipe with ID: \(cloudRecordID)", category: .sharing)
     }
     
     func unshareRecipeBook(cloudRecordID: String, modelContext: ModelContext) async throws {
@@ -998,7 +998,7 @@ class CloudKitSharingService: ObservableObject {
             throw SharingError.cloudKitUnavailable()
         }
         
-        logInfo("📚 Unsharing book: \(cloudRecordID)", category: "sharing")
+        AppLog.info("📚 Unsharing book: \(cloudRecordID)", category: .sharing)
         
         // Find the SharedRecipeBook entry to get the bookID before deletion
         let recordIDToFind = cloudRecordID
@@ -1014,12 +1014,12 @@ class CloudKitSharingService: ObservableObject {
         // Delete from CloudKit first
         let recordID = CKRecord.ID(recordName: cloudRecordID)
         try await publicDatabase.deleteRecord(withID: recordID)
-        logInfo("📚 Deleted CloudKit record: \(cloudRecordID)", category: "sharing")
+        AppLog.info("📚 Deleted CloudKit record: \(cloudRecordID)", category: .sharing)
         
         // Remove from local tracking
         if let sharedBook = sharedBook {
             modelContext.delete(sharedBook)
-            logInfo("📚 Deleted SharedRecipeBook tracking entry", category: "sharing")
+            AppLog.info("📚 Deleted SharedRecipeBook tracking entry", category: .sharing)
         }
         
         // IMPORTANT: Also delete the local RecipeBook if this was the user's own shared book
@@ -1034,14 +1034,14 @@ class CloudKitSharingService: ObservableObject {
             )
             
             if (try modelContext.fetch(bookDescriptor).first) != nil {
-                logInfo("📚 Also deleting local RecipeBook (user's own shared book)", category: "sharing")
+                AppLog.info("📚 Also deleting local RecipeBook (user's own shared book)", category: .sharing)
                 // Note: We're NOT deleting the book here because the user may still want to keep it locally
                 // Only mark the sharing as inactive
             }
         }
         
         try modelContext.save()
-        logInfo("✅ Successfully unshared recipe book: \(cloudRecordID)", category: "sharing")
+        AppLog.info("✅ Successfully unshared recipe book: \(cloudRecordID)", category: .sharing)
     }
     
     // MARK: - Image Handling
@@ -1060,12 +1060,12 @@ class CloudKitSharingService: ObservableObject {
                 record[fieldName] = CKAsset(fileURL: imageURL)
                 return
             }
-            logWarning("Image file not found on disk: \(imageName) — attempting imageData fallback", category: "sharing")
+            AppLog.warning("Image file not found on disk: \(imageName) — attempting imageData fallback", category: .sharing)
         }
 
         // --- Fall back to inline imageData ---
         guard let data = imageData, !data.isEmpty else {
-            logWarning("No image available for field '\(fieldName)' (imageName: \(imageName ?? "nil"), imageData: nil)", category: "sharing")
+            AppLog.warning("No image available for field '\(fieldName)' (imageName: \(imageName ?? "nil"), imageData: nil)", category: .sharing)
             return
         }
 
@@ -1073,7 +1073,7 @@ class CloudKitSharingService: ObservableObject {
             .appendingPathComponent("ckasset_\(fieldName)_\(UUID().uuidString).jpg")
         try data.write(to: tempURL)
         record[fieldName] = CKAsset(fileURL: tempURL)
-        logInfo("  📷 Uploaded '\(fieldName)' from inline imageData (\(data.count) bytes)", category: "sharing")
+        AppLog.info("  📷 Uploaded '\(fieldName)' from inline imageData (\(data.count) bytes)", category: .sharing)
     }
     
     func downloadImage(from record: CKRecord, fieldName: String) async throws -> UIImage? {
@@ -1095,7 +1095,7 @@ class CloudKitSharingService: ObservableObject {
     /// Diagnostic function to check CloudKit public database status and detect sync issues
     func diagnoseSharedRecipes() async {
         guard let currentUserID = currentUserID else {
-            logError("Cannot run diagnostic - no current user ID", category: "sharing")
+            AppLog.error("Cannot run diagnostic - no current user ID", category: .sharing)
             return
         }
         
@@ -1107,23 +1107,23 @@ class CloudKitSharingService: ObservableObject {
             let myRecipes = recipes.filter { $0.sharedByUserID == currentUserID }
             let othersRecipes = recipes.filter { $0.sharedByUserID != currentUserID }
             
-            logInfo("Diagnostic: \(myRecipes.count) of my recipes, \(othersRecipes.count) from others", category: "sharing")
+            AppLog.info("Diagnostic: \(myRecipes.count) of my recipes, \(othersRecipes.count) from others", category: .sharing)
             
             // Group by sharer
             let groupedByUser = Dictionary(grouping: recipes) { $0.sharedByUserID }
-            logInfo("Total unique sharers: \(groupedByUser.count)", category: "sharing")
+            AppLog.info("Total unique sharers: \(groupedByUser.count)", category: .sharing)
             
             // Detect duplicates by recipe ID
             let groupedByRecipeID = Dictionary(grouping: recipes) { $0.id }
             let duplicates = groupedByRecipeID.filter { $0.value.count > 1 }
             if !duplicates.isEmpty {
-                logWarning("Found \(duplicates.count) duplicate recipe IDs in CloudKit", category: "sharing")
+                AppLog.warning("Found \(duplicates.count) duplicate recipe IDs in CloudKit", category: .sharing)
             } else {
-                logInfo("No duplicates found", category: "sharing")
+                AppLog.info("No duplicates found", category: .sharing)
             }
             
         } catch {
-            logError("Diagnostic failed: \(error)", category: "sharing")
+            AppLog.error("Diagnostic failed: \(error)", category: .sharing)
         }
     }
     
@@ -1134,7 +1134,7 @@ class CloudKitSharingService: ObservableObject {
             throw SharingError.notAuthenticated
         }
         
-        logInfo("Starting local tracking sync", category: "sharing")
+        AppLog.info("Starting local tracking sync", category: .sharing)
         
         // Fetch ALL recipes from CloudKit (including current user's)
         let allCloudKitRecipes = try await fetchSharedRecipes(excludeCurrentUser: false)
@@ -1144,7 +1144,7 @@ class CloudKitSharingService: ObservableObject {
         let localTracking = try modelContext.fetch(FetchDescriptor<SharedRecipe>())
         let localRecipeIDs = Set(localTracking.compactMap { $0.recipeID })
         
-        logInfo("Found \(myCloudKitRecipes.count) recipes in CloudKit, \(localTracking.count) local tracking records", category: "sharing")
+        AppLog.info("Found \(myCloudKitRecipes.count) recipes in CloudKit, \(localTracking.count) local tracking records", category: .sharing)
         
         // Find CloudKit recipes that aren't tracked locally
         var missingLocalTracking: [CloudKitRecipe] = []
@@ -1166,7 +1166,7 @@ class CloudKitSharingService: ObservableObject {
             }
         }
         
-        logInfo("Sync: \(missingLocalTracking.count) CloudKit recipes not tracked, \(orphanedLocalRecords.count) orphaned local records", category: "sharing")
+        AppLog.info("Sync: \(missingLocalTracking.count) CloudKit recipes not tracked, \(orphanedLocalRecords.count) orphaned local records", category: .sharing)
         
         // Clean up orphaned local records (recipes that were unshared but local tracking wasn't cleaned)
         if !orphanedLocalRecords.isEmpty {
@@ -1177,14 +1177,14 @@ class CloudKitSharingService: ObservableObject {
         
         // Report on missing local tracking
         if !missingLocalTracking.isEmpty {
-            logWarning("Found \(missingLocalTracking.count) recipes in CloudKit without local tracking - run cleanupGhostRecipes()", category: "sharing")
+            AppLog.warning("Found \(missingLocalTracking.count) recipes in CloudKit without local tracking - run cleanupGhostRecipes()", category: .sharing)
         }
         
         try modelContext.save()
         
-        logInfo("✅ SYNC COMPLETE: Local tracking is now synced with CloudKit", category: "sharing")
-        logInfo("   - Deactivated \(orphanedLocalRecords.count) stale local records", category: "sharing")
-        logInfo("   - Found \(missingLocalTracking.count) ghost recipes in CloudKit (need cleanup)", category: "sharing")
+        AppLog.info("✅ SYNC COMPLETE: Local tracking is now synced with CloudKit", category: .sharing)
+        AppLog.info("   - Deactivated \(orphanedLocalRecords.count) stale local records", category: .sharing)
+        AppLog.info("   - Found \(missingLocalTracking.count) ghost recipes in CloudKit (need cleanup)", category: .sharing)
     }
     
     /// Repair missing CloudKit record IDs for shared recipes
@@ -1194,18 +1194,18 @@ class CloudKitSharingService: ObservableObject {
             throw SharingError.notAuthenticated
         }
         
-        logInfo("🔧 REPAIR: Starting repair of missing recipe CloudKit IDs...", category: "sharing")
+        AppLog.info("🔧 REPAIR: Starting repair of missing recipe CloudKit IDs...", category: .sharing)
         
         // Find all active shared recipes without cloudRecordID
         let allSharedRecipes = try modelContext.fetch(FetchDescriptor<SharedRecipe>())
         let recipesNeedingRepair = allSharedRecipes.filter { $0.cloudRecordID == nil && $0.isActive }
         
         if recipesNeedingRepair.isEmpty {
-            logInfo("✅ REPAIR: No recipes need repair - all have CloudKit IDs", category: "sharing")
+            AppLog.info("✅ REPAIR: No recipes need repair - all have CloudKit IDs", category: .sharing)
             return
         }
         
-        logInfo("🔧 REPAIR: Found \(recipesNeedingRepair.count) recipes missing CloudKit IDs", category: "sharing")
+        AppLog.info("🔧 REPAIR: Found \(recipesNeedingRepair.count) recipes missing CloudKit IDs", category: .sharing)
         
         // Fetch all CloudKit records for current user's recipes
         let allCloudKitRecords = try await fetchAllCloudKitRecords(type: CloudKitRecordType.sharedRecipe)
@@ -1214,7 +1214,7 @@ class CloudKitSharingService: ObservableObject {
             return sharedBy == currentUserID
         }
         
-        logInfo("🔧 REPAIR: Found \(myRecords.count) CloudKit records belonging to current user", category: "sharing")
+        AppLog.info("🔧 REPAIR: Found \(myRecords.count) CloudKit records belonging to current user", category: .sharing)
         
         // Build mapping from recipeID to cloudRecordID
         var recipeIDToRecordID: [UUID: String] = [:]
@@ -1233,18 +1233,18 @@ class CloudKitSharingService: ObservableObject {
         for sharedRecipe in recipesNeedingRepair {
             guard let recipeID = sharedRecipe.recipeID,
                   let cloudRecordID = recipeIDToRecordID[recipeID] else {
-                logWarning("🔧 REPAIR: Could not find CloudKit record for recipe '\(sharedRecipe.recipeTitle)'", category: "sharing")
+                AppLog.warning("🔧 REPAIR: Could not find CloudKit record for recipe '\(sharedRecipe.recipeTitle)'", category: .sharing)
                 continue
             }
             
             sharedRecipe.cloudRecordID = cloudRecordID
             repairedCount += 1
-            logInfo("🔧 REPAIR: Fixed '\(sharedRecipe.recipeTitle)' - added CloudKit ID: \(cloudRecordID)", category: "sharing")
+            AppLog.info("🔧 REPAIR: Fixed '\(sharedRecipe.recipeTitle)' - added CloudKit ID: \(cloudRecordID)", category: .sharing)
         }
         
         try modelContext.save()
         
-        logInfo("✅ REPAIR COMPLETE: Fixed \(repairedCount) of \(recipesNeedingRepair.count) recipes", category: "sharing")
+        AppLog.info("✅ REPAIR COMPLETE: Fixed \(repairedCount) of \(recipesNeedingRepair.count) recipes", category: .sharing)
     }
     
     /// Remove "ghost recipes" - recipes in CloudKit that users think they've unshared
@@ -1255,13 +1255,13 @@ class CloudKitSharingService: ObservableObject {
             throw SharingError.notAuthenticated
         }
         
-        logInfo("👻 GHOST CLEANUP: Starting ghost recipe detection...", category: "sharing")
+        AppLog.info("👻 GHOST CLEANUP: Starting ghost recipe detection...", category: .sharing)
         
         // Fetch ALL my recipes from CloudKit
         let allCloudKitRecipes = try await fetchSharedRecipes(excludeCurrentUser: false)
         let myCloudKitRecipes = allCloudKitRecipes.filter { $0.sharedByUserID == currentUserID }
         
-        logInfo("👻 Found \(myCloudKitRecipes.count) of my recipes in CloudKit", category: "sharing")
+        AppLog.info("👻 Found \(myCloudKitRecipes.count) of my recipes in CloudKit", category: .sharing)
         
         // Fetch all ACTIVE local SharedRecipe tracking records
         let activeTracking = try modelContext.fetch(
@@ -1271,7 +1271,7 @@ class CloudKitSharingService: ObservableObject {
         )
         let activeRecipeIDs = Set(activeTracking.compactMap { $0.recipeID })
         
-        logInfo("👻 Found \(activeTracking.count) active local tracking records", category: "sharing")
+        AppLog.info("👻 Found \(activeTracking.count) active local tracking records", category: .sharing)
         
         // Find CloudKit recipes that aren't actively tracked (these are ghosts!)
         var ghostRecipes: [(recipe: CloudKitRecipe, cloudRecordID: String)] = []
@@ -1291,19 +1291,19 @@ class CloudKitSharingService: ObservableObject {
             // If this recipe isn't actively tracked locally, it's a ghost
             if !activeRecipeIDs.contains(cloudRecipe.id) {
                 ghostRecipes.append((cloudRecipe, record.recordID.recordName))
-                logWarning("👻 Found ghost recipe: '\(cloudRecipe.title)' (ID: \(cloudRecipe.id))", category: "sharing")
+                AppLog.warning("👻 Found ghost recipe: '\(cloudRecipe.title)' (ID: \(cloudRecipe.id))", category: .sharing)
             }
         }
         
-        logInfo("👻 Found \(ghostRecipes.count) ghost recipes", category: "sharing")
+        AppLog.info("👻 Found \(ghostRecipes.count) ghost recipes", category: .sharing)
         
         if ghostRecipes.isEmpty {
-            logInfo("✅ No ghost recipes found - everything is in sync!", category: "sharing")
+            AppLog.info("✅ No ghost recipes found - everything is in sync!", category: .sharing)
             return (ghostsFound: 0, deleted: 0, failed: 0)
         }
         
         // Delete ghost recipes from CloudKit
-        logInfo("👻 Deleting \(ghostRecipes.count) ghost recipes from CloudKit...", category: "sharing")
+        AppLog.info("👻 Deleting \(ghostRecipes.count) ghost recipes from CloudKit...", category: .sharing)
         var successCount = 0
         var failCount = 0
         
@@ -1311,15 +1311,15 @@ class CloudKitSharingService: ObservableObject {
             do {
                 let recordID = CKRecord.ID(recordName: cloudRecordID)
                 try await publicDatabase.deleteRecord(withID: recordID)
-                logInfo("👻   Deleted '\(recipe.title)'", category: "sharing")
+                AppLog.info("👻   Deleted '\(recipe.title)'", category: .sharing)
                 successCount += 1
             } catch {
-                logError("👻   Failed to delete '\(recipe.title)': \(error)", category: "sharing")
+                AppLog.error("👻   Failed to delete '\(recipe.title)': \(error)", category: .sharing)
                 failCount += 1
             }
         }
         
-        logInfo("✅ GHOST CLEANUP COMPLETE: Deleted \(successCount) ghost recipes, \(failCount) failures", category: "sharing")
+        AppLog.info("✅ GHOST CLEANUP COMPLETE: Deleted \(successCount) ghost recipes, \(failCount) failures", category: .sharing)
         
         return (ghostsFound: ghostRecipes.count, deleted: successCount, failed: failCount)
     }
@@ -1344,7 +1344,7 @@ class CloudKitSharingService: ObservableObject {
     /// Returns structured diagnostic data for display to user
     func diagnoseSharedRecipeBooks(modelContext: ModelContext) async -> BookDiagnosticResult? {
         guard let currentUserID = currentUserID else {
-            logError("No user ID available", category: "sharing")
+            AppLog.error("No user ID available", category: .sharing)
             return nil
         }
         
@@ -1364,9 +1364,9 @@ class CloudKitSharingService: ObservableObject {
             let groupedByBookID = Dictionary(grouping: books) { $0.id }
             duplicateBookIDs = groupedByBookID.filter { $0.value.count > 1 }.count
             
-            logInfo("CloudKit: \(cloudKitBooks) total (\(myCloudKitBooks) mine, \(othersCloudKitBooks) others)", category: "sharing")
+            AppLog.info("CloudKit: \(cloudKitBooks) total (\(myCloudKitBooks) mine, \(othersCloudKitBooks) others)", category: .sharing)
         } catch {
-            logError("Failed to fetch from CloudKit: \(error)", category: "sharing")
+            AppLog.error("Failed to fetch from CloudKit: \(error)", category: .sharing)
         }
         
         var localBooks = 0
@@ -1394,9 +1394,9 @@ class CloudKitSharingService: ObservableObject {
             let trackedBookIDs = Set(activeTracking.compactMap { $0.bookID })
             orphanedBooks = allLocalBooks.filter { !trackedBookIDs.contains($0.id!) }.count
             
-            logInfo("Local: \(localBooks) books, \(activeCount) active tracking, \(orphanedBooks) orphaned", category: "sharing")
+            AppLog.info("Local: \(localBooks) books, \(activeCount) active tracking, \(orphanedBooks) orphaned", category: .sharing)
         } catch {
-            logError("Failed to fetch from local: \(error)", category: "sharing")
+            AppLog.error("Failed to fetch from local: \(error)", category: .sharing)
         }
         
         return BookDiagnosticResult(
@@ -1420,7 +1420,7 @@ class CloudKitSharingService: ObservableObject {
             throw SharingError.notAuthenticated
         }
         
-        logInfo("Starting local recipe book tracking sync", category: "sharing")
+        AppLog.info("Starting local recipe book tracking sync", category: .sharing)
         
         // Fetch ALL recipe books from CloudKit (including current user's)
         let allCloudKitBooks = try await fetchSharedRecipeBooks(excludeCurrentUser: false)
@@ -1430,7 +1430,7 @@ class CloudKitSharingService: ObservableObject {
         let localTracking = try modelContext.fetch(FetchDescriptor<SharedRecipeBook>())
         let localBookIDs = Set(localTracking.compactMap { $0.bookID })
         
-        logInfo("Found \(myCloudKitBooks.count) books in CloudKit, \(localTracking.count) local tracking records", category: "sharing")
+        AppLog.info("Found \(myCloudKitBooks.count) books in CloudKit, \(localTracking.count) local tracking records", category: .sharing)
         
         // Find CloudKit recipe books that aren't tracked locally
         var missingLocalTracking: [CloudKitRecipeBook] = []
@@ -1452,7 +1452,7 @@ class CloudKitSharingService: ObservableObject {
             }
         }
         
-        logInfo("Sync: \(missingLocalTracking.count) CloudKit books not tracked, \(orphanedLocalRecords.count) orphaned local records", category: "sharing")
+        AppLog.info("Sync: \(missingLocalTracking.count) CloudKit books not tracked, \(orphanedLocalRecords.count) orphaned local records", category: .sharing)
         
         // Clean up orphaned local records (books that were unshared but local tracking wasn't cleaned)
         if !orphanedLocalRecords.isEmpty {
@@ -1463,12 +1463,12 @@ class CloudKitSharingService: ObservableObject {
         
         // Warn about missing local tracking
         if !missingLocalTracking.isEmpty {
-            logWarning("Found \(missingLocalTracking.count) books in CloudKit without local tracking - run cleanupGhostRecipeBooks()", category: "sharing")
+            AppLog.warning("Found \(missingLocalTracking.count) books in CloudKit without local tracking - run cleanupGhostRecipeBooks()", category: .sharing)
         }
         
         try modelContext.save()
         
-        logInfo("Sync complete: deactivated \(orphanedLocalRecords.count) stale records, \(missingLocalTracking.count) ghost books found", category: "sharing")
+        AppLog.info("Sync complete: deactivated \(orphanedLocalRecords.count) stale records, \(missingLocalTracking.count) ghost books found", category: .sharing)
     }
     
     /// Repair missing CloudKit record IDs for shared recipe books
@@ -1478,18 +1478,18 @@ class CloudKitSharingService: ObservableObject {
             throw SharingError.notAuthenticated
         }
         
-        logInfo("🔧 REPAIR: Starting repair of missing recipe book CloudKit IDs...", category: "sharing")
+        AppLog.info("🔧 REPAIR: Starting repair of missing recipe book CloudKit IDs...", category: .sharing)
         
         // Find all active shared books without cloudRecordID
         let allSharedBooks = try modelContext.fetch(FetchDescriptor<SharedRecipeBook>())
         let booksNeedingRepair = allSharedBooks.filter { $0.cloudRecordID == nil && $0.isActive }
         
         if booksNeedingRepair.isEmpty {
-            logInfo("✅ REPAIR: No recipe books need repair - all have CloudKit IDs", category: "sharing")
+            AppLog.info("✅ REPAIR: No recipe books need repair - all have CloudKit IDs", category: .sharing)
             return
         }
         
-        logInfo("🔧 REPAIR: Found \(booksNeedingRepair.count) books missing CloudKit IDs", category: "sharing")
+        AppLog.info("🔧 REPAIR: Found \(booksNeedingRepair.count) books missing CloudKit IDs", category: .sharing)
         
         // Fetch all CloudKit records for current user's books
         let allCloudKitRecords = try await fetchAllCloudKitRecords(type: CloudKitRecordType.sharedRecipeBook)
@@ -1498,7 +1498,7 @@ class CloudKitSharingService: ObservableObject {
             return sharedBy == currentUserID
         }
         
-        logInfo("🔧 REPAIR: Found \(myRecords.count) CloudKit records belonging to current user", category: "sharing")
+        AppLog.info("🔧 REPAIR: Found \(myRecords.count) CloudKit records belonging to current user", category: .sharing)
         
         // Build mapping from bookID to cloudRecordID
         var bookIDToRecordID: [UUID: String] = [:]
@@ -1517,18 +1517,18 @@ class CloudKitSharingService: ObservableObject {
         for sharedBook in booksNeedingRepair {
             guard let bookID = sharedBook.bookID,
                   let cloudRecordID = bookIDToRecordID[bookID] else {
-                logWarning("🔧 REPAIR: Could not find CloudKit record for book '\(sharedBook.bookName)'", category: "sharing")
+                AppLog.warning("🔧 REPAIR: Could not find CloudKit record for book '\(sharedBook.bookName)'", category: .sharing)
                 continue
             }
             
             sharedBook.cloudRecordID = cloudRecordID
             repairedCount += 1
-            logInfo("🔧 REPAIR: Fixed '\(sharedBook.bookName)' - added CloudKit ID: \(cloudRecordID)", category: "sharing")
+            AppLog.info("🔧 REPAIR: Fixed '\(sharedBook.bookName)' - added CloudKit ID: \(cloudRecordID)", category: .sharing)
         }
         
         try modelContext.save()
         
-        logInfo("✅ REPAIR COMPLETE: Fixed \(repairedCount) of \(booksNeedingRepair.count) books", category: "sharing")
+        AppLog.info("✅ REPAIR COMPLETE: Fixed \(repairedCount) of \(booksNeedingRepair.count) books", category: .sharing)
     }
     
     /// Remove "ghost recipe books" - books in CloudKit that users think they've unshared
@@ -1539,13 +1539,13 @@ class CloudKitSharingService: ObservableObject {
             throw SharingError.notAuthenticated
         }
         
-        logInfo("👻 GHOST CLEANUP: Starting ghost recipe book detection...", category: "sharing")
+        AppLog.info("👻 GHOST CLEANUP: Starting ghost recipe book detection...", category: .sharing)
         
         // Fetch ALL my recipe books from CloudKit
         let allCloudKitBooks = try await fetchSharedRecipeBooks(excludeCurrentUser: false)
         let myCloudKitBooks = allCloudKitBooks.filter { $0.sharedByUserID == currentUserID }
         
-        logInfo("👻 Found \(myCloudKitBooks.count) of my recipe books in CloudKit", category: "sharing")
+        AppLog.info("👻 Found \(myCloudKitBooks.count) of my recipe books in CloudKit", category: .sharing)
         
         // Fetch all ACTIVE local SharedRecipeBook tracking records
         let activeTracking = try modelContext.fetch(
@@ -1555,7 +1555,7 @@ class CloudKitSharingService: ObservableObject {
         )
         let activeBookIDs = Set(activeTracking.compactMap { $0.bookID })
         
-        logInfo("👻 Found \(activeTracking.count) active local tracking records", category: "sharing")
+        AppLog.info("👻 Found \(activeTracking.count) active local tracking records", category: .sharing)
         
         // Find CloudKit recipe books that aren't actively tracked (these are ghosts!)
         var ghostBooks: [(book: CloudKitRecipeBook, cloudRecordID: String)] = []
@@ -1575,19 +1575,19 @@ class CloudKitSharingService: ObservableObject {
             // If this book isn't actively tracked locally, it's a ghost
             if !activeBookIDs.contains(cloudBook.id) {
                 ghostBooks.append((cloudBook, record.recordID.recordName))
-                logWarning("👻 Found ghost recipe book: '\(cloudBook.name)' (ID: \(cloudBook.id))", category: "sharing")
+                AppLog.warning("👻 Found ghost recipe book: '\(cloudBook.name)' (ID: \(cloudBook.id))", category: .sharing)
             }
         }
         
-        logInfo("👻 Found \(ghostBooks.count) ghost recipe books", category: "sharing")
+        AppLog.info("👻 Found \(ghostBooks.count) ghost recipe books", category: .sharing)
         
         if ghostBooks.isEmpty {
-            logInfo("✅ No ghost recipe books found - everything is in sync!", category: "sharing")
+            AppLog.info("✅ No ghost recipe books found - everything is in sync!", category: .sharing)
             return (ghostsFound: 0, deleted: 0, failed: 0)
         }
         
         // Delete ghost recipe books from CloudKit
-        logInfo("👻 Deleting \(ghostBooks.count) ghost recipe books from CloudKit...", category: "sharing")
+        AppLog.info("👻 Deleting \(ghostBooks.count) ghost recipe books from CloudKit...", category: .sharing)
         var successCount = 0
         var failCount = 0
         
@@ -1595,15 +1595,15 @@ class CloudKitSharingService: ObservableObject {
             do {
                 let recordID = CKRecord.ID(recordName: cloudRecordID)
                 try await publicDatabase.deleteRecord(withID: recordID)
-                logInfo("👻   Deleted '\(book.name)'", category: "sharing")
+                AppLog.info("👻   Deleted '\(book.name)'", category: .sharing)
                 successCount += 1
             } catch {
-                logError("👻   Failed to delete '\(book.name)': \(error)", category: "sharing")
+                AppLog.error("👻   Failed to delete '\(book.name)': \(error)", category: .sharing)
                 failCount += 1
             }
         }
         
-        logInfo("✅ GHOST CLEANUP COMPLETE: Deleted \(successCount) ghost recipe books, \(failCount) failures", category: "sharing")
+        AppLog.info("✅ GHOST CLEANUP COMPLETE: Deleted \(successCount) ghost recipe books, \(failCount) failures", category: .sharing)
         
         return (ghostsFound: ghostBooks.count, deleted: successCount, failed: failCount)
     }
@@ -1624,7 +1624,7 @@ class CloudKitSharingService: ObservableObject {
         // Store model context reference
         self.currentModelContext = modelContext
         
-        logInfo("Starting auto-sync (interval: \(Int(syncInterval/60))min)", category: "sharing")
+        AppLog.info("Starting auto-sync (interval: \(Int(syncInterval/60))min)", category: .sharing)
         
         // Sync immediately on start
         await performBackgroundSync(modelContext: modelContext)
@@ -1652,7 +1652,7 @@ class CloudKitSharingService: ObservableObject {
         syncTimer?.invalidate()
         syncTimer = nil
         currentModelContext = nil
-        logInfo("Stopped auto-sync", category: "sharing")
+        AppLog.info("Stopped auto-sync", category: .sharing)
     }
     
     /// Perform a background sync (checks for changes without blocking UI)
@@ -1678,7 +1678,7 @@ class CloudKitSharingService: ObservableObject {
         defer { isSyncing = false }
         
         let startTime = Date()
-        logInfo("Starting background sync", category: "sharing")
+        AppLog.info("Starting background sync", category: .sharing)
         
         do {
             // Sync community recipes (limit to recent 100 to keep it fast)
@@ -1689,9 +1689,9 @@ class CloudKitSharingService: ObservableObject {
             
             lastSyncDate = Date()
             let duration = Date().timeIntervalSince(startTime)
-            logInfo("Auto-sync completed in \(String(format: "%.1f", duration))s", category: "sharing")
+            AppLog.info("Auto-sync completed in \(String(format: "%.1f", duration))s", category: .sharing)
         } catch {
-            logError("Auto-sync failed: \(error.localizedDescription)", category: "sharing")
+            AppLog.error("Auto-sync failed: \(error.localizedDescription)", category: .sharing)
         }
     }
     
@@ -1735,14 +1735,14 @@ class CloudKitSharingService: ObservableObject {
         }
         
         let isFetchingAll = limit == Int.max
-        logInfo("📖 SYNC: Syncing community recipes for viewing\(isFetchingAll ? " (ALL recipes)" : " (limit: \(limit))")...", category: "sharing")
+        AppLog.info("📖 SYNC: Syncing community recipes for viewing\(isFetchingAll ? " (ALL recipes)" : " (limit: \(limit))")...", category: .sharing)
         
         // Fetch shared recipes from CloudKit with pagination
         // The fetchSharedRecipes method automatically handles pagination in batches of 100
         let cloudRecipes = try await fetchSharedRecipes(limit: limit, excludeCurrentUser: true)
         let recipesToCache = isFetchingAll ? cloudRecipes : Array(cloudRecipes.prefix(limit))
         
-        logInfo("📖 SYNC: Found \(cloudRecipes.count) community recipes, caching \(recipesToCache.count)", category: "sharing")
+        AppLog.info("📖 SYNC: Found \(cloudRecipes.count) community recipes, caching \(recipesToCache.count)", category: .sharing)
         
         // Fetch existing cached recipes
         let existingCached = try modelContext.fetch(FetchDescriptor<CachedSharedRecipe>())
@@ -1779,7 +1779,7 @@ class CloudKitSharingService: ObservableObject {
                     existingCached.imageData = imageData
                 }
                 updatedCount += 1
-                logInfo("📖   Updated cached recipe: '\(cloudRecipe.title)'\(cloudRecipe.imageData != nil ? " (with image)" : "")", category: "sharing")
+                AppLog.info("📖   Updated cached recipe: '\(cloudRecipe.title)'\(cloudRecipe.imageData != nil ? " (with image)" : "")", category: .sharing)
             } else {
                 // Create new cached recipe
                 let newCached = CachedSharedRecipe(from: cloudRecipe)
@@ -1789,7 +1789,7 @@ class CloudKitSharingService: ObservableObject {
                 }
                 modelContext.insert(newCached)
                 addedCount += 1
-                logInfo("📖   Cached new recipe: '\(cloudRecipe.title)' by \(cloudRecipe.sharedByUserName ?? "Unknown")\(cloudRecipe.imageData != nil ? " (with image)" : "")", category: "sharing")
+                AppLog.info("📖   Cached new recipe: '\(cloudRecipe.title)' by \(cloudRecipe.sharedByUserName ?? "Unknown")\(cloudRecipe.imageData != nil ? " (with image)" : "")", category: .sharing)
             }
         }
         
@@ -1803,16 +1803,16 @@ class CloudKitSharingService: ObservableObject {
             if shouldRemove {
                 modelContext.delete(cached)
                 removedCount += 1
-                logInfo("📖   Removed cached recipe: '\(cached.title)'", category: "sharing")
+                AppLog.info("📖   Removed cached recipe: '\(cached.title)'", category: .sharing)
             }
         }
         
         try modelContext.save()
         
-        logInfo("✅ SYNC COMPLETE: Community recipes cached for viewing", category: "sharing")
-        logInfo("   - Added: \(addedCount) recipes", category: "sharing")
-        logInfo("   - Updated: \(updatedCount) recipes", category: "sharing")
-        logInfo("   - Removed: \(removedCount) recipes", category: "sharing")
+        AppLog.info("✅ SYNC COMPLETE: Community recipes cached for viewing", category: .sharing)
+        AppLog.info("   - Added: \(addedCount) recipes", category: .sharing)
+        AppLog.info("   - Updated: \(updatedCount) recipes", category: .sharing)
+        AppLog.info("   - Removed: \(removedCount) recipes", category: .sharing)
     }
     
     /// Update last accessed date for a cached recipe (prevents auto-cleanup)
@@ -1824,7 +1824,7 @@ class CloudKitSharingService: ObservableObject {
         if let cached = try modelContext.fetch(descriptor).first {
             cached.lastAccessedDate = Date()
             try modelContext.save()
-            logInfo("📖 Marked cached recipe as accessed: '\(cached.title)'", category: "sharing")
+            AppLog.info("📖 Marked cached recipe as accessed: '\(cached.title)'", category: .sharing)
         }
     }
     
@@ -1849,7 +1849,7 @@ class CloudKitSharingService: ObservableObject {
         modelContext.insert(recipe)
         try modelContext.save()
         
-        logInfo("Imported cached recipe to permanent collection: \(cachedRecipe.title)", category: "sharing")
+        AppLog.info("Imported cached recipe to permanent collection: \(cachedRecipe.title)", category: .sharing)
     }
     
     /// Clean up old cached recipes (not accessed in 30 days)
@@ -1870,7 +1870,7 @@ class CloudKitSharingService: ObservableObject {
         
         try modelContext.save()
         
-        logInfo("🧹 Cleaned up \(oldRecipes.count) old cached recipes", category: "sharing")
+        AppLog.info("🧹 Cleaned up \(oldRecipes.count) old cached recipes", category: .sharing)
     }
     
     // MARK: - Community Books Sync
@@ -1883,10 +1883,10 @@ class CloudKitSharingService: ObservableObject {
             throw SharingError.cloudKitUnavailable()
         }
         
-        logInfo("📚 SYNC: Starting enhanced community books sync to local SwiftData...", category: "sharing")
+        AppLog.info("📚 SYNC: Starting enhanced community books sync to local SwiftData...", category: .sharing)
         
         // Step 1: Fetch all CloudKit records (including assets)
-        logInfo("📚 Step 1: Fetching CloudKit records with assets...", category: "sharing")
+        AppLog.info("📚 Step 1: Fetching CloudKit records with assets...", category: .sharing)
         let allCloudKitRecords = try await fetchAllCloudKitRecords(type: CloudKitRecordType.sharedRecipeBook)
         
         // Filter to exclude current user's books
@@ -1895,7 +1895,7 @@ class CloudKitSharingService: ObservableObject {
             return sharedBy != currentUserID
         }
         
-        logInfo("📚 Found \(communityRecords.count) community book records in CloudKit", category: "sharing")
+        AppLog.info("📚 Found \(communityRecords.count) community book records in CloudKit", category: .sharing)
         
         // Fetch all existing SharedRecipeBook records that are shared by others
         let existingSharedBooks = try modelContext.fetch(
@@ -1933,9 +1933,9 @@ class CloudKitSharingService: ObservableObject {
             }
         }
         
-        logInfo("📚 SYNC: Found \(existingSharedBooks.count) existing community book tracking records", category: "sharing")
-        logInfo("📚 SYNC: Found \(allRecipeBooks.count) total RecipeBook entries", category: "sharing")
-        logInfo("📚 SYNC: Found \(allPreviews.count) existing recipe previews", category: "sharing")
+        AppLog.info("📚 SYNC: Found \(existingSharedBooks.count) existing community book tracking records", category: .sharing)
+        AppLog.info("📚 SYNC: Found \(allRecipeBooks.count) total RecipeBook entries", category: .sharing)
+        AppLog.info("📚 SYNC: Found \(allPreviews.count) existing recipe previews", category: .sharing)
         
         // Track which CloudKit books we've seen (to identify books to remove)
         var cloudKitBookIDs = Set<UUID>()
@@ -1951,14 +1951,14 @@ class CloudKitSharingService: ObservableObject {
             guard let bookData = record["bookData"] as? String,
                   let jsonData = bookData.data(using: .utf8),
                   let cloudBook = try? JSONDecoder().decode(CloudKitRecipeBook.self, from: jsonData) else {
-                logWarning("📚 Skipping invalid book record: \(record.recordID.recordName)", category: "sharing")
+                AppLog.warning("📚 Skipping invalid book record: \(record.recordID.recordName)", category: .sharing)
                 continue
             }
             
             cloudKitBookIDs.insert(cloudBook.id)
             let cloudRecordID = record.recordID.recordName
             
-            logInfo("📚 Processing book: '\(cloudBook.name)' (\(cloudBook.recipeIDs.count) recipes)", category: "sharing")
+            AppLog.info("📚 Processing book: '\(cloudBook.name)' (\(cloudBook.recipeIDs.count) recipes)", category: .sharing)
             
             // Step 2: Download cover image
             if let coverImageAsset = record["coverImage"] as? CKAsset,
@@ -1967,7 +1967,7 @@ class CloudKitSharingService: ObservableObject {
                 // Save cover image to local storage
                 let coverImageName = "shared_cover_\(cloudBook.id).jpg"
                 try? saveImageToDocuments(data: coverImageData, filename: coverImageName)
-                logInfo("📚   ✅ Downloaded cover image: \(coverImageName)", category: "sharing")
+                AppLog.info("📚   ✅ Downloaded cover image: \(coverImageName)", category: .sharing)
             }
             
             // Step 3: Parse recipe previews JSON
@@ -1976,9 +1976,9 @@ class CloudKitSharingService: ObservableObject {
                let previewsData = previewsJSON.data(using: .utf8),
                let previews = try? JSONDecoder().decode([RecipePreviewData].self, from: previewsData) {
                 recipePreviews = previews
-                logInfo("📚   ✅ Parsed \(previews.count) recipe previews", category: "sharing")
+                AppLog.info("📚   ✅ Parsed \(previews.count) recipe previews", category: .sharing)
             } else {
-                logWarning("📚   ⚠️ No recipe previews found in record", category: "sharing")
+                AppLog.warning("📚   ⚠️ No recipe previews found in record", category: .sharing)
             }
             
             // Check if RecipeBook entity exists
@@ -2014,7 +2014,7 @@ class CloudKitSharingService: ObservableObject {
                 if needsUpdate {
                     book.dateModified = Date()
                     updatedCount += 1
-                    logInfo("📚   Updated RecipeBook: '\(cloudBook.name)'", category: "sharing")
+                    AppLog.info("📚   Updated RecipeBook: '\(cloudBook.name)'", category: .sharing)
                 }
             } else {
                 // Create new Book entity
@@ -2034,7 +2034,7 @@ class CloudKitSharingService: ObservableObject {
                 
                 modelContext.insert(book)
                 addedCount += 1
-                logInfo("📚   Created RecipeBook: '\(cloudBook.name)' by \(cloudBook.sharedByUserName ?? "Unknown")", category: "sharing")
+                AppLog.info("📚   Created RecipeBook: '\(cloudBook.name)' by \(cloudBook.sharedByUserName ?? "Unknown")", category: .sharing)
             }
             
             // Check if SharedRecipeBook tracking entry exists
@@ -2063,7 +2063,7 @@ class CloudKitSharingService: ObservableObject {
                 }
                 
                 if needsUpdate {
-                    logInfo("📚   Updated SharedRecipeBook tracking: '\(cloudBook.name)'", category: "sharing")
+                    AppLog.info("📚   Updated SharedRecipeBook tracking: '\(cloudBook.name)'", category: .sharing)
                 }
             } else {
                 // Create new SharedRecipeBook tracking entry
@@ -2079,7 +2079,7 @@ class CloudKitSharingService: ObservableObject {
                 )
                 
                 modelContext.insert(newSharedBook)
-                logInfo("📚   Created SharedRecipeBook tracking: '\(cloudBook.name)' by \(cloudBook.sharedByUserName ?? "Unknown")", category: "sharing")
+                AppLog.info("📚   Created SharedRecipeBook tracking: '\(cloudBook.name)' by \(cloudBook.sharedByUserName ?? "Unknown")", category: .sharing)
             }
             
             // Step 4-5: Decode thumbnails from base64 and create CloudKitRecipePreview entries
@@ -2099,9 +2099,9 @@ class CloudKitSharingService: ObservableObject {
                        let data = Data(base64Encoded: base64String) {
                         thumbnailData = data
                         thumbnailsDownloaded += 1
-                        logInfo("📚     ✅ Decoded thumbnail: '\(previewData.title)'", category: "sharing")
+                        AppLog.info("📚     ✅ Decoded thumbnail: '\(previewData.title)'", category: .sharing)
                     } else {
-                        logInfo("📚     ⚪️ No thumbnail for '\(previewData.title)'", category: "sharing")
+                        AppLog.info("📚     ⚪️ No thumbnail for '\(previewData.title)'", category: .sharing)
                     }
                     
                     // Step 5: Create CloudKitRecipePreview entry
@@ -2122,7 +2122,7 @@ class CloudKitSharingService: ObservableObject {
                     previewsCreated += 1
                 }
                 
-                logInfo("📚   ✅ Created \(recipePreviews.count) recipe previews", category: "sharing")
+                AppLog.info("📚   ✅ Created \(recipePreviews.count) recipe previews", category: .sharing)
             }
         }
         
@@ -2135,11 +2135,11 @@ class CloudKitSharingService: ObservableObject {
             if !cloudKitBookIDs.contains(bookID) {
                 // Only remove books shared by others, not the current user's own shared books
                 if existingSharedBook.sharedByUserID != currentUserID {
-                    logInfo("📚   Removing book (no longer shared): '\(existingSharedBook.bookName)'", category: "sharing")
+                    AppLog.info("📚   Removing book (no longer shared): '\(existingSharedBook.bookName)'", category: .sharing)
                     
                     // Step 1: Delete associated recipe previews
                     if let previews = existingPreviewsByBookID[bookID] {
-                        logInfo("📚     Deleting \(previews.count) recipe previews", category: "sharing")
+                        AppLog.info("📚     Deleting \(previews.count) recipe previews", category: .sharing)
                         for preview in previews {
                             modelContext.delete(preview)
                         }
@@ -2153,30 +2153,30 @@ class CloudKitSharingService: ObservableObject {
                             let fileURL = documentsPath.appendingPathComponent(coverImageName)
                             do {
                                 try FileManager.default.removeItem(at: fileURL)
-                                logInfo("📚     Deleted cover image: \(coverImageName)", category: "sharing")
+                                AppLog.info("📚     Deleted cover image: \(coverImageName)", category: .sharing)
                             } catch {
                                 // File might not exist, which is fine
-                                logDebug("📚     Cover image file not found (already deleted): \(error)", category: "sharing")
+                                AppLog.debug("📚     Cover image file not found (already deleted): \(error)", category: .sharing)
                             }
                         }
                         
                         // Note: We intentionally DO NOT delete the Recipe entities themselves
                         // because they might be used in other books or standalone.
                         // Only delete the book container.
-                        logInfo("📚     Deleting RecipeBook entity", category: "sharing")
+                        AppLog.info("📚     Deleting RecipeBook entity", category: .sharing)
                         modelContext.delete(recipeBook)
                     } else {
                         // RecipeBook might have already been deleted, but tracking remains
-                        logWarning("📚     RecipeBook entity not found (might have been already deleted)", category: "sharing")
+                        AppLog.warning("📚     RecipeBook entity not found (might have been already deleted)", category: .sharing)
                     }
                     
                     // Step 3: Delete the tracking entry completely (not just marking inactive)
                     // This ensures the book disappears from ALL tabs, including "All"
-                    logInfo("📚     Deleting SharedRecipeBook tracking entry", category: "sharing")
+                    AppLog.info("📚     Deleting SharedRecipeBook tracking entry", category: .sharing)
                     modelContext.delete(existingSharedBook)
                     
                     removedCount += 1
-                    logInfo("📚   ✅ Removed book '\(existingSharedBook.bookName)' and cleaned up associated data", category: "sharing")
+                    AppLog.info("📚   ✅ Removed book '\(existingSharedBook.bookName)' and cleaned up associated data", category: .sharing)
                 }
             }
         }
@@ -2184,19 +2184,19 @@ class CloudKitSharingService: ObservableObject {
         // Save changes with error handling
         do {
             try modelContext.save()
-            logInfo("✅ SYNC COMPLETE: Enhanced community books sync finished", category: "sharing")
+            AppLog.info("✅ SYNC COMPLETE: Enhanced community books sync finished", category: .sharing)
         } catch {
-            logError("❌ Failed to save sync changes: \(error)", category: "sharing")
+            AppLog.error("❌ Failed to save sync changes: \(error)", category: .sharing)
             // Try to rollback to prevent partial state
             modelContext.rollback()
             throw error
         }
         
-        logInfo("   - Added: \(addedCount) books", category: "sharing")
-        logInfo("   - Updated: \(updatedCount) books", category: "sharing")
-        logInfo("   - Removed: \(removedCount) books", category: "sharing")
-        logInfo("   - Recipe previews created: \(previewsCreated)", category: "sharing")
-        logInfo("   - Thumbnails decoded: \(thumbnailsDownloaded)", category: "sharing")
+        AppLog.info("   - Added: \(addedCount) books", category: .sharing)
+        AppLog.info("   - Updated: \(updatedCount) books", category: .sharing)
+        AppLog.info("   - Removed: \(removedCount) books", category: .sharing)
+        AppLog.info("   - Recipe previews created: \(previewsCreated)", category: .sharing)
+        AppLog.info("   - Thumbnails decoded: \(thumbnailsDownloaded)", category: .sharing)
     }
     
     /// Helper: Save image data to Documents directory
@@ -2237,7 +2237,7 @@ class CloudKitSharingService: ObservableObject {
     
     /// Remove orphaned recipes from CloudKit (recipes with invalid/missing sharedByUserID)
     func removeOrphanedRecipes() async throws {
-        logInfo("🧹 ORPHAN CLEANUP: Starting orphan detection...", category: "sharing")
+        AppLog.info("🧹 ORPHAN CLEANUP: Starting orphan detection...", category: .sharing)
         
         guard currentUserID != nil else {
             throw SharingError.notAuthenticated
@@ -2245,7 +2245,7 @@ class CloudKitSharingService: ObservableObject {
         
         // Fetch all CloudKit records
         let allRecords = try await fetchAllCloudKitRecords(type: CloudKitRecordType.sharedRecipe)
-        logInfo("🧹 Found \(allRecords.count) total records in CloudKit", category: "sharing")
+        AppLog.info("🧹 Found \(allRecords.count) total records in CloudKit", category: .sharing)
         
         var orphanedRecords: [CKRecord.ID] = []
         var validUserIDs = Set<String>()
@@ -2256,7 +2256,7 @@ class CloudKitSharingService: ObservableObject {
                   !sharedBy.isEmpty else {
                 // No valid sharedByUserID - this is an orphan
                 orphanedRecords.append(record.recordID)
-                logWarning("🧹 Found orphan (no sharedBy): \(record.recordID.recordName)", category: "sharing")
+                AppLog.warning("🧹 Found orphan (no sharedBy): \(record.recordID.recordName)", category: .sharing)
                 continue
             }
             
@@ -2264,12 +2264,12 @@ class CloudKitSharingService: ObservableObject {
             validUserIDs.insert(sharedBy)
         }
         
-        logInfo("🧹 Found \(orphanedRecords.count) orphaned records", category: "sharing")
-        logInfo("🧹 Found \(validUserIDs.count) distinct valid users", category: "sharing")
+        AppLog.info("🧹 Found \(orphanedRecords.count) orphaned records", category: .sharing)
+        AppLog.info("🧹 Found \(validUserIDs.count) distinct valid users", category: .sharing)
         
         // Delete orphans
         if !orphanedRecords.isEmpty {
-            logInfo("🧹 Deleting \(orphanedRecords.count) orphaned records...", category: "sharing")
+            AppLog.info("🧹 Deleting \(orphanedRecords.count) orphaned records...", category: .sharing)
             
             let batches = stride(from: 0, to: orphanedRecords.count, by: 100).map {
                 Array(orphanedRecords[$0..<min($0 + 100, orphanedRecords.count)])
@@ -2278,44 +2278,44 @@ class CloudKitSharingService: ObservableObject {
             for (index, batch) in batches.enumerated() {
                 do {
                     _ = try await publicDatabase.modifyRecords(saving: [], deleting: batch)
-                    logInfo("🧹 Deleted orphan batch \(index + 1)/\(batches.count) (\(batch.count) records)", category: "sharing")
+                    AppLog.info("🧹 Deleted orphan batch \(index + 1)/\(batches.count) (\(batch.count) records)", category: .sharing)
                 } catch {
-                    logError("🧹 Failed to delete orphan batch \(index + 1): \(error)", category: "sharing")
+                    AppLog.error("🧹 Failed to delete orphan batch \(index + 1): \(error)", category: .sharing)
                 }
             }
             
-            logInfo("✅ Orphan cleanup complete: Removed \(orphanedRecords.count) orphans", category: "sharing")
+            AppLog.info("✅ Orphan cleanup complete: Removed \(orphanedRecords.count) orphans", category: .sharing)
         } else {
-            logInfo("✅ No orphans found - CloudKit is clean!", category: "sharing")
+            AppLog.info("✅ No orphans found - CloudKit is clean!", category: .sharing)
         }
     }
     
     /// Clean up all stale shared content and re-sync from CloudKit
     /// WARNING: This removes ALL local sharing tracking and rebuilds from CloudKit truth
     func cleanupAndResyncSharing(modelContext: ModelContext) async throws {
-        logInfo("🧹 CLEANUP: Starting comprehensive sharing cleanup...", category: "sharing")
+        AppLog.info("🧹 CLEANUP: Starting comprehensive sharing cleanup...", category: .sharing)
         
         guard let currentUserID = currentUserID else {
             throw SharingError.notAuthenticated
         }
         
         // Step 0: Check for duplicate local Recipe records first
-        logInfo("🧹 Step 0: Checking for duplicate local Recipe records...", category: "sharing")
+        AppLog.info("🧹 Step 0: Checking for duplicate local Recipe records...", category: .sharing)
         let allLocalRecipes = try modelContext.fetch(FetchDescriptor<RecipeX>())
         let uniqueRecipeIDs = Set(allLocalRecipes.compactMap { $0.id })
         let duplicateCount = allLocalRecipes.count - uniqueRecipeIDs.count
         
         if duplicateCount > 0 {
-            logWarning("🧹 Found \(duplicateCount) duplicate Recipe records in local database!", category: "sharing")
-            logWarning("🧹 ⚠️ IMPORTANT: You have \(allLocalRecipes.count) recipes but only \(uniqueRecipeIDs.count) unique IDs", category: "sharing")
-            logWarning("🧹 Please use Settings → Database Recovery to clean up local duplicates first", category: "sharing")
+            AppLog.warning("🧹 Found \(duplicateCount) duplicate Recipe records in local database!", category: .sharing)
+            AppLog.warning("🧹 ⚠️ IMPORTANT: You have \(allLocalRecipes.count) recipes but only \(uniqueRecipeIDs.count) unique IDs", category: .sharing)
+            AppLog.warning("🧹 Please use Settings → Database Recovery to clean up local duplicates first", category: .sharing)
             throw SharingError.invalidData
         }
         
-        logInfo("🧹 Local database clean: \(allLocalRecipes.count) recipes, all unique ✅", category: "sharing")
+        AppLog.info("🧹 Local database clean: \(allLocalRecipes.count) recipes, all unique ✅", category: .sharing)
         
         // Step 1: Delete ALL local SharedRecipe tracking records
-        logInfo("🧹 Step 1: Removing all local SharedRecipe tracking...", category: "sharing")
+        AppLog.info("🧹 Step 1: Removing all local SharedRecipe tracking...", category: .sharing)
         let allSharedRecipes = try modelContext.fetch(FetchDescriptor<SharedRecipe>())
         let allSharedBooks = try modelContext.fetch(FetchDescriptor<SharedRecipeBook>())
         
@@ -2326,15 +2326,15 @@ class CloudKitSharingService: ObservableObject {
             modelContext.delete(book)
         }
         try modelContext.save()
-        logInfo("🧹 Deleted \(allSharedRecipes.count) SharedRecipe and \(allSharedBooks.count) SharedRecipeBook tracking records", category: "sharing")
+        AppLog.info("🧹 Deleted \(allSharedRecipes.count) SharedRecipe and \(allSharedBooks.count) SharedRecipeBook tracking records", category: .sharing)
         
         // Step 2: Fetch ALL records from CloudKit public database
-        logInfo("🧹 Step 2: Fetching all CloudKit public database records...", category: "sharing")
+        AppLog.info("🧹 Step 2: Fetching all CloudKit public database records...", category: .sharing)
         let allCloudRecipes = try await fetchAllCloudKitRecords(type: CloudKitRecordType.sharedRecipe)
-        logInfo("🧹 Found \(allCloudRecipes.count) total records in CloudKit public database", category: "sharing")
+        AppLog.info("🧹 Found \(allCloudRecipes.count) total records in CloudKit public database", category: .sharing)
         
         // Step 3: Find and delete duplicates + records not owned by current user
-        logInfo("🧹 Step 3: Identifying stale and duplicate records...", category: "sharing")
+        AppLog.info("🧹 Step 3: Identifying stale and duplicate records...", category: .sharing)
         
         // Group by recipe ID to find duplicates
         var recordsToKeep: [CKRecord.ID] = []
@@ -2347,7 +2347,7 @@ class CloudKitSharingService: ObservableObject {
                   let cloudRecipe = try? JSONDecoder().decode(CloudKitRecipe.self, from: jsonData) else {
                 // Invalid record - delete it
                 recordsToDelete.append(record.recordID)
-                logWarning("🧹 Marking invalid record for deletion: \(record.recordID.recordName)", category: "sharing")
+                AppLog.warning("🧹 Marking invalid record for deletion: \(record.recordID.recordName)", category: .sharing)
                 continue
             }
             
@@ -2364,11 +2364,11 @@ class CloudKitSharingService: ObservableObject {
                     recordsToDelete.append(existingRecord.recordID)
                     seenRecipeIDs[cloudRecipe.id] = record
                     recordsToKeep.append(record.recordID)
-                    logInfo("🧹 Duplicate: Keeping my record, deleting other for recipe \(cloudRecipe.title)", category: "sharing")
+                    AppLog.info("🧹 Duplicate: Keeping my record, deleting other for recipe \(cloudRecipe.title)", category: .sharing)
                 } else if existingSharedBy == currentUserID && !isMyRecord {
                     // Keep existing (mine), delete this one
                     recordsToDelete.append(record.recordID)
-                    logInfo("🧹 Duplicate: Keeping existing record, deleting duplicate for recipe \(cloudRecipe.title)", category: "sharing")
+                    AppLog.info("🧹 Duplicate: Keeping existing record, deleting duplicate for recipe \(cloudRecipe.title)", category: .sharing)
                 } else {
                     // Both from same user - keep newer one
                     let existingDate = existingRecord["sharedDate"] as? Date ?? Date.distantPast
@@ -2381,7 +2381,7 @@ class CloudKitSharingService: ObservableObject {
                     } else {
                         recordsToDelete.append(record.recordID)
                     }
-                    logInfo("🧹 Duplicate: Keeping newer record for recipe \(cloudRecipe.title)", category: "sharing")
+                    AppLog.info("🧹 Duplicate: Keeping newer record for recipe \(cloudRecipe.title)", category: .sharing)
                 }
             } else {
                 // First time seeing this recipe ID
@@ -2391,7 +2391,7 @@ class CloudKitSharingService: ObservableObject {
         }
         
         // Step 4: Delete stale/duplicate records from CloudKit
-        logInfo("🧹 Step 4: Deleting \(recordsToDelete.count) stale/duplicate records from CloudKit...", category: "sharing")
+        AppLog.info("🧹 Step 4: Deleting \(recordsToDelete.count) stale/duplicate records from CloudKit...", category: .sharing)
         
         if !recordsToDelete.isEmpty {
             // Delete in batches of 100
@@ -2402,15 +2402,15 @@ class CloudKitSharingService: ObservableObject {
             for (index, batch) in batches.enumerated() {
                 do {
                     _ = try await publicDatabase.modifyRecords(saving: [], deleting: batch)
-                    logInfo("🧹 Deleted batch \(index + 1)/\(batches.count) (\(batch.count) records)", category: "sharing")
+                    AppLog.info("🧹 Deleted batch \(index + 1)/\(batches.count) (\(batch.count) records)", category: .sharing)
                 } catch {
-                    logError("🧹 Failed to delete batch \(index + 1): \(error)", category: "sharing")
+                    AppLog.error("🧹 Failed to delete batch \(index + 1): \(error)", category: .sharing)
                 }
             }
         }
         
         // Step 5: Rebuild local tracking from clean CloudKit data
-        logInfo("🧹 Step 5: Rebuilding local SharedRecipe tracking from \(seenRecipeIDs.count) clean records...", category: "sharing")
+        AppLog.info("🧹 Step 5: Rebuilding local SharedRecipe tracking from \(seenRecipeIDs.count) clean records...", category: .sharing)
         
         for (_, record) in seenRecipeIDs {
             guard let recipeData = record["recipeData"] as? String,
@@ -2439,8 +2439,8 @@ class CloudKitSharingService: ObservableObject {
         
         try modelContext.save()
         
-        logInfo("✅ CLEANUP COMPLETE: Removed \(recordsToDelete.count) duplicates, kept \(seenRecipeIDs.count) clean records", category: "sharing")
-        logInfo("✅ You should now see accurate counts: Mine=\(seenRecipeIDs.values.filter { ($0["sharedBy"] as? String) == currentUserID }.count), Shared=\(seenRecipeIDs.count)", category: "sharing")
+        AppLog.info("✅ CLEANUP COMPLETE: Removed \(recordsToDelete.count) duplicates, kept \(seenRecipeIDs.count) clean records", category: .sharing)
+        AppLog.info("✅ You should now see accurate counts: Mine=\(seenRecipeIDs.values.filter { ($0["sharedBy"] as? String) == currentUserID }.count), Shared=\(seenRecipeIDs.count)", category: .sharing)
     }
     
     /// Fetch all CloudKit records of a given type (with pagination)
@@ -2455,7 +2455,7 @@ class CloudKitSharingService: ObservableObject {
     ///    - Add SORTABLE index on "sharedDate" field  
     ///    - Deploy to Production
     private func fetchAllCloudKitRecords(type: String) async throws -> [CKRecord] {
-        logInfo("📦 Fetching all '\(type)' records from CloudKit Public Database...", category: "sharing")
+        AppLog.info("📦 Fetching all '\(type)' records from CloudKit Public Database...", category: .sharing)
         
         var allRecords: [CKRecord] = []
         
@@ -2478,12 +2478,12 @@ class CloudKitSharingService: ObservableObject {
                 case .success(let record):
                     allRecords.append(record)
                 case .failure(let error):
-                    logError("❌ Error fetching record: \(error)", category: "sharing")
+                    AppLog.error("❌ Error fetching record: \(error)", category: .sharing)
                 }
             }
             
             currentCursor = results.queryCursor
-            logInfo("📦 Batch #\(batchNumber): Fetched \(results.matchResults.count) records, total: \(allRecords.count)", category: "sharing")
+            AppLog.info("📦 Batch #\(batchNumber): Fetched \(results.matchResults.count) records, total: \(allRecords.count)", category: .sharing)
             
             // Continue with cursor if available
             while let cursor = currentCursor {
@@ -2501,16 +2501,16 @@ class CloudKitSharingService: ObservableObject {
                     case .success(let record):
                         allRecords.append(record)
                     case .failure(let error):
-                        logError("❌ Error fetching record: \(error)", category: "sharing")
+                        AppLog.error("❌ Error fetching record: \(error)", category: .sharing)
                     }
                 }
                 
                 currentCursor = nextResults.queryCursor
-                logInfo("📦 Batch #\(batchNumber): Fetched \(nextResults.matchResults.count) records, total: \(allRecords.count)", category: "sharing")
+                AppLog.info("📦 Batch #\(batchNumber): Fetched \(nextResults.matchResults.count) records, total: \(allRecords.count)", category: .sharing)
                 
                 // Safety: prevent infinite loops
                 if batchNumber > 100 {
-                    logWarning("📦 Reached maximum batch limit (100), stopping pagination", category: "sharing")
+                    AppLog.warning("📦 Reached maximum batch limit (100), stopping pagination", category: .sharing)
                     break
                 }
             }
@@ -2522,11 +2522,11 @@ class CloudKitSharingService: ObservableObject {
                 return date1 > date2
             }
             
-            logInfo("✅ Fetched all \(sorted.count) '\(type)' records in \(batchNumber) batches", category: "sharing")
+            AppLog.info("✅ Fetched all \(sorted.count) '\(type)' records in \(batchNumber) batches", category: .sharing)
             return sorted
             
         } catch let error as CKError {
-            logError("❌ CloudKit query failed for '\(type)': \(error)", category: "sharing")
+            AppLog.error("❌ CloudKit query failed for '\(type)': \(error)", category: .sharing)
             
             // Check if it's the "recordName not queryable" error
             if error.code == .invalidArguments {
@@ -2593,6 +2593,6 @@ class CloudKitSharingService: ObservableObject {
         modelContext.insert(recipe)
         try modelContext.save()
         
-        logInfo("Imported shared recipe: \(cloudRecipe.title)", category: "sharing")
+        AppLog.info("Imported shared recipe: \(cloudRecipe.title)", category: .sharing)
     }
 }

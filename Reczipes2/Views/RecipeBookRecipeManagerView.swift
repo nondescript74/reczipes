@@ -231,10 +231,10 @@ struct RecipeBookRecipeManagerView: View {
         
         do {
             try modelContext.save()
-            logInfo("Removed \(recipesToRemove.count) recipes from book: \(book.name ?? "Unknown")", category: "book")
+            AppLog.info("Removed \(recipesToRemove.count) recipes from book: \(book.name ?? "Unknown")", category: .recipe)
             recipesToRemove.removeAll()
         } catch {
-            logError("Failed to remove recipes from book: \(error)", category: "book")
+            AppLog.error("Failed to remove recipes from book: \(error)", category: .recipe)
         }
     }
     
@@ -246,12 +246,12 @@ struct RecipeBookRecipeManagerView: View {
         
         do {
             try modelContext.save()
-            logInfo("Added \(recipesToAdd.count) recipes to book: \(book.name ?? "Unknown")", category: "book")
+            AppLog.info("Added \(recipesToAdd.count) recipes to book: \(book.name ?? "Unknown")", category: .recipe)
             recipesToAdd.removeAll()
             // Switch back to current tab to show the newly added recipes
             selectedTab = .current
         } catch {
-            logError("Failed to add recipes to book: \(error)", category: "book")
+            AppLog.error("Failed to add recipes to book: \(error)", category: .recipe)
         }
     }
 }

@@ -86,10 +86,10 @@ struct BatchRecipeExtractorView: View {
             .onChange(of: viewModel.isExtracting) { oldValue, newValue in
                 // Automatically enable keep awake during batch extraction
                 if newValue {
-                    logInfo("Batch URL extraction started - enabling keep awake", category: "batch")
+                    AppLog.info("Batch URL extraction started - enabling keep awake", category: .batch)
                     keepAwakeManager.enable()
                 } else if oldValue {
-                    logInfo("Batch URL extraction ended - disabling keep awake", category: "batch")
+                    AppLog.info("Batch URL extraction ended - disabling keep awake", category: .batch)
                     keepAwakeManager.disable()
                 }
             }

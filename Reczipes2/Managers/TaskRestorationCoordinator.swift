@@ -73,7 +73,7 @@ class TaskRestorationCoordinator: ObservableObject {
     // MARK: - Private Task Restoration
     
     private func restoreExtractionTask(_ task: TaskState) async {
-        logInfo("Restoring extraction task", category: "state")
+        AppLog.info("Restoring extraction task", category: .state)
         
         // The extraction view will pick up the task state from AppStateManager
         // and show appropriate UI (e.g., "Resuming extraction...")
@@ -83,7 +83,7 @@ class TaskRestorationCoordinator: ObservableObject {
     }
     
     private func restoreDiabeticAnalysisTask(_ task: TaskState, modelContainer: ModelContainer) async {
-        logInfo("Restoring diabetic analysis task for recipe: \(task.recipeId?.uuidString ?? "unknown")", category: "state")
+        AppLog.info("Restoring diabetic analysis task for recipe: \(task.recipeId?.uuidString ?? "unknown")", category: .state)
         
         // Navigate to recipes tab and select the recipe being analyzed
         AppStateManager.shared.currentTab = .recipes

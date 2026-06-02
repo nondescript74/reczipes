@@ -118,8 +118,8 @@ class ImagePreprocessor {
     ///   - maxSizeBytes: Maximum size in bytes (default 20KB for text extraction)
     /// - Returns: Data representation of the reduced image, or nil if failed
     func reduceImageSize(_ image: UIImage, maxSizeBytes: Int = 20_000) -> Data? {
-        logInfo("Reducing image size, target: \(maxSizeBytes) bytes (~\(maxSizeBytes / 1024)KB)", category: "image")
-        logDebug("Original image size: \(image.size.width) x \(image.size.height)", category: "image")
+        AppLog.info("Reducing image size, target: \(maxSizeBytes) bytes (~\(maxSizeBytes / 1024)KB)", category: .image)
+        AppLog.debug("Original image size: \(image.size.width) x \(image.size.height)", category: .image)
         
         // For small targets (like 10-20KB), we need aggressive resizing first
         // Text recognition works well even with heavily reduced images
@@ -130,7 +130,7 @@ class ImagePreprocessor {
         if image.size.width > maxDimension || image.size.height > maxDimension {
             let scale = min(maxDimension / image.size.width, maxDimension / image.size.height)
             let newSize = CGSize(width: image.size.width * scale, height: image.size.height * scale)
-            logDebug("Initial resize to \(newSize.width) x \(newSize.height)", category: "image")
+            AppLog.debug("Initial resize to \(newSize.width) x \(newSize.height)", category: .image)
             
             if let resized = resizeImage(image, to: newSize) {
                 workingImage = resized
@@ -142,16 +142,16 @@ class ImagePreprocessor {
         
         for quality in compressionQualities {
             if let data = workingImage.jpegData(compressionQuality: quality) {
-                logDebug("Compression quality \(quality): \(data.count) bytes (~\(data.count / 1024)KB)", category: "image")
+                AppLog.debug("Compression quality \(quality): \(data.count) bytes (~\(data.count / 1024)KB)", category: .image)
                 if data.count <= maxSizeBytes {
-                    logInfo("Image reduced to \(data.count) bytes (~\(data.count / 1024)KB) with compression \(quality)", category: "image")
+                    AppLog.info("Image reduced to \(data.count) bytes (~\(data.count / 1024)KB) with compression \(quality)", category: .image)
                     return data
                 }
             }
         }
         
         // If still too large, progressively reduce dimensions
-        logDebug("Compression alone insufficient, applying progressive resizing", category: "image")
+        AppLog.debug("Compression alone insufficient, applying progressive resizing", category: .image)
         
         // More aggressive resize factors for small file targets
         let resizeFactors: [CGFloat] = [0.8, 0.6, 0.5, 0.4, 0.35, 0.3, 0.25, 0.2]
@@ -162,10 +162,10 @@ class ImagePreprocessor {
                 height: workingImage.size.height * factor
             )
             
-            logDebug("Trying resize to \(Int(newSize.width)) x \(Int(newSize.height)) (factor: \(factor))", category: "image")
+            AppLog.debug("Trying resize to \(Int(newSize.width)) x \(Int(newSize.height)) (factor: \(factor))", category: .image)
             
             guard let resizedImage = resizeImage(workingImage, to: newSize) else {
-                logWarning("Failed to resize image to \(newSize)", category: "image")
+                AppLog.warning("Failed to resize image to \(newSize)", category: .image)
                 continue
             }
             
@@ -173,8 +173,8 @@ class ImagePreprocessor {
             for quality in compressionQualities {
                 if let data = resizedImage.jpegData(compressionQuality: quality) {
                     if data.count <= maxSizeBytes {
-                        logInfo("Image reduced to \(data.count) bytes (~\(data.count / 1024)KB) with resize factor \(factor) and compression \(quality)", category: "image")
-                        logDebug("Final dimensions: \(Int(newSize.width)) x \(Int(newSize.height))", category: "image")
+                        AppLog.info("Image reduced to \(data.count) bytes (~\(data.count / 1024)KB) with resize factor \(factor) and compression \(quality)", category: .image)
+                        AppLog.debug("Final dimensions: \(Int(newSize.width)) x \(Int(newSize.height))", category: .image)
                         return data
                     }
                 }
@@ -183,7 +183,7 @@ class ImagePreprocessor {
         
         // Last resort: Very small image with heavy compression
         // Even a 200x200 image is usually enough for text recognition
-        logWarning("Using last resort: minimal dimensions with heavy compression", category: "image")
+        AppLog.warning("Using last resort: minimal dimensions with heavy compression", category: .image)
         let minDimension = min(workingImage.size.width, workingImage.size.height)
         let targetMinDimension: CGFloat = 200
         let finalScale = targetMinDimension / minDimension
@@ -195,12 +195,12 @@ class ImagePreprocessor {
         
         if let finalResize = resizeImage(workingImage, to: finalSize),
            let finalData = finalResize.jpegData(compressionQuality: 0.1) {
-            logInfo("Final image size: \(finalData.count) bytes (~\(finalData.count / 1024)KB)", category: "image")
-            logDebug("Final dimensions: \(Int(finalSize.width)) x \(Int(finalSize.height))", category: "image")
+            AppLog.info("Final image size: \(finalData.count) bytes (~\(finalData.count / 1024)KB)", category: .image)
+            AppLog.debug("Final dimensions: \(Int(finalSize.width)) x \(Int(finalSize.height))", category: .image)
             return finalData
         }
         
-        logError("Failed to reduce image to target size", category: "image")
+        AppLog.error("Failed to reduce image to target size", category: .image)
         return nil
     }
     

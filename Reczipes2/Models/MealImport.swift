@@ -2,15 +2,20 @@
 //  MealImport.swift
 //  Reczipes2
 //
-//  Decodable schema for importing meal plans from JSON. Each entry
-//  in the package becomes a Meal; its course names are matched
-//  against existing recipes by title (case-insensitive) at import
-//  time.
+//  Codable schema for importing and exporting meal plans as JSON.
+//
+//  Schema versioning:
+//   - v1: course list is a `[String]` of names. Importer matches each
+//         name against existing recipes by title.
+//   - v2: adds `courseDetails: [MealCourseExport]` carrying recipeID /
+//         recipeTitle / searchQuery for round-trip fidelity. Importer
+//         prefers `courseDetails` when present; falls back to `courses`
+//         (v1 behavior) otherwise.
 //
 
 import Foundation
 
-/// Top-level container for a meal-plan import file.
+/// Top-level container for a meal-plan import/export file.
 struct MealImportPackage: Codable {
     var version: Int
     var source: String?
@@ -33,17 +38,72 @@ struct MealImportEntry: Codable {
     /// — preserved on import so we can use it later for categorization.
     var cuisine: String?
 
-    /// Ordered course names. If empty or missing, the meal is seeded
-    /// with a single course matching `name`.
+    /// v1 schema: ordered course names. If empty or missing AND
+    /// `courseDetails` is also missing, the meal is seeded with a
+    /// single course matching `name`.
     var courses: [String]?
 
-    /// Courses to actually use, falling back to a single course
-    /// derived from the meal name.
+    /// v2 schema: full course detail (recipeID, recipeTitle,
+    /// searchQuery). When present, takes priority over `courses` and
+    /// allows the importer to preserve linkage without re-matching
+    /// by title.
+    var courseDetails: [MealCourseExport]?
+
+    init(
+        name: String,
+        description: String? = nil,
+        notes: String? = nil,
+        cuisine: String? = nil,
+        courses: [String]? = nil,
+        courseDetails: [MealCourseExport]? = nil
+    ) {
+        self.name = name
+        self.description = description
+        self.notes = notes
+        self.cuisine = cuisine
+        self.courses = courses
+        self.courseDetails = courseDetails
+    }
+
+    /// v1 fallback: ordered course names to use, falling back to a
+    /// single course derived from the meal name. Only consulted when
+    /// `courseDetails` is nil.
     var effectiveCourses: [String] {
         if let courses, !courses.isEmpty {
             return courses
         }
         return [name]
+    }
+}
+
+/// v2 schema: full meal-course detail for round-trip export/import.
+/// Mirrors the runtime `MealCourse` so we can reconstruct linked
+/// recipes without re-matching by title.
+struct MealCourseExport: Codable, Hashable {
+    /// Display label for the course slot.
+    var name: String
+
+    /// Linked recipe ID (when the course was filled with a real recipe).
+    var recipeID: UUID?
+
+    /// Cached recipe title at export time. Used for display when the
+    /// linked recipe is unloaded, and as a fallback search query if
+    /// the recipeID no longer resolves at import time.
+    var recipeTitle: String?
+
+    /// Placeholder search query for unlinked courses.
+    var searchQuery: String?
+
+    init(
+        name: String,
+        recipeID: UUID? = nil,
+        recipeTitle: String? = nil,
+        searchQuery: String? = nil
+    ) {
+        self.name = name
+        self.recipeID = recipeID
+        self.recipeTitle = recipeTitle
+        self.searchQuery = searchQuery
     }
 }
 

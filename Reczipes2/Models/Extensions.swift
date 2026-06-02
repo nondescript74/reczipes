@@ -68,7 +68,7 @@ func saveBackupFile(jsonData: Data, prefix: String) async throws -> URL {
     if docsExists && isDir.boolValue {
         reczipesDirectory = documentsDirectory.appendingPathComponent("Reczipes2")
     } else {
-        logWarning("Documents directory not accessible, using temporary directory", category: "backup")
+        AppLog.warning("Documents directory not accessible, using temporary directory", category: .backup)
         reczipesDirectory = FileManager.default.temporaryDirectory.appendingPathComponent("Reczipes2")
     }
     
@@ -84,7 +84,7 @@ func saveBackupFile(jsonData: Data, prefix: String) async throws -> URL {
     let fileURL = reczipesDirectory.appendingPathComponent(fileName)
     
     try jsonData.write(to: fileURL)
-    logInfo("Backup created successfully: \(fileName) (\(jsonData.count) bytes)", category: "backup")
+    AppLog.info("Backup created successfully: \(fileName) (\(jsonData.count) bytes)", category: .backup)
     return fileURL
 }
 

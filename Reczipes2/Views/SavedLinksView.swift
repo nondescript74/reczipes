@@ -339,7 +339,7 @@ struct SavedLinksView: View {
             do {
                 try modelContext.save()
             } catch {
-                logError("Failed to delete link: \(error)", category: "storage")
+                AppLog.error("Failed to delete link: \(error)", category: .storage)
             }
         }
     }
@@ -348,14 +348,14 @@ struct SavedLinksView: View {
         do {
             try LinkImportService.clearAllLinks(from: modelContext)
         } catch {
-            logError("Failed to clear links: \(error)", category: "storage")
+            AppLog.error("Failed to clear links: \(error)", category: .storage)
         }
     }
     
     private func extractAllUnprocessed() {
         // TODO: Implement batch extraction
         // This would process all unprocessed links sequentially
-        logInfo("Batch extraction not yet implemented", category: "extraction")
+        AppLog.info("Batch extraction not yet implemented", category: .extraction)
     }
     
     private func handleExtractionComplete(for link: SavedLink, success: Bool, error: String?) {
@@ -367,7 +367,7 @@ struct SavedLinksView: View {
         do {
             try modelContext.save()
         } catch {
-            logError("Failed to save link status: \(error)", category: "storage")
+            AppLog.error("Failed to save link status: \(error)", category: .storage)
         }
     }
 }
@@ -661,13 +661,13 @@ struct ImportLinksSheet: View {
                         importError = "Cannot import: file has \(result.errors.count) error(s)"
                     }
                     
-                    logInfo("Validation complete: \(result.linkCount) links, \(result.errors.count) errors, \(result.warnings.count) warnings", category: "import")
+                    AppLog.info("Validation complete: \(result.linkCount) links, \(result.errors.count) errors, \(result.warnings.count) warnings", category: .batch)
                 }
             } catch {
                 await MainActor.run {
                     isValidating = false
                     importError = error.localizedDescription
-                    logError("Validation failed: \(error)", category: "import")
+                    AppLog.error("Validation failed: \(error)", category: .batch)
                 }
             }
         }
@@ -693,7 +693,7 @@ struct ImportLinksSheet: View {
                 await MainActor.run {
                     isImporting = false
                     importError = error.localizedDescription
-                    logError("Import failed: \(error)", category: "import")
+                    AppLog.error("Import failed: \(error)", category: .batch)
                 }
             }
         }

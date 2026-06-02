@@ -64,7 +64,7 @@ struct RecipeBooksView: View {
         result = result.filter { book in
             guard let bookID = book.id else { return false }
             if seenIDs.contains(bookID) {
-                logWarning("⚠️ Duplicate book ID detected: \(bookID) (\(book.name ?? "Untitled"))", category: "book")
+                AppLog.warning("⚠️ Duplicate book ID detected: \(bookID) (\(book.name ?? "Untitled"))", category: .recipe)
                 return false
             }
             seenIDs.insert(bookID)
@@ -150,11 +150,11 @@ struct RecipeBooksView: View {
                     do {
                         let fetchedBooks = try modelContext.fetch(descriptor)
                         if fetchedBooks.isEmpty {
-                            logInfo("📚 Dismissing sheet - book was deleted", category: "book")
+                            AppLog.info("📚 Dismissing sheet - book was deleted", category: .recipe)
                             selectedBook = nil
                         }
                     } catch {
-                        logError("❌ Failed to verify book existence: \(error)", category: "book")
+                        AppLog.error("❌ Failed to verify book existence: \(error)", category: .recipe)
                         selectedBook = nil
                     }
                 }
@@ -304,7 +304,7 @@ struct RecipeBooksView: View {
         withAnimation {
             // Delete all recipes in this book
             let recipeIDsToDelete = book.recipeIDs ?? []
-            logInfo("Deleting book '\(book.name ?? "Untitled")' and \(recipeIDsToDelete.count) associated recipes", category: "book")
+            AppLog.info("Deleting book '\(book.name ?? "Untitled")' and \(recipeIDsToDelete.count) associated recipes", category: .recipe)
             
             // Fetch and delete each recipe
             for recipeID in recipeIDsToDelete {
@@ -316,7 +316,7 @@ struct RecipeBooksView: View {
                 
                 if let recipes = try? modelContext.fetch(descriptor),
                    let recipe = recipes.first {
-                    logDebug("Deleting recipe '\(recipe.title ?? "Untitled")' (ID: \(recipeID))", category: "book")
+                    AppLog.debug("Deleting recipe '\(recipe.title ?? "Untitled")' (ID: \(recipeID))", category: .recipe)
                     modelContext.delete(recipe)
                 }
             }
@@ -327,9 +327,9 @@ struct RecipeBooksView: View {
             // Save changes
             do {
                 try modelContext.save()
-                logInfo("Successfully deleted book '\(book.name ?? "Untitled")' and its recipes", category: "book")
+                AppLog.info("Successfully deleted book '\(book.name ?? "Untitled")' and its recipes", category: .recipe)
             } catch {
-                logError("Failed to save after deleting book: \(error)", category: "book")
+                AppLog.error("Failed to save after deleting book: \(error)", category: .recipe)
             }
         }
     }
@@ -341,12 +341,12 @@ struct RecipeBooksView: View {
         if let lastSync = lastSyncDate {
             let timeSinceLastSync = Date().timeIntervalSince(lastSync)
             if timeSinceLastSync < syncInterval {
-                logInfo("📚 Skipping sync - last synced \(Int(timeSinceLastSync))s ago", category: "sharing")
+                AppLog.info("📚 Skipping sync - last synced \(Int(timeSinceLastSync))s ago", category: .sharing)
                 return
             }
         }
         
-        logInfo("📚 Syncing community books to local SwiftData...", category: "sharing")
+        AppLog.info("📚 Syncing community books to local SwiftData...", category: .sharing)
         
         do {
             try await CloudKitSharingService.shared.syncCommunityBooksToLocal(modelContext: modelContext)
@@ -354,10 +354,10 @@ struct RecipeBooksView: View {
             await MainActor.run {
                 lastSyncDate = Date()
                 refreshID = UUID() // Force UI refresh
-                logInfo("✅ Community books sync completed successfully", category: "sharing")
+                AppLog.info("✅ Community books sync completed successfully", category: .sharing)
             }
         } catch {
-            logError("❌ Failed to sync community books: \(error)", category: "sharing")
+            AppLog.error("❌ Failed to sync community books: \(error)", category: .sharing)
             // Log the error but don't show it to the user
             // The sync will automatically retry next time they switch tabs
         }

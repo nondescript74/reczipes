@@ -110,9 +110,9 @@ struct BookRecipeManagerView: View {
             
             do {
                 try modelContext.save()
-                logInfo("Added recipe '\(recipe.title ?? "Untitled")' to book '\(book.displayName)'", category: "book")
+                AppLog.info("Added recipe '\(recipe.title ?? "Untitled")' to book '\(book.displayName)'", category: .recipe)
             } catch {
-                logError("Failed to add recipe to book: \(error)", category: "book")
+                AppLog.error("Failed to add recipe to book: \(error)", category: .recipe)
             }
         }
     }
@@ -125,9 +125,9 @@ struct BookRecipeManagerView: View {
             
             do {
                 try modelContext.save()
-                logInfo("Removed recipe '\(recipe.title ?? "Untitled")' from book '\(book.displayName)'", category: "book")
+                AppLog.info("Removed recipe '\(recipe.title ?? "Untitled")' from book '\(book.displayName)'", category: .recipe)
             } catch {
-                logError("Failed to remove recipe from book: \(error)", category: "book")
+                AppLog.error("Failed to remove recipe from book: \(error)", category: .recipe)
             }
         }
     }

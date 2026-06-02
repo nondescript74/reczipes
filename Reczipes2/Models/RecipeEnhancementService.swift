@@ -22,7 +22,7 @@ class RecipeEnhancementService {
     /// - Parameter recipe: The extracted recipe to validate
     /// - Returns: Validation result with suggested corrections
     func validateRecipeContent(_ recipe: RecipeX) async throws -> RecipeValidationResult {
-        logInfo("Starting recipe content validation for: \(recipe.safeTitle)", category: "enhancement")
+        AppLog.info("Starting recipe content validation for: \(recipe.safeTitle)", category: .recipe)
         
         let systemPrompt = """
         You are a recipe validation expert. Your job is to review recipes extracted from images and ensure:
@@ -92,34 +92,34 @@ class RecipeEnhancementService {
             maxTokens: 4096
         )
         
-        logInfo("Received validation response", category: "enhancement")
+        AppLog.info("Received validation response", category: .recipe)
         
         // Extract JSON from response (remove markdown code blocks if present)
         let cleanedJSON = extractJSON(from: validationJSON)
-        logDebug("Cleaned JSON for decoding: \(String(cleanedJSON.prefix(500)))", category: "enhancement")
+        AppLog.debug("Cleaned JSON for decoding: \(String(cleanedJSON.prefix(500)))", category: .recipe)
         
         // Parse the validation result
         guard let jsonData = cleanedJSON.data(using: .utf8) else {
-            logError("Failed to convert cleaned JSON to data", category: "enhancement")
+            AppLog.error("Failed to convert cleaned JSON to data", category: .recipe)
             throw EnhancementError.invalidResponse
         }
         
         do {
             let decoder = JSONDecoder()
             let result = try decoder.decode(RecipeValidationResult.self, from: jsonData)
-            logInfo("✅ Validation complete. Valid: \(result.isValid), Confidence: \(result.confidence)", category: "enhancement")
+            AppLog.info("✅ Validation complete. Valid: \(result.isValid), Confidence: \(result.confidence)", category: .recipe)
             if let corrections = result.corrections {
-                logInfo("Corrections found: cuisine=\(corrections.cuisine ?? "nil"), sections=\(corrections.ingredientSections?.count ?? 0)", category: "enhancement")
+                AppLog.info("Corrections found: cuisine=\(corrections.cuisine ?? "nil"), sections=\(corrections.ingredientSections?.count ?? 0)", category: .recipe)
             }
             return result
         } catch let DecodingError.keyNotFound(key, context) {
-            logError("❌ Missing key '\(key.stringValue)' at path: \(context.codingPath.map { $0.stringValue }.joined(separator: " -> "))", category: "enhancement")
-            logDebug("Context: \(context.debugDescription)", category: "enhancement")
-            logDebug("Full JSON: \(cleanedJSON)", category: "enhancement")
+            AppLog.error("❌ Missing key '\(key.stringValue)' at path: \(context.codingPath.map { $0.stringValue }.joined(separator: " -> "))", category: .recipe)
+            AppLog.debug("Context: \(context.debugDescription)", category: .recipe)
+            AppLog.debug("Full JSON: \(cleanedJSON)", category: .recipe)
             throw EnhancementError.validationFailed
         } catch {
-            logError("Failed to decode validation result: \(error)", category: "enhancement")
-            logDebug("Cleaned JSON: \(cleanedJSON)", category: "enhancement")
+            AppLog.error("Failed to decode validation result: \(error)", category: .recipe)
+            AppLog.debug("Cleaned JSON: \(cleanedJSON)", category: .recipe)
             throw EnhancementError.validationFailed
         }
     }

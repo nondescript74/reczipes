@@ -29,16 +29,16 @@ class RemindersService {
             if #available(iOS 17.0, *) {
                 // Request full access for iOS 17+
                 let granted = try await eventStore.requestFullAccessToReminders()
-                logInfo("📝 Reminders permission: \(granted ? "Granted" : "Denied")", category: "general")
+                AppLog.info("📝 Reminders permission: \(granted ? "Granted" : "Denied")", category: .general)
                 return granted
             } else {
                 // Fall back to the old API for earlier iOS versions
                 let granted = try await eventStore.requestAccess(to: .reminder)
-                logInfo("📝 Reminders permission: \(granted ? "Granted" : "Denied")", category: "general")
+                AppLog.info("📝 Reminders permission: \(granted ? "Granted" : "Denied")", category: .general)
                 return granted
             }
         } catch {
-            logError("❌ Error requesting reminders permission: \(error)", category: "general")
+            AppLog.error("❌ Error requesting reminders permission: \(error)", category: .general)
             return false
         }
     }
@@ -56,21 +56,21 @@ class RemindersService {
             }
         }
         
-        logInfo("📝 ========== ADDING INGREDIENTS TO REMINDERS ==========", category: "general")
-        logInfo("📝 Recipe: \(recipe.safeTitle)", category: "general")
+        AppLog.info("📝 ========== ADDING INGREDIENTS TO REMINDERS ==========", category: .general)
+        AppLog.info("📝 Recipe: \(recipe.safeTitle)", category: .general)
         
         // Find or create a list for recipe ingredients
         let listTitle = "🍳 \(recipe.safeTitle)"
         let calendar = try findOrCreateReminderList(named: listTitle)
         
-        logInfo("📝 Using reminder list: \(calendar.title)", category: "general")
+        AppLog.info("📝 Using reminder list: \(calendar.title)", category: .general)
         
         var addedCount = 0
         
         // Decode ingredient sections from RecipeX
         guard let sectionsData = recipe.ingredientSectionsData,
               let sections = try? JSONDecoder().decode([IngredientSection].self, from: sectionsData) else {
-            logError("Failed to decode ingredient sections", category: "general")
+            AppLog.error("Failed to decode ingredient sections", category: .general)
             throw RemindersError.saveFailed
         }
         
@@ -126,8 +126,8 @@ class RemindersService {
         // Commit all changes at once for better performance
         try eventStore.commit()
         
-        logInfo("📝 ✅ Successfully added \(addedCount) reminders", category: "general")
-        logInfo("📝 ========== REMINDERS EXPORT COMPLETE ==========", category: "general")
+        AppLog.info("📝 ✅ Successfully added \(addedCount) reminders", category: .general)
+        AppLog.info("📝 ========== REMINDERS EXPORT COMPLETE ==========", category: .general)
     }
     
     /// Find an existing reminder list or create a new one
@@ -139,12 +139,12 @@ class RemindersService {
         
         // Look for existing list with this name
         if let existingCalendar = calendars.first(where: { $0.title == name }) {
-            logInfo("📝 Found existing reminder list: \(name)", category: "general")
+            AppLog.info("📝 Found existing reminder list: \(name)", category: .general)
             return existingCalendar
         }
         
         // Create a new list
-        logInfo("📝 Creating new reminder list: \(name)", category: "general")
+        AppLog.info("📝 Creating new reminder list: \(name)", category: .general)
         let newCalendar = EKCalendar(for: .reminder, eventStore: eventStore)
         newCalendar.title = name
         

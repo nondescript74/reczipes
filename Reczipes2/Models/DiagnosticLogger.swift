@@ -8,19 +8,50 @@
 import Foundation
 import OSLog
 
-/// Centralized logging system that writes to both OSLog and a diagnostic file
+/// Centralized logging system that writes to both OSLog and a diagnostic file.
+///
+/// # Thread Safety (`@unchecked Sendable` justification)
+///
+/// This type is `@unchecked Sendable` rather than an `actor` because it must offer a
+/// **synchronous** API to ~1500 call sites across the project. Converting to an actor
+/// would require `await` at every logging call, with a large blast radius and no
+/// material safety benefit beyond what is documented below.
+///
+/// Safety is guaranteed by these invariants:
+///
+/// 1. **`subsystems`** — `let`-bound dictionary of `Logger` values. `os.Logger` is
+///    documented as thread-safe (see `OSLog`/`Logger` reference), and the dictionary
+///    is never mutated after `init`.
+/// 2. **`fileManager`** — `let`-bound `FileManager` instance. Per Apple's docs,
+///    `FileManager` methods are thread-safe when accessed from multiple threads as
+///    long as the instance itself is not reconfigured (we never reconfigure it).
+/// 3. **`logFileURL`** — written exactly once during `init` and only read afterward.
+///    Reads happen-after the singleton's `init` completes (Swift guarantees safe
+///    publication of static `let` initializers), so no synchronization is required.
+/// 4. **File writes** — all `writeToFile` invocations dispatch onto the serial
+///    `logQueue`, providing total ordering of writes and exclusive access to the
+///    `FileHandle` lifecycle.
+/// 5. **UserDefaults** — `UserDefaults` is documented as thread-safe.
+///
+/// Because every mutable resource is either confined to `logQueue` or written-once
+/// during init, there is no data race surface that an actor would protect against
+/// more strongly than the current implementation.
 @preconcurrency
 final class DiagnosticLogger: @unchecked Sendable {
-    
+
     // MARK: - Singleton
-    
+
     static let shared = DiagnosticLogger()
-    
+
     // MARK: - Properties
-    
+
+    // Write-once during init, never mutated afterward — safe to read from any thread.
     private nonisolated(unsafe) let fileManager = FileManager()
     private let logFileName = "reczipes_diagnostics.log"
+    // Written once in `setupLogFile()` (called only from `init`) and treated as
+    // read-only thereafter. Reads happen-after init via static-let publication.
     private nonisolated(unsafe) var logFileURL: URL?
+    // Serial queue: provides total ordering and mutual exclusion for file writes.
     private let logQueue = DispatchQueue(label: "com.reczipes.diagnosticlogger", qos: .utility)
     
     // UserDefaults key for tracking security migration

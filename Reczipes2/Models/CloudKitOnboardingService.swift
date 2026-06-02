@@ -141,7 +141,7 @@ class CloudKitOnboardingService: ObservableObject {
     
     /// Run comprehensive diagnostics and determine onboarding state
     func runComprehensiveDiagnostics() async {
-        logInfo("🔍 Starting CloudKit comprehensive diagnostics...", category: "onboarding")
+        AppLog.info("🔍 Starting CloudKit comprehensive diagnostics...", category: .onboarding)
         
         onboardingState = .checking
         currentStep = .checkingAccount
@@ -163,7 +163,7 @@ class CloudKitOnboardingService: ObservableObject {
             }
             accountStatusString = status.description
             
-            logInfo("   Account Status: \(accountStatusString)", category: "onboarding")
+            AppLog.info("   Account Status: \(accountStatusString)", category: .onboarding)
             
             switch status {
             case .available:
@@ -173,17 +173,17 @@ class CloudKitOnboardingService: ObservableObject {
             case .noAccount:
                 onboardingState = .needsiCloudSignIn
                 errors.append("No iCloud account signed in")
-                logWarning("   ❌ No iCloud account", category: "onboarding")
+                AppLog.warning("   ❌ No iCloud account", category: .onboarding)
                 
             case .restricted:
                 onboardingState = .restricted
                 errors.append("CloudKit is restricted (check Screen Time/Parental Controls)")
-                logWarning("   ❌ CloudKit restricted", category: "onboarding")
+                AppLog.warning("   ❌ CloudKit restricted", category: .onboarding)
                 
             case .couldNotDetermine, .temporarilyUnavailable:
                 errors.append("CloudKit status could not be determined")
                 onboardingState = .failed(CloudKitError.statusUnknown)
-                logWarning("   ❌ Status unknown", category: "onboarding")
+                AppLog.warning("   ❌ Status unknown", category: .onboarding)
                 
             @unknown default:
                 errors.append("Unknown CloudKit status")
@@ -211,7 +211,7 @@ class CloudKitOnboardingService: ObservableObject {
             errors.append("iCloud status check timed out - iCloud may not be configured on this device")
             accountStatusString = "timeout"
             onboardingState = .needsiCloudSignIn
-            logWarning("   ⏱️ Account check timed out - likely not configured", category: "onboarding")
+            AppLog.warning("   ⏱️ Account check timed out - likely not configured", category: .onboarding)
             createDiagnostics(
                 accountStatus: accountStatusString,
                 containerAccessible: false,
@@ -227,7 +227,7 @@ class CloudKitOnboardingService: ObservableObject {
         } catch {
             errors.append("Failed to check account status: \(error.localizedDescription)")
             onboardingState = .failed(error)
-            logError("   ❌ Account check failed: \(error)", category: "onboarding")
+            AppLog.error("   ❌ Account check failed: \(error)", category: .onboarding)
             createDiagnostics(
                 accountStatus: "error",
                 containerAccessible: false,
@@ -252,15 +252,15 @@ class CloudKitOnboardingService: ObservableObject {
             }
             userRecordID = recordID.recordName
             containerAccessible = true
-            logInfo("   ✅ Container accessible, User ID: \(recordID.recordName)", category: "onboarding")
+            AppLog.info("   ✅ Container accessible, User ID: \(recordID.recordName)", category: .onboarding)
         } catch is TimeoutError {
             errors.append("Container access check timed out - iCloud may not be fully initialized")
             containerAccessible = false
-            logWarning("   ⏱️ Container access timed out", category: "onboarding")
+            AppLog.warning("   ⏱️ Container access timed out", category: .onboarding)
         } catch {
             errors.append("Cannot access CloudKit container: \(error.localizedDescription)")
             containerAccessible = false
-            logError("   ❌ Container inaccessible: \(error)", category: "onboarding")
+            AppLog.error("   ❌ Container inaccessible: \(error)", category: .onboarding)
         }
         
         // Step 3: Check public database access (read)
@@ -269,28 +269,28 @@ class CloudKitOnboardingService: ObservableObject {
         canReadFromPublic = await testPublicDatabaseRead()
         if canReadFromPublic {
             publicDBAccessible = true
-            logInfo("   ✅ Public database readable", category: "onboarding")
+            AppLog.info("   ✅ Public database readable", category: .onboarding)
         } else {
             errors.append("Cannot read from public database")
-            logWarning("   ⚠️ Public database not readable", category: "onboarding")
+            AppLog.warning("   ⚠️ Public database not readable", category: .onboarding)
         }
         
         // Step 4: Check public database access (write)
         canShareToPublic = await testPublicDatabaseWrite()
         if canShareToPublic {
-            logInfo("   ✅ Public database writable", category: "onboarding")
+            AppLog.info("   ✅ Public database writable", category: .onboarding)
         } else {
             errors.append("Cannot write to public database")
-            logWarning("   ⚠️ Public database not writable", category: "onboarding")
+            AppLog.warning("   ⚠️ Public database not writable", category: .onboarding)
         }
         
         // Step 5: Check private database access
         privateDBAccessible = await testPrivateDatabaseAccess()
         if privateDBAccessible {
-            logInfo("   ✅ Private database accessible", category: "onboarding")
+            AppLog.info("   ✅ Private database accessible", category: .onboarding)
         } else {
             errors.append("Private database not accessible")
-            logWarning("   ⚠️ Private database inaccessible", category: "onboarding")
+            AppLog.warning("   ⚠️ Private database inaccessible", category: .onboarding)
         }
         
         // Step 6: Check user identity (discoverability is automatic in iOS 17+)
@@ -302,9 +302,9 @@ class CloudKitOnboardingService: ObservableObject {
         userDiscoverable = (userRecordID != nil)
         
         if userDiscoverable {
-            logInfo("   ✅ User identity established", category: "onboarding")
+            AppLog.info("   ✅ User identity established", category: .onboarding)
         } else {
-            logWarning("   ⚠️ User identity not available", category: "onboarding")
+            AppLog.warning("   ⚠️ User identity not available", category: .onboarding)
         }
         
         // Step 7: Determine final state
@@ -326,25 +326,25 @@ class CloudKitOnboardingService: ObservableObject {
         if containerAccessible && publicDBAccessible && canShareToPublic && canReadFromPublic {
             onboardingState = .ready
             currentStep = .complete
-            logInfo("✅ CloudKit fully functional for community sharing!", category: "onboarding")
-            logInfo("Onboarding completed: ready", category: "analytics")
+            AppLog.info("✅ CloudKit fully functional for community sharing!", category: .onboarding)
+            AppLog.info("Onboarding completed: ready", category: .analytics)
         } else if !containerAccessible {
             onboardingState = .needsContainerPermission
-            logWarning("⚠️ Container permission needed", category: "onboarding")
-            logInfo("Onboarding completed: needsContainerPermission", category: "analytics")
+            AppLog.warning("⚠️ Container permission needed", category: .onboarding)
+            AppLog.info("Onboarding completed: needsContainerPermission", category: .analytics)
         } else if !publicDBAccessible {
             onboardingState = .needsPublicDBSetup
-            logWarning("⚠️ Public database setup needed", category: "onboarding")
-            logInfo("Onboarding completed: needsPublicDBSetup", category: "analytics")
+            AppLog.warning("⚠️ Public database setup needed", category: .onboarding)
+            AppLog.info("Onboarding completed: needsPublicDBSetup", category: .analytics)
         } else if userRecordID == nil {
             onboardingState = .needsUserIdentity
-            logWarning("⚠️ User identity creation needed", category: "onboarding")
-            logInfo("Onboarding completed: needsUserIdentity", category: "analytics")
+            AppLog.warning("⚠️ User identity creation needed", category: .onboarding)
+            AppLog.info("Onboarding completed: needsUserIdentity", category: .analytics)
         } else {
             onboardingState = .failed(CloudKitError.unknownIssue)
             errorDetails = errors.joined(separator: "\n")
-            logError("❌ CloudKit issues detected: \(errors.joined(separator: ", "))", category: "onboarding")
-            logInfo("Onboarding completed: failed", category: "analytics")
+            AppLog.error("❌ CloudKit issues detected: \(errors.joined(separator: ", "))", category: .onboarding)
+            AppLog.info("Onboarding completed: failed", category: .analytics)
         }
     }
     
@@ -360,7 +360,7 @@ class CloudKitOnboardingService: ObservableObject {
             _ = result
             return true
         } catch is TimeoutError {
-            logWarning("Public DB read test timed out", category: "onboarding")
+            AppLog.warning("Public DB read test timed out", category: .onboarding)
             return false
         } catch let error as CKError {
             // Some errors are expected if no data exists yet
@@ -369,11 +369,11 @@ class CloudKitOnboardingService: ObservableObject {
                 // These actually indicate we CAN access the database, just no data
                 return true
             default:
-                logError("Public DB read test failed: \(error)", category: "onboarding")
+                AppLog.error("Public DB read test failed: \(error)", category: .onboarding)
                 return false
             }
         } catch {
-            logError("Public DB read test failed: \(error)", category: "onboarding")
+            AppLog.error("Public DB read test failed: \(error)", category: .onboarding)
             return false
         }
     }
@@ -396,10 +396,10 @@ class CloudKitOnboardingService: ObservableObject {
             
             return true
         } catch is TimeoutError {
-            logWarning("Public DB write test timed out", category: "onboarding")
+            AppLog.warning("Public DB write test timed out", category: .onboarding)
             return false
         } catch {
-            logError("Public DB write test failed: \(error)", category: "onboarding")
+            AppLog.error("Public DB write test failed: \(error)", category: .onboarding)
             return false
         }
     }
@@ -414,7 +414,7 @@ class CloudKitOnboardingService: ObservableObject {
             _ = result
             return true
         } catch is TimeoutError {
-            logWarning("Private DB test timed out", category: "onboarding")
+            AppLog.warning("Private DB test timed out", category: .onboarding)
             return false
         } catch let error as CKError {
             // Some errors are expected
@@ -433,21 +433,21 @@ class CloudKitOnboardingService: ObservableObject {
     
     /// Attempt to repair CloudKit access by forcing re-initialization
     func attemptRepair() async {
-        logInfo("🔧 Attempting CloudKit repair...", category: "onboarding")
+        AppLog.info("🔧 Attempting CloudKit repair...", category: .onboarding)
         
         currentStep = .requestingPermissions
         
         // Force request container permissions
         do {
             _ = try await container.userRecordID()
-            logInfo("   ✅ Container permission refreshed", category: "onboarding")
+            AppLog.info("   ✅ Container permission refreshed", category: .onboarding)
         } catch {
-            logError("   ❌ Container permission refresh failed: \(error)", category: "onboarding")
+            AppLog.error("   ❌ Container permission refresh failed: \(error)", category: .onboarding)
         }
         
         // Note: User discoverability is handled automatically in iOS 17+
         // No need to explicitly request permission anymore
-        logInfo("   ℹ️ User discoverability is automatic in iOS 17+", category: "onboarding")
+        AppLog.info("   ℹ️ User discoverability is automatic in iOS 17+", category: .onboarding)
         
         // Re-run diagnostics
         await runComprehensiveDiagnostics()
@@ -455,7 +455,7 @@ class CloudKitOnboardingService: ObservableObject {
     
     /// Initialize public database schema (create indexes, etc.)
     func initializePublicDatabaseSchema() async {
-        logInfo("🗄️ Initializing public database schema...", category: "onboarding")
+        AppLog.info("🗄️ Initializing public database schema...", category: .onboarding)
         
         // Create a dummy record of each type to ensure schema exists
         let recordTypes = [
@@ -473,9 +473,9 @@ class CloudKitOnboardingService: ObservableObject {
                 let saved = try await publicDatabase.save(dummyRecord)
                 _ = try? await publicDatabase.deleteRecord(withID: saved.recordID)
                 
-                logInfo("   ✅ Schema initialized for \(recordType)", category: "onboarding")
+                AppLog.info("   ✅ Schema initialized for \(recordType)", category: .onboarding)
             } catch {
-                logError("   ❌ Failed to initialize \(recordType): \(error)", category: "onboarding")
+                AppLog.error("   ❌ Failed to initialize \(recordType): \(error)", category: .onboarding)
             }
         }
         

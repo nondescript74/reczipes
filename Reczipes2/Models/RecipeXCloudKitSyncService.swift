@@ -46,7 +46,7 @@ class RecipeXCloudKitSyncService: ObservableObject {
     // MARK: - Initialization
     
     private init() {
-        logInfo("📤 RecipeXCloudKitSyncService initialized", category: "cloudkit")
+        AppLog.info("📤 RecipeXCloudKitSyncService initialized", category: .cloudKit)
     }
     
     // MARK: - Public API
@@ -56,7 +56,7 @@ class RecipeXCloudKitSyncService: ObservableObject {
     func startAutomaticSync(modelContext: ModelContext) {
         self.modelContext = modelContext
         
-        logInfo("🚀 Starting automatic CloudKit sync for RecipeX", category: "cloudkit")
+        AppLog.info("🚀 Starting automatic CloudKit sync for RecipeX", category: .cloudKit)
         
         // Perform initial sync immediately
         Task {
@@ -72,14 +72,14 @@ class RecipeXCloudKitSyncService: ObservableObject {
             }
         }
         
-        logInfo("⏰ Scheduled periodic sync every \(Int(syncInterval)) seconds", category: "cloudkit")
+        AppLog.info("⏰ Scheduled periodic sync every \(Int(syncInterval)) seconds", category: .cloudKit)
     }
     
     /// Stop automatic sync service
     func stopAutomaticSync() {
         syncTimer?.invalidate()
         syncTimer = nil
-        logInfo("🛑 Stopped automatic CloudKit sync", category: "cloudkit")
+        AppLog.info("🛑 Stopped automatic CloudKit sync", category: .cloudKit)
     }
     
     /// Manually trigger sync (useful for immediate upload after creating a recipe)
@@ -98,7 +98,7 @@ class RecipeXCloudKitSyncService: ObservableObject {
             let results = try modelContext.fetch(descriptor)
             return results.count
         } catch {
-            logError("Failed to fetch pending recipes: \(error)", category: "cloudkit")
+            AppLog.error("Failed to fetch pending recipes: \(error)", category: .cloudKit)
             return 0
         }
     }
@@ -107,13 +107,13 @@ class RecipeXCloudKitSyncService: ObservableObject {
     
     private func syncPendingRecipes() async {
         guard let modelContext = modelContext else {
-            logWarning("Cannot sync - modelContext is nil", category: "cloudkit")
+            AppLog.warning("Cannot sync - modelContext is nil", category: .cloudKit)
             return
         }
         
         // Don't run multiple syncs simultaneously
         guard !isSyncing else {
-            logDebug("Sync already in progress, skipping", category: "cloudkit")
+            AppLog.debug("Sync already in progress, skipping", category: .cloudKit)
             return
         }
         
@@ -133,25 +133,25 @@ class RecipeXCloudKitSyncService: ObservableObject {
             pendingCount = recipesToSync.count
             
             guard !recipesToSync.isEmpty else {
-                logDebug("No recipes need syncing", category: "cloudkit")
+                AppLog.debug("No recipes need syncing", category: .cloudKit)
                 return
             }
             
-            logInfo("📤 Syncing \(recipesToSync.count) recipe(s) to CloudKit", category: "cloudkit")
+            AppLog.info("📤 Syncing \(recipesToSync.count) recipe(s) to CloudKit", category: .cloudKit)
             
             // Process in batches
             let batches = recipesToSync.chunked(into: batchSize)
             
             for (index, batch) in batches.enumerated() {
-                logInfo("Processing batch \(index + 1)/\(batches.count) (\(batch.count) recipes)", category: "cloudkit")
+                AppLog.info("Processing batch \(index + 1)/\(batches.count) (\(batch.count) recipes)", category: .cloudKit)
                 await syncBatch(batch, modelContext: modelContext)
             }
             
             lastSyncDate = Date()
-            logInfo("✅ Sync complete", category: "cloudkit")
+            AppLog.info("✅ Sync complete", category: .cloudKit)
             
         } catch {
-            logError("Failed to fetch recipes for sync: \(error)", category: "cloudkit")
+            AppLog.error("Failed to fetch recipes for sync: \(error)", category: .cloudKit)
             lastError = error.localizedDescription
         }
     }
@@ -164,11 +164,11 @@ class RecipeXCloudKitSyncService: ObservableObject {
     
     private func syncRecipe(_ recipe: RecipeX, modelContext: ModelContext) async {
         guard let title = recipe.title else {
-            logWarning("Skipping recipe with no title", category: "cloudkit")
+            AppLog.warning("Skipping recipe with no title", category: .cloudKit)
             return
         }
         
-        logDebug("Syncing recipe: \(title)", category: "cloudkit")
+        AppLog.debug("Syncing recipe: \(title)", category: .cloudKit)
         
         do {
             // Convert RecipeX to CKRecord
@@ -183,12 +183,12 @@ class RecipeXCloudKitSyncService: ObservableObject {
             // Save SwiftData changes
             try modelContext.save()
             
-            logInfo("✅ Synced recipe '\(title)' to CloudKit", category: "cloudkit")
+            AppLog.info("✅ Synced recipe '\(title)' to CloudKit", category: .cloudKit)
             
         } catch let error as CKError {
             handleCloudKitError(error, for: recipe, modelContext: modelContext)
         } catch {
-            logError("Unexpected error syncing '\(title)': \(error)", category: "cloudkit")
+            AppLog.error("Unexpected error syncing '\(title)': \(error)", category: .cloudKit)
             recipe.markSyncFailed(error: error.localizedDescription)
             try? modelContext.save()
         }
@@ -269,29 +269,29 @@ class RecipeXCloudKitSyncService: ObservableObject {
     // MARK: - Error Handling
     
     private func handleCloudKitError(_ error: CKError, for recipe: RecipeX, modelContext: ModelContext) {
-        logError("CloudKit error syncing '\(recipe.safeTitle)': \(error.localizedDescription)", category: "cloudkit")
+        AppLog.error("CloudKit error syncing '\(recipe.safeTitle)': \(error.localizedDescription)", category: .cloudKit)
         
         switch error.code {
         case .networkFailure, .networkUnavailable:
             // Transient error - retry later
-            logWarning("Network error, will retry later", category: "cloudkit")
+            AppLog.warning("Network error, will retry later", category: .cloudKit)
             recipe.markSyncFailed(error: "Network unavailable")
             
         case .quotaExceeded:
             // User exceeded CloudKit quota
-            logError("CloudKit quota exceeded for user", category: "cloudkit")
+            AppLog.error("CloudKit quota exceeded for user", category: .cloudKit)
             recipe.markSyncFailed(error: "iCloud storage full")
             lastError = "iCloud storage quota exceeded. Please free up space."
             
         case .serverRecordChanged:
             // Conflict - server has a newer version
-            logWarning("Server record changed, need to resolve conflict", category: "cloudkit")
+            AppLog.warning("Server record changed, need to resolve conflict", category: .cloudKit)
             // TODO: Implement conflict resolution
             recipe.markSyncFailed(error: "Conflict with server version")
             
         case .notAuthenticated:
             // User not signed into iCloud
-            logError("User not signed into iCloud", category: "cloudkit")
+            AppLog.error("User not signed into iCloud", category: .cloudKit)
             recipe.markSyncFailed(error: "Not signed into iCloud")
             lastError = "Please sign into iCloud to sync recipes"
             

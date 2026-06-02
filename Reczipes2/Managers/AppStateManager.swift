@@ -139,13 +139,13 @@ class AppStateManager: ObservableObject {
     func handleScenePhaseChange(_ phase: ScenePhase) {
         switch phase {
         case .active:
-            logInfo("App became active", category: "state")
+            AppLog.info("App became active", category: .state)
             
         case .inactive:
-            logInfo("App became inactive", category: "state")
+            AppLog.info("App became inactive", category: .state)
             
         case .background:
-            logInfo("App entered background - saving state", category: "state")
+            AppLog.info("App entered background - saving state", category: .state)
             saveStateToBackground()
             
         @unknown default:

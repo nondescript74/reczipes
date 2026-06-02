@@ -26,7 +26,7 @@ class CloudKitImageManager {
     }()
     
     private init() {
-        logInfo("📸 CloudKitImageManager initialized with directory: \(imageDirectory.path)", category: "image")
+        AppLog.info("📸 CloudKitImageManager initialized with directory: \(imageDirectory.path)", category: .image)
     }
     
     // MARK: - Image Storage
@@ -39,16 +39,16 @@ class CloudKitImageManager {
         
         // Compress image for reasonable file size (adjust quality as needed)
         guard let imageData = image.jpegData(compressionQuality: 0.8) else {
-            logInfo("❌ Failed to convert image to JPEG data", category: "image")
+            AppLog.info("❌ Failed to convert image to JPEG data", category: .image)
             return nil
         }
         
         do {
             try imageData.write(to: fileURL)
-            logInfo("✅ Saved image: \(filename)", category: "image")
+            AppLog.info("✅ Saved image: \(filename)", category: .image)
             return filename
         } catch {
-            logError("❌ Error saving image: \(error)", category: "image")
+            AppLog.error("❌ Error saving image: \(error)", category: .image)
             return nil
         }
     }
@@ -59,7 +59,7 @@ class CloudKitImageManager {
         
         guard let imageData = try? Data(contentsOf: fileURL),
               let image = UIImage(data: imageData) else {
-            logWarning("⚠️ Could not load image: \(filename)", category: "image")
+            AppLog.warning("⚠️ Could not load image: \(filename)", category: .image)
             return nil
         }
         
@@ -72,9 +72,9 @@ class CloudKitImageManager {
         
         do {
             try FileManager.default.removeItem(at: fileURL)
-            logInfo("🗑️ Deleted image: \(filename)", category: "image")
+            AppLog.info("🗑️ Deleted image: \(filename)", category: .image)
         } catch {
-            logWarning("⚠️ Error deleting image: \(error)", category: "image")
+            AppLog.warning("⚠️ Error deleting image: \(error)", category: .image)
         }
     }
     
@@ -158,7 +158,7 @@ class CloudKitImageManager {
         }
         
         if deletedCount > 0 {
-            logInfo("🧹 Cleaned up \(deletedCount) orphaned images", category: "image")
+            AppLog.info("🧹 Cleaned up \(deletedCount) orphaned images", category: .image)
         }
     }
 }

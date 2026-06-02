@@ -114,7 +114,7 @@ class CloudKitDuplicateMonitor: ObservableObject {
             .receive(on: DispatchQueue.main)
             .sink { [weak self] _ in
                 self?.isSyncing = true
-                logInfo("☁️ CloudKit import started", category: "cloudkit")
+                AppLog.info("☁️ CloudKit import started", category: .cloudKit)
             }
             .store(in: &cancellables)
         
@@ -128,20 +128,20 @@ class CloudKitDuplicateMonitor: ObservableObject {
     }
     
     private func handleSyncWillReset(_ notification: Notification) {
-        logWarning("⚠️ CloudKit sync will reset - change token expired", category: "cloudkit")
-        logWarning("⚠️ This may cause duplicate recipes to be synced", category: "cloudkit")
+        AppLog.warning("⚠️ CloudKit sync will reset - change token expired", category: .cloudKit)
+        AppLog.warning("⚠️ This may cause duplicate recipes to be synced", category: .cloudKit)
         
         // Log the reason if available
         if let userInfo = notification.userInfo,
            let reason = userInfo["reason"] as? String {
-            logWarning("⚠️ Reason: \(reason)", category: "cloudkit")
+            AppLog.warning("⚠️ Reason: \(reason)", category: .cloudKit)
         }
         
         isSyncing = true
     }
     
     private func handleSyncDidReset(_ notification: Notification) {
-        logInfo("✅ CloudKit sync reset complete", category: "cloudkit")
+        AppLog.info("✅ CloudKit sync reset complete", category: .cloudKit)
         lastSyncReset = Date()
         
         // Schedule duplicate detection after a delay to let sync finish
@@ -152,13 +152,13 @@ class CloudKitDuplicateMonitor: ObservableObject {
     }
     
     private func handleImportFinished(_ notification: Notification) {
-        logInfo("✅ CloudKit import finished", category: "cloudkit")
+        AppLog.info("✅ CloudKit import finished", category: .cloudKit)
         isSyncing = false
         
         // Check if there was an error
         if let userInfo = notification.userInfo,
            let error = userInfo[NSUnderlyingErrorKey] as? Error {
-            logError("❌ Import finished with error: \(error.localizedDescription)", category: "cloudkit")
+            AppLog.error("❌ Import finished with error: \(error.localizedDescription)", category: .cloudKit)
         }
         
         // Run duplicate check after import
@@ -257,7 +257,7 @@ class CloudKitDuplicateMonitor: ObservableObject {
 
     func checkForDuplicates(force: Bool = false) async {
         guard let context = modelContext else {
-            logWarning("⚠️ ModelContext not configured for duplicate detection", category: "cloudkit")
+            AppLog.warning("⚠️ ModelContext not configured for duplicate detection", category: .cloudKit)
             return
         }
 
@@ -267,17 +267,17 @@ class CloudKitDuplicateMonitor: ObservableObject {
             let recipeCount = try context.fetchCount(countDescriptor)
 
             if DuplicateScanTracker.shouldSkipScan(currentCount: recipeCount, force: force) {
-                logInfo("⏭️ Skipping duplicate scan — recipe count unchanged (\(recipeCount)) and cooldown active", category: "cloudkit")
+                AppLog.info("⏭️ Skipping duplicate scan — recipe count unchanged (\(recipeCount)) and cooldown active", category: .cloudKit)
                 return
             }
 
-            logInfo("🔍 Checking for duplicates after sync (multi-strategy)...", category: "cloudkit")
+            AppLog.info("🔍 Checking for duplicates after sync (multi-strategy)...", category: .cloudKit)
             DuplicateScanTracker.recordScanRan()
 
             let descriptor = FetchDescriptor<RecipeX>(sortBy: [SortDescriptor(\.title)])
             let allRecipes = try context.fetch(descriptor)
 
-            logInfo("📊 Total recipes: \(allRecipes.count)", category: "cloudkit")
+            AppLog.info("📊 Total recipes: \(allRecipes.count)", category: .cloudKit)
 
             let clusters = findDuplicateClusters(allRecipes)
             let totalDuplicates = clusters.reduce(0) { $0 + $1.delete.count }
@@ -285,14 +285,14 @@ class CloudKitDuplicateMonitor: ObservableObject {
             duplicatesDetected = totalDuplicates
 
             if totalDuplicates > 0 {
-                logWarning("⚠️ Found \(clusters.count) duplicate groups containing \(totalDuplicates) extra recipes", category: "cloudkit")
+                AppLog.warning("⚠️ Found \(clusters.count) duplicate groups containing \(totalDuplicates) extra recipes", category: .cloudKit)
 
-                logInfo("🧹 Auto-cleaning \(totalDuplicates) duplicate(s) from CloudKit sync...", category: "cloudkit")
+                AppLog.info("🧹 Auto-cleaning \(totalDuplicates) duplicate(s) from CloudKit sync...", category: .cloudKit)
                 var deletedCount = 0
                 for cluster in clusters {
-                    logInfo("   Keeping: '\(cluster.keep.safeTitle)' (ID: \(String(describing: cluster.keep.id)))", category: "cloudkit")
+                    AppLog.info("   Keeping: '\(cluster.keep.safeTitle)' (ID: \(String(describing: cluster.keep.id)))", category: .cloudKit)
                     for duplicate in cluster.delete {
-                        logInfo("   🗑️ Deleting duplicate: \(String(describing: duplicate.id))", category: "cloudkit")
+                        AppLog.info("   🗑️ Deleting duplicate: \(String(describing: duplicate.id))", category: .cloudKit)
                         context.delete(duplicate)
                         deletedCount += 1
                     }
@@ -300,21 +300,21 @@ class CloudKitDuplicateMonitor: ObservableObject {
 
                 if deletedCount > 0 {
                     try context.save()
-                    logInfo("✅ Auto-cleaned \(deletedCount) CloudKit sync duplicates", category: "cloudkit")
+                    AppLog.info("✅ Auto-cleaned \(deletedCount) CloudKit sync duplicates", category: .cloudKit)
                     duplicatesDetected = 0
                 }
 
                 // After cleanup, re-count and record clean state
                 let newCount = try context.fetchCount(countDescriptor)
                 DuplicateScanTracker.recordCleanScan(recipeCount: newCount)
-                logInfo("🧹 Silently resolved \(deletedCount) duplicate(s) — next scan skipped until count changes", category: "cloudkit")
+                AppLog.info("🧹 Silently resolved \(deletedCount) duplicate(s) — next scan skipped until count changes", category: .cloudKit)
             } else {
-                logInfo("✅ No duplicates detected — recording clean state", category: "cloudkit")
+                AppLog.info("✅ No duplicates detected — recording clean state", category: .cloudKit)
                 DuplicateScanTracker.recordCleanScan(recipeCount: recipeCount)
             }
 
         } catch {
-            logError("❌ Error checking for duplicates: \(error)", category: "cloudkit")
+            AppLog.error("❌ Error checking for duplicates: \(error)", category: .cloudKit)
         }
     }
 

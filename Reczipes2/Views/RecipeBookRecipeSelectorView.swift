@@ -131,10 +131,10 @@ struct RecipeBookRecipeSelectorView: View {
         
         do {
             try modelContext.save()
-            logInfo("Added \(selectedRecipeIDs.count) recipes to book: \(String(describing: book.name))", category: "book")
+            AppLog.info("Added \(selectedRecipeIDs.count) recipes to book: \(String(describing: book.name))", category: .recipe)
             dismiss()
         } catch {
-            logError("Failed to add recipes to book: \(error)", category: "book")
+            AppLog.error("Failed to add recipes to book: \(error)", category: .recipe)
         }
     }
 }

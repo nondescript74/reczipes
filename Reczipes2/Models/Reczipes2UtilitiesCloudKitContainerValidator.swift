@@ -118,79 +118,79 @@ actor CloudKitContainerValidator {
     
     /// Print detailed validation report
     @MainActor static func printValidationReport(_ result: ValidationResult) {
-        logInfo("\n" + String(repeating: "=", count: 70), category: "storage")
-        logInfo("☁️  CLOUDKIT CONTAINER VALIDATION REPORT", category: "storage")
-        logInfo(String(repeating: "=", count: 70), category: "storage")
+        AppLog.info("\n" + String(repeating: "=", count: 70), category: .storage)
+        AppLog.info("☁️  CLOUDKIT CONTAINER VALIDATION REPORT", category: .storage)
+        AppLog.info(String(repeating: "=", count: 70), category: .storage)
         
-        logInfo("\n📦 CONTAINER INFORMATION:", category: "storage")
-        logInfo("   Container ID: \(result.containerIdentifier)", category: "storage")
-        logInfo("   Bundle ID: \(result.bundleID)", category: "storage")
-        logInfo("   Can Create Reference: \(result.canCreateReference ? "✅" : "❌")", category: "storage")
+        AppLog.info("\n📦 CONTAINER INFORMATION:", category: .storage)
+        AppLog.info("   Container ID: \(result.containerIdentifier)", category: .storage)
+        AppLog.info("   Bundle ID: \(result.bundleID)", category: .storage)
+        AppLog.info("   Can Create Reference: \(result.canCreateReference ? "✅" : "❌")", category: .storage)
         
-        logInfo("\n👤 ICLOUD ACCOUNT:", category: "storage")
-        logInfo("   \(result.accountStatusMessage)", category: "storage")
+        AppLog.info("\n👤 ICLOUD ACCOUNT:", category: .storage)
+        AppLog.info("   \(result.accountStatusMessage)", category: .storage)
         if let error = result.accountStatusError {
-            logInfo("   Error: \(error)", category: "storage")
+            AppLog.info("   Error: \(error)", category: .storage)
         }
         
-        logInfo("\n🗄️  CONTAINER ACCESS:", category: "storage")
-        logInfo("   \(result.containerAccessMessage)", category: "storage")
+        AppLog.info("\n🗄️  CONTAINER ACCESS:", category: .storage)
+        AppLog.info("   \(result.containerAccessMessage)", category: .storage)
         if result.canAccessPrivateDatabase {
-            logInfo("   Private Database: ✅ Accessible", category: "storage")
+            AppLog.info("   Private Database: ✅ Accessible", category: .storage)
         }
         if let userID = result.userRecordID {
-            logInfo("   User Record ID: \(userID)", category: "storage")
+            AppLog.info("   User Record ID: \(userID)", category: .storage)
         }
         if let error = result.containerAccessError {
-            logInfo("   Error: \(error)", category: "storage")
+            AppLog.info("   Error: \(error)", category: .storage)
         }
         
-        logInfo("\n🔐 ENTITLEMENTS CHECK:", category: "storage")
+        AppLog.info("\n🔐 ENTITLEMENTS CHECK:", category: .storage)
         let entitlements = result.entitlementsCheck
         
         if let note = entitlements.runtimeCheckNote {
-            logInfo("   \(note)", category: "storage")
-            logInfo("", category: "storage")
-            logInfo("   💡 Real test: Can we access CloudKit? (See Container Access above)", category: "storage")
-            logInfo("      - If container access works → Entitlements are correct ✅", category: "storage")
-            logInfo("      - If container access fails → Check entitlements in Xcode ❌", category: "storage")
+            AppLog.info("   \(note)", category: .storage)
+            AppLog.info("", category: .storage)
+            AppLog.info("   💡 Real test: Can we access CloudKit? (See Container Access above)", category: .storage)
+            AppLog.info("      - If container access works → Entitlements are correct ✅", category: .storage)
+            AppLog.info("      - If container access fails → Check entitlements in Xcode ❌", category: .storage)
         } else {
             // Old style reporting (won't happen with new code)
-            logInfo("   iCloud Services: \(entitlements.hasICloudServices ? "✅" : "❌")", category: "storage")
+            AppLog.info("   iCloud Services: \(entitlements.hasICloudServices ? "✅" : "❌")", category: .storage)
             if entitlements.hasICloudServices {
-                logInfo("      Services: \(entitlements.iCloudServices.joined(separator: ", "))", category: "storage")
+                AppLog.info("      Services: \(entitlements.iCloudServices.joined(separator: ", "))", category: .storage)
             }
-            logInfo("   CloudKit Enabled: \(entitlements.hasCloudKit ? "✅" : "❌")", category: "storage")
-            logInfo("   Container Identifiers: \(entitlements.hasContainerIdentifiers ? "✅" : "❌")", category: "storage")
+            AppLog.info("   CloudKit Enabled: \(entitlements.hasCloudKit ? "✅" : "❌")", category: .storage)
+            AppLog.info("   Container Identifiers: \(entitlements.hasContainerIdentifiers ? "✅" : "❌")", category: .storage)
             if entitlements.hasContainerIdentifiers {
-                logInfo("      Containers:", category: "storage")
+                AppLog.info("      Containers:", category: .storage)
                 for container in entitlements.containerIdentifiers {
                     let marker = container == result.containerIdentifier ? "  ➜" : "   "
-                    logInfo("\(marker) \(container)", category: "storage")
+                    AppLog.info("\(marker) \(container)", category: .storage)
                 }
             }
-            logInfo("   Target Container Listed: \(entitlements.containsTargetContainer ? "✅" : "❌")", category: "storage")
+            AppLog.info("   Target Container Listed: \(entitlements.containsTargetContainer ? "✅" : "❌")", category: .storage)
         }
         
-        logInfo("\n🔍 DIAGNOSIS:", category: "storage")
+        AppLog.info("\n🔍 DIAGNOSIS:", category: .storage)
         let diagnosis = result.diagnose()
-        logInfo("   \(diagnosis.emoji) \(diagnosis.summary)", category: "storage")
+        AppLog.info("   \(diagnosis.emoji) \(diagnosis.summary)", category: .storage)
         
         if !diagnosis.issues.isEmpty {
-            logInfo("\n⚠️  ISSUES FOUND:", category: "storage")
+            AppLog.info("\n⚠️  ISSUES FOUND:", category: .storage)
             for (index, issue) in diagnosis.issues.enumerated() {
-                logInfo("   \(index + 1). \(issue)", category: "storage")
+                AppLog.info("   \(index + 1). \(issue)", category: .storage)
             }
         }
         
         if !diagnosis.recommendations.isEmpty {
-            logInfo("\n💡 RECOMMENDATIONS:", category: "storage")
+            AppLog.info("\n💡 RECOMMENDATIONS:", category: .storage)
             for (index, recommendation) in diagnosis.recommendations.enumerated() {
-                logInfo("   \(index + 1). \(recommendation)", category: "storage")
+                AppLog.info("   \(index + 1). \(recommendation)", category: .storage)
             }
         }
         
-        logInfo("\n" + String(repeating: "=", count: 70) + "\n", category: "storage")
+        AppLog.info("\n" + String(repeating: "=", count: 70) + "\n", category: .storage)
     }
 }
 

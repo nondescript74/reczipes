@@ -503,16 +503,16 @@ extension RecipeX {
         
         // Fallback: use basic JPEG compression if utility fails
         if imageData == nil {
-            logWarning("Compression utility failed for '\(safeTitle)', using fallback JPEG compression (original size: \(image.size))", category: "recipe")
+            AppLog.warning("Compression utility failed for '\(safeTitle)', using fallback JPEG compression (original size: \(image.size))", category: .recipe)
             imageData = image.jpegData(compressionQuality: 0.8)
         }
         
         guard let imageData else {
-            logError("Both compression methods failed for recipe '\(safeTitle)' - image size: \(image.size), scale: \(image.scale)", category: "recipe")
+            AppLog.error("Both compression methods failed for recipe '\(safeTitle)' - image size: \(image.size), scale: \(image.scale)", category: .recipe)
             return
         }
         
-        logInfo("Successfully compressed image for '\(safeTitle)' to \(imageData.count) bytes", category: "recipe")
+        AppLog.info("Successfully compressed image for '\(safeTitle)' to \(imageData.count) bytes", category: .recipe)
 
         if isMainImage {
             self.imageData = imageData

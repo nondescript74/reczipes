@@ -705,7 +705,19 @@ final class DiabeticInfoCache: Sendable {
         self.cache = Cache()
     }
     
-    // Thread-safe storage
+    // Thread-safe storage.
+    //
+    // # Thread Safety (`@unchecked Sendable` justification)
+    //
+    // `storage` is mutable, so the type cannot synthesize `Sendable`. All access
+    // to `storage` is guarded by `lock` (`NSLock`), which provides mutual exclusion
+    // across threads. Every public method follows the lock/defer-unlock pattern,
+    // so there is no path that reads or writes `storage` without holding `lock`.
+    //
+    // An `actor` would provide compile-time enforcement but would force callers to
+    // `await` every cache hit. Since this cache is read on the hot path during
+    // diabetic analysis rendering, the synchronous lock-based API is intentional.
+    // If actor migration is desired later, see `SWIFT_6_CONCURRENCY_AUDIT.md`.
     private final class Cache: @unchecked Sendable {
         private var storage: [UUID: CachedInfo] = [:]
         private let lock = NSLock()

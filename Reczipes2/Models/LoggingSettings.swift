@@ -66,9 +66,18 @@ final class LoggingSettings {
         case image = "Image Processing"
         case cloudkit = "CloudKit Sync"
         case analytics = "Analytics"
-        
+        case background = "Background Processing"
+        case lifecycle = "App Lifecycle"
+        case sync = "Sync"
+        case sharing = "Sharing"
+        case backup = "Backup"
+        case onboarding = "Onboarding"
+        case api = "API"
+        case batch = "Batch Operations"
+        case state = "State Management"
+
         var id: String { rawValue }
-        
+
         var systemImage: String {
             switch self {
             case .general: return "gear"
@@ -82,9 +91,18 @@ final class LoggingSettings {
             case .image: return "photo"
             case .cloudkit: return "icloud"
             case .analytics: return "chart.bar"
+            case .background: return "moon.zzz"
+            case .lifecycle: return "arrow.triangle.2.circlepath"
+            case .sync: return "arrow.triangle.2.circlepath.icloud"
+            case .sharing: return "person.2"
+            case .backup: return "externaldrive"
+            case .onboarding: return "hand.wave"
+            case .api: return "globe"
+            case .batch: return "square.stack.3d.up"
+            case .state: return "switch.2"
             }
         }
-        
+
         var description: String {
             switch self {
             case .general: return "General app operations"
@@ -98,6 +116,15 @@ final class LoggingSettings {
             case .image: return "Image processing and compression"
             case .cloudkit: return "iCloud synchronization"
             case .analytics: return "Usage analytics and metrics"
+            case .background: return "Background task scheduling and execution"
+            case .lifecycle: return "App scene-phase transitions"
+            case .sync: return "Sync engine activity"
+            case .sharing: return "Recipe and book sharing"
+            case .backup: return "Backup creation and restore"
+            case .onboarding: return "First-launch onboarding flow"
+            case .api: return "Claude / external API calls"
+            case .batch: return "Batch import and extraction"
+            case .state: return "App state transitions"
             }
         }
     }
@@ -307,6 +334,25 @@ enum LoggingHelper {
     /// Check if file logging is enabled (thread-safe)
     nonisolated static var isFileLoggingEnabled: Bool {
         UserDefaults.standard.object(forKey: "com.reczipes.logging.fileLogging") == nil ? true : UserDefaults.standard.bool(forKey: "com.reczipes.logging.fileLogging")
+    }
+
+    /// Typed variant of `shouldLog(category:)` that avoids the stringly-typed
+    /// `rawValue.capitalized` lookup (which silently falls back to General for
+    /// multi-word rawValues like `"Allergen Detection"`). Prefer this overload
+    /// from new code such as `AppLog`.
+    nonisolated static func shouldLog(category: LoggingSettings.LoggingCategory) -> Bool {
+        let levelString = UserDefaults.standard.string(forKey: "com.reczipes.logging.level") ?? "Errors Only"
+        guard let level = LoggingSettings.LoggingLevel(rawValue: levelString) else {
+            return false
+        }
+        if level == .off { return false }
+
+        // If the user has never touched logging settings, fall back to allowing
+        // the category (so new installs see logs by default for our trial).
+        guard let saved = UserDefaults.standard.array(forKey: "com.reczipes.logging.categories") as? [String] else {
+            return true
+        }
+        return saved.contains(category.rawValue)
     }
 }
 

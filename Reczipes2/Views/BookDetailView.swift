@@ -218,7 +218,7 @@ struct BookDetailView: View {
         // For now, show a message
         await MainActor.run {
             isExporting = false
-            logInfo("Book export not yet implemented for new Book model", category: "book-export")
+            AppLog.info("Book export not yet implemented for new Book model", category: .backup)
         }
     }
 }

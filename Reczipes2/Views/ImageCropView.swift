@@ -186,7 +186,7 @@ struct ImageCropView: View {
     
     private func performCrop() {
         guard let croppedImage = cropImage() else {
-            logError("Failed to crop image", category: "image")
+            AppLog.error("Failed to crop image", category: .image)
             return
         }
         

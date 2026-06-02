@@ -424,12 +424,38 @@ The Reczipes2 project demonstrates **solid understanding and implementation** of
 
 ### Immediate (This Sprint)
 - [x] ✅ Fix task group warnings (COMPLETED)
-- [ ] Review and document all `@unchecked Sendable` usage
+- [x] ✅ Review and document all `@unchecked Sendable` usage (COMPLETED 2026-05-21)
+  - `DiagnosticLogger`: added detailed thread-safety doc-comment covering all
+    invariants that justify `@unchecked Sendable` (subsystems, fileManager,
+    logFileURL, file writes via `logQueue`, UserDefaults).
+  - `DiabeticInfoCache.Cache`: added doc-comment explaining `NSLock`-guarded
+    storage and the rationale for keeping a synchronous lock-based API rather
+    than migrating to an `actor`.
 
 ### Short-term (Next Sprint)
-- [ ] Migrate `DiagnosticLogger` to actor
-- [ ] Audit `Task.detached` usage in `BackgroundProcessingManager`
-- [ ] Add concurrency stress tests
+- [~] **Deferred:** Migrate `DiagnosticLogger` to actor.
+  - **Rationale:** `DiagnosticLogger` and its global helpers (`logInfo`,
+    `logError`, etc.) are invoked from ~1500+ synchronous call sites across the
+    project. Converting to an `actor` would force `await` at every site, with a
+    very large blast radius and no material safety gain — the type is already
+    safe under the documented invariants (see §2 and the doc-comment in
+    `DiagnosticLogger.swift`).
+  - **Future option:** Introduce a parallel actor-based logger and migrate
+    incrementally, deprecating the synchronous helpers over multiple releases.
+- [x] ✅ Audit `Task.detached` usage in `BackgroundProcessingManager` (COMPLETED 2026-05-21)
+  - Two sites in the app-lifecycle extension (`handleAppDidEnterBackground`,
+    `handleAppWillEnterForeground`) are **intentionally** detached to decouple
+    work from the scene-phase transition that triggered it. A plain
+    `Task { @MainActor in ... }` inherits the caller's MainActor context, which
+    can be suspended mid-flight during backgrounding — this caused the
+    historical crash fixed in `Docs/STARTUP_BACKGROUND_CRASH_FIX.md`. Both sites
+    now carry `INTENTIONAL:` comments warning future readers not to "fix" them.
+- [x] ✅ Add concurrency stress tests (COMPLETED 2026-05-21)
+  - Added `Reczipes2Tests/ConcurrencyStressTests.swift` with 6 tests:
+    - 3 hammering `DiagnosticLogger` (concurrent log calls, global helpers,
+      reads-during-writes).
+    - 3 hammering `DiabeticInfoCache` (concurrent store/get, store/clear,
+      clearAll under concurrent stores).
 
 ### Long-term (Future)
 - [ ] Full Swift 6 migration with strict concurrency checking
@@ -438,6 +464,9 @@ The Reczipes2 project demonstrates **solid understanding and implementation** of
 
 ---
 
-**Audited by:** Swift Concurrency Expert  
-**Date:** May 16, 2026  
+**Audited by:** Swift Concurrency Expert
+**Date:** May 16, 2026
 **Status:** ✅ Ready for production with minor improvements recommended
+**Last updated:** 2026-05-21 — Immediate and short-term action items addressed
+(see §12 above). The `DiagnosticLogger` actor migration was intentionally
+deferred; see the rationale in §12.

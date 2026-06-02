@@ -20,13 +20,13 @@ final class RecipeCollection {
     /// Returns all recipes from SwiftData (extracted via Claude API)
     /// Automatically deduplicates based on title and content
     func allRecipes(savedRecipes: [RecipeX]) -> [RecipeX] {
-        logInfo("📚 RecipeCollection.allRecipes called with \(savedRecipes.count) saved recipes", category: "recipe")
+        AppLog.info("📚 RecipeCollection.allRecipes called with \(savedRecipes.count) saved recipes", category: .recipe)
         
         // Deduplicate first
         let deduplicatedRecipes = deduplicateRecipes(savedRecipes)
         
         if deduplicatedRecipes.count < savedRecipes.count {
-            logWarning("⚠️ Found \(savedRecipes.count - deduplicatedRecipes.count) duplicate recipes (filtered out)", category: "recipe")
+            AppLog.warning("⚠️ Found \(savedRecipes.count - deduplicatedRecipes.count) duplicate recipes (filtered out)", category: .recipe)
         }
         
         // Convert saved Recipe objects to RecipeModels
@@ -35,7 +35,7 @@ final class RecipeCollection {
             return model
         }
         
-        logInfo("📚 RecipeCollection.allRecipes returning \(models.count) models", category: "recipe")
+        AppLog.info("📚 RecipeCollection.allRecipes returning \(models.count) models", category: .recipe)
         return models
     }
     

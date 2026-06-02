@@ -84,7 +84,7 @@ class BatchImageExtractorViewModel: ObservableObject {
     ) {
         guard !assets.isEmpty else { return }
         
-        logInfo("Starting batch image extraction with \(assets.count) images, shouldCrop: \(shouldCrop)", category: "batch")
+        AppLog.info("Starting batch image extraction with \(assets.count) images, shouldCrop: \(shouldCrop)", category: .batch)
         
         self.allAssets = assets
         self.remainingAssets = assets
@@ -117,7 +117,7 @@ class BatchImageExtractorViewModel: ObservableObject {
     ) {
         guard !images.isEmpty else { return }
         
-        logInfo("Starting batch image extraction from \(images.count) UIImages (Files/iCloud Drive), shouldCrop: \(shouldCrop)", category: "batch")
+        AppLog.info("Starting batch image extraction from \(images.count) UIImages (Files/iCloud Drive), shouldCrop: \(shouldCrop)", category: .batch)
         
         self.currentBatch = images
         self.shouldCrop = shouldCrop
@@ -151,13 +151,13 @@ class BatchImageExtractorViewModel: ObservableObject {
     func pause() {
         isPaused = true
         currentStatus = "Paused"
-        logInfo("Batch extraction paused", category: "batch")
+        AppLog.info("Batch extraction paused", category: .batch)
     }
     
     func resume() {
         isPaused = false
         currentStatus = "Resuming..."
-        logInfo("Batch extraction resumed", category: "batch")
+        AppLog.info("Batch extraction resumed", category: .batch)
     }
     
     func stop() {
@@ -166,7 +166,7 @@ class BatchImageExtractorViewModel: ObservableObject {
         isPaused = false
         isWaitingForCrop = false
         currentStatus = "Stopped"
-        logInfo("Batch extraction stopped", category: "batch")
+        AppLog.info("Batch extraction stopped", category: .batch)
     }
     
     func skipCropping() {
@@ -217,12 +217,12 @@ class BatchImageExtractorViewModel: ObservableObject {
     }
     
     private func processBatch(photoManager: PhotoLibraryManager) async {
-        logInfo("Processing batch of \(allAssets.count) images", category: "batch")
+        AppLog.info("Processing batch of \(allAssets.count) images", category: .batch)
         
         for (index, asset) in allAssets.enumerated() {
             // Check if stopped
             guard isExtracting else {
-                logInfo("Extraction stopped", category: "batch")
+                AppLog.info("Extraction stopped", category: .batch)
                 break
             }
             
@@ -237,14 +237,14 @@ class BatchImageExtractorViewModel: ObservableObject {
             }
             
             currentStatus = "Processing image \(index + 1) of \(totalToExtract)..."
-            logInfo("Processing image \(index + 1) of \(totalToExtract)", category: "batch")
+            AppLog.info("Processing image \(index + 1) of \(totalToExtract)", category: .batch)
             
             // Load full resolution image
             guard let image = await photoManager.loadImage(
                 for: asset,
                 targetSize: PHImageManagerMaximumSize
             ) else {
-                logError("Failed to load image \(index + 1)", category: "batch")
+                AppLog.error("Failed to load image \(index + 1)", category: .batch)
                 errorLog.append((imageIndex: index, error: "Failed to load image from Photos library"))
                 failureCount += 1
                 currentProgress += 1
@@ -262,9 +262,9 @@ class BatchImageExtractorViewModel: ObservableObject {
                 if shouldCropThisImage {
                     if let croppedImage = await requestCrop(for: image) {
                         imageToProcess = croppedImage
-                        logInfo("Image cropped successfully for batch extraction", category: "batch")
+                        AppLog.info("Image cropped successfully for batch extraction", category: .batch)
                     } else {
-                        logInfo("Crop cancelled, using original image", category: "batch")
+                        AppLog.info("Crop cancelled, using original image", category: .batch)
                     }
                 }
             }
@@ -282,7 +282,7 @@ class BatchImageExtractorViewModel: ObservableObject {
             // Process in batches of 10
             if currentProgress % 10 == 0 && currentProgress < totalToExtract {
                 currentStatus = "Completed \(currentProgress) images. Continuing with next batch..."
-                logInfo("Completed batch of 10, continuing...", category: "batch")
+                AppLog.info("Completed batch of 10, continuing...", category: .batch)
                 try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 second pause
             }
         }
@@ -290,7 +290,7 @@ class BatchImageExtractorViewModel: ObservableObject {
         // Extraction complete
         currentStatus = "Complete! Extracted \(successCount) recipes."
         isExtracting = false
-        logInfo("Batch extraction complete: \(successCount) success, \(failureCount) failures", category: "batch")
+        AppLog.info("Batch extraction complete: \(successCount) success, \(failureCount) failures", category: .batch)
     }
     
     private func askToCrop() async -> Bool {
@@ -313,7 +313,7 @@ class BatchImageExtractorViewModel: ObservableObject {
                 )
             }
             
-            logInfo("Calling API for image \(imageIndex + 1), size: \(imageData.count) bytes (~\(imageData.count / 1024)KB)", category: "batch")
+            AppLog.info("Calling API for image \(imageIndex + 1), size: \(imageData.count) bytes (~\(imageData.count / 1024)KB)", category: .batch)
             
             // Extract recipe using Claude API
             let recipe = try await apiClient.extractRecipe(
@@ -327,16 +327,16 @@ class BatchImageExtractorViewModel: ObservableObject {
             await saveRecipe(recipe, withImage: image)
             
             successCount += 1
-            logInfo("Successfully extracted recipe: \(String(describing: recipe.title))", category: "batch")
+            AppLog.info("Successfully extracted recipe: \(String(describing: recipe.title))", category: .batch)
             
         } catch let error as ClaudeAPIError {
-            logError("API error for image \(imageIndex + 1): \(error.errorDescription ?? "unknown")", category: "batch")
+            AppLog.error("API error for image \(imageIndex + 1): \(error.errorDescription ?? "unknown")", category: .batch)
             errorLog.append((imageIndex: imageIndex, error: error.errorDescription ?? "API error"))
             failureCount += 1
             currentRecipe = nil
             
         } catch {
-            logError("Unexpected error for image \(imageIndex + 1): \(error.localizedDescription)", category: "batch")
+            AppLog.error("Unexpected error for image \(imageIndex + 1): \(error.localizedDescription)", category: .batch)
             errorLog.append((imageIndex: imageIndex, error: error.localizedDescription))
             failureCount += 1
             currentRecipe = nil
@@ -344,12 +344,12 @@ class BatchImageExtractorViewModel: ObservableObject {
     }
     
     private func processImageBatch() async {
-        logInfo("Processing batch of \(currentBatch.count) UIImages from Files/iCloud Drive", category: "batch")
+        AppLog.info("Processing batch of \(currentBatch.count) UIImages from Files/iCloud Drive", category: .batch)
         
         for (index, image) in currentBatch.enumerated() {
             // Check if stopped
             guard isExtracting else {
-                logInfo("Extraction stopped", category: "batch")
+                AppLog.info("Extraction stopped", category: .batch)
                 break
             }
             
@@ -359,7 +359,7 @@ class BatchImageExtractorViewModel: ObservableObject {
             }
             
             currentStatus = "Processing image \(index + 1) of \(totalToExtract)..."
-            logInfo("Processing UIImage \(index + 1) of \(totalToExtract)", category: "batch")
+            AppLog.info("Processing UIImage \(index + 1) of \(totalToExtract)", category: .batch)
             
             currentImage = image
             
@@ -371,9 +371,9 @@ class BatchImageExtractorViewModel: ObservableObject {
                 if shouldCropThisImage {
                     if let croppedImage = await requestCrop(for: image) {
                         imageToProcess = croppedImage
-                        logInfo("Image cropped successfully for batch extraction", category: "batch")
+                        AppLog.info("Image cropped successfully for batch extraction", category: .batch)
                     } else {
-                        logInfo("Crop cancelled, using original image", category: "batch")
+                        AppLog.info("Crop cancelled, using original image", category: .batch)
                     }
                 }
             }
@@ -389,7 +389,7 @@ class BatchImageExtractorViewModel: ObservableObject {
             // Process in batches of 10
             if currentProgress % 10 == 0 && currentProgress < totalToExtract {
                 currentStatus = "Completed \(currentProgress) images. Continuing with next batch..."
-                logInfo("Completed batch of 10, continuing...", category: "batch")
+                AppLog.info("Completed batch of 10, continuing...", category: .batch)
                 try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 second pause
             }
         }
@@ -398,11 +398,11 @@ class BatchImageExtractorViewModel: ObservableObject {
         currentStatus = "Complete! Extracted \(successCount) recipes."
         isExtracting = false
         currentBatch = []
-        logInfo("Batch extraction from UIImages complete: \(successCount) success, \(failureCount) failures", category: "batch")
+        AppLog.info("Batch extraction from UIImages complete: \(successCount) success, \(failureCount) failures", category: .batch)
     }
     
     private func saveRecipe(_ recipeX: RecipeX, withImage image: UIImage) async {
-        logInfo("Saving recipe: \(String(describing: recipeX.title))", category: "batch")
+        AppLog.info("Saving recipe: \(String(describing: recipeX.title))", category: .batch)
 //
 //        // Convert to SwiftData RecipeX (NEW unified model)
 //        let recipeX = RecipeX(from: recipeModel)
@@ -436,16 +436,16 @@ class BatchImageExtractorViewModel: ObservableObject {
         // Save context
         do {
             try modelContext.save()
-            logInfo("✅ Recipe saved to database as RecipeX (CloudKit-synced, auto-sharing enabled)", category: "batch")
+            AppLog.info("✅ Recipe saved to database as RecipeX (CloudKit-synced, auto-sharing enabled)", category: .batch)
         } catch {
-            logError("Failed to save recipe to database: \(error)", category: "batch")
+            AppLog.error("Failed to save recipe to database: \(error)", category: .batch)
         }
     }
     
     // MARK: - Background Extraction Methods
     
     private func startBackgroundExtractionFromImages(images: [UIImage]) {
-        logInfo("Starting background extraction from \(images.count) images", category: "batch")
+        AppLog.info("Starting background extraction from \(images.count) images", category: .batch)
         
         // Start a task to process images and feed them to the background manager
         extractionTask = Task {
@@ -461,7 +461,7 @@ class BatchImageExtractorViewModel: ObservableObject {
     }
     
     private func startBackgroundExtractionFromAssets(assets: [PHAsset], photoManager: PhotoLibraryManager) {
-        logInfo("Starting background extraction from \(assets.count) assets", category: "batch")
+        AppLog.info("Starting background extraction from \(assets.count) assets", category: .batch)
         
         // Start a task to load images from assets and feed them to the background manager
         extractionTask = Task {
@@ -471,7 +471,7 @@ class BatchImageExtractorViewModel: ObservableObject {
                 if let image = await photoManager.loadImage(for: asset, targetSize: PHImageManagerMaximumSize) {
                     processedImages.append((image: image, index: index))
                 } else {
-                    logError("Failed to load image from asset at index \(index)", category: "batch")
+                    AppLog.error("Failed to load image from asset at index \(index)", category: .batch)
                 }
             }
             
@@ -481,7 +481,7 @@ class BatchImageExtractorViewModel: ObservableObject {
     }
     
     private func startBackgroundExtractionWithProcessedImages(_ processedImages: [(image: UIImage, index: Int)]) async {
-        logInfo("Handing off \(processedImages.count) images to background extraction", category: "batch")
+        AppLog.info("Handing off \(processedImages.count) images to background extraction", category: .batch)
         
         // Start background task to allow continuation when app is backgrounded
         // This MUST be called on main thread since it's a UI operation
@@ -504,7 +504,7 @@ class BatchImageExtractorViewModel: ObservableObject {
         for (image, index) in processedImages {
             // Check if stopped
             guard isExtracting else {
-                logInfo("Background extraction stopped", category: "batch")
+                AppLog.info("Background extraction stopped", category: .batch)
                 await MainActor.run {
                     backgroundManager.endBackgroundTask()
                 }
@@ -539,7 +539,7 @@ class BatchImageExtractorViewModel: ObservableObject {
             
             // Log progress
             if currentProgress % 5 == 0 || currentProgress == totalToExtract {
-                logInfo("Background extraction progress: \(currentProgress)/\(totalToExtract)", category: "batch")
+                AppLog.info("Background extraction progress: \(currentProgress)/\(totalToExtract)", category: .batch)
             }
         }
         
@@ -554,7 +554,7 @@ class BatchImageExtractorViewModel: ObservableObject {
         }
         backgroundManager.clearQueue()
         
-        logInfo("Background extraction complete: \(successCount) success, \(failureCount) failures", category: "batch")
+        AppLog.info("Background extraction complete: \(successCount) success, \(failureCount) failures", category: .batch)
     }
     
     /// Returns whether background extraction is currently active
@@ -567,7 +567,7 @@ class BatchImageExtractorViewModel: ObservableObject {
     /// Prepares for view dismissal during background extraction
     func prepareForBackgroundDismissal() {
         if isUsingBackgroundExtraction && isExtracting {
-            logInfo("View dismissing, extraction will continue in background", category: "batch")
+            AppLog.info("View dismissing, extraction will continue in background", category: .batch)
             // Extraction will continue in the background
         }
     }

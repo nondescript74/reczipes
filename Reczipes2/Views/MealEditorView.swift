@@ -200,7 +200,7 @@ struct MealEditorView: View {
             try modelContext.save()
             dismiss()
         } catch {
-            logError("Failed to save meal: \(error)", category: "storage")
+            AppLog.error("Failed to save meal: \(error)", category: .storage)
         }
     }
 }

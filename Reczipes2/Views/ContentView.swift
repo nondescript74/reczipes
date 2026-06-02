@@ -88,9 +88,9 @@ struct ContentView: View {
     
     /// Load and cache all recipes from SwiftData (both owned and cached shared)
     private func refreshRecipeCache() {
-        logDebug("🔄 Refreshing recipe cache", category: "recipe")
-        logDebug("Saved recipes count: \(savedRecipes.count)", category: "recipe")
-        logDebug("Cached shared recipes count: \(cachedSharedRecipes.count)", category: "recipe")
+        AppLog.debug("🔄 Refreshing recipe cache", category: .recipe)
+        AppLog.debug("Saved recipes count: \(savedRecipes.count)", category: .recipe)
+        AppLog.debug("Cached shared recipes count: \(cachedSharedRecipes.count)", category: .recipe)
         
         // Combine both types of recipes into a single array
         var allRecipes: [any RecipeDisplayProtocol] = []
@@ -101,7 +101,7 @@ struct ContentView: View {
         // Add cached shared recipes (CachedSharedRecipe)
         allRecipes.append(contentsOf: cachedSharedRecipes as [any RecipeDisplayProtocol])
         
-        logDebug("Total available recipes count: \(allRecipes.count)", category: "recipe")
+        AppLog.debug("Total available recipes count: \(allRecipes.count)", category: .recipe)
         
         // Update cache
         cachedAllRecipes = allRecipes
@@ -226,7 +226,7 @@ struct ContentView: View {
     private func shareRecipe(_ recipe: any RecipeDisplayProtocol) async {
         // Only allow sharing of owned recipes (RecipeX), not cached shared recipes
         guard let recipeX = recipe as? RecipeX else {
-            logWarning("Cannot share cached community recipes", category: "sharing")
+            AppLog.warning("Cannot share cached community recipes", category: .sharing)
             return
         }
         
@@ -236,10 +236,10 @@ struct ContentView: View {
                 modelContext: modelContext
             )
             // Show success message
-            logInfo("Successfully shared recipe: \(recipe.displayTitle)", category: "sharing")
+            AppLog.info("Successfully shared recipe: \(recipe.displayTitle)", category: .sharing)
         } catch {
             // Show error
-            logError("Failed to share recipe: \(error)", category: "sharing")
+            AppLog.error("Failed to share recipe: \(error)", category: .sharing)
         }
     }
     
@@ -253,21 +253,21 @@ struct ContentView: View {
         if let lastSync = lastCommunitySync {
             let timeSinceLastSync = Date().timeIntervalSince(lastSync)
             if timeSinceLastSync < syncInterval {
-                logDebug("Skipping sync - last synced \(Int(timeSinceLastSync))s ago", category: "sharing")
+                AppLog.debug("Skipping sync - last synced \(Int(timeSinceLastSync))s ago", category: .sharing)
                 return
             }
         }
         
         // Prevent concurrent syncs
         guard !isSyncingCommunityRecipes else {
-            logDebug("Sync already in progress, skipping", category: "sharing")
+            AppLog.debug("Sync already in progress, skipping", category: .sharing)
             return
         }
         
         isSyncingCommunityRecipes = true
         syncProgress = "Connecting to CloudKit..."
         
-        logInfo("🔄 Auto-syncing ALL community recipes (paginated)...", category: "sharing")
+        AppLog.info("🔄 Auto-syncing ALL community recipes (paginated)...", category: .sharing)
         
         do {
             // Use a high limit to fetch all recipes - CloudKit will paginate automatically
@@ -283,7 +283,7 @@ struct ContentView: View {
             lastCommunitySync = Date()
             
             syncProgress = "Sync complete!"
-            logInfo("✅ Auto-sync completed successfully (all recipes synced)", category: "sharing")
+            AppLog.info("✅ Auto-sync completed successfully (all recipes synced)", category: .sharing)
             
             // Clear progress after delay
             try? await Task.sleep(nanoseconds: 1_000_000_000)
@@ -291,7 +291,7 @@ struct ContentView: View {
         } catch {
             // Silently fail - manual sync still available
             syncProgress = "Sync failed"
-            logError("Auto-sync failed: \(error)", category: "sharing")
+            AppLog.error("Auto-sync failed: \(error)", category: .sharing)
             
             // Clear error after delay
             try? await Task.sleep(nanoseconds: 2_000_000_000)
@@ -367,7 +367,7 @@ struct ContentView: View {
 
         // Skip if nothing has changed since the last clean scan
         if DuplicateScanTracker.shouldSkipScan(currentCount: allRecipes.count) {
-            logInfo("⏭️ Skipping launch duplicate scan — recipe count unchanged (\(allRecipes.count))", category: "dedup")
+            AppLog.info("⏭️ Skipping launch duplicate scan — recipe count unchanged (\(allRecipes.count))", category: .cloudKit)
             return
         }
 
@@ -378,14 +378,14 @@ struct ContentView: View {
 
         guard !clusters.isEmpty else {
             DuplicateScanTracker.recordCleanScan(recipeCount: allRecipes.count)
-            logInfo("✅ Launch duplicate scan clean — will skip until count changes", category: "dedup")
+            AppLog.info("✅ Launch duplicate scan clean — will skip until count changes", category: .cloudKit)
             return
         }
 
         var deletedCount = 0
         for cluster in clusters {
             for dupe in cluster.duplicatesToDelete {
-                logInfo("🗑️ Auto-removing duplicate: '\(dupe.safeTitle)' (ID: \(String(describing: dupe.id)))", category: "dedup")
+                AppLog.info("🗑️ Auto-removing duplicate: '\(dupe.safeTitle)' (ID: \(String(describing: dupe.id)))", category: .cloudKit)
                 modelContext.delete(dupe)
                 deletedCount += 1
             }
@@ -394,11 +394,11 @@ struct ContentView: View {
         if deletedCount > 0 {
             do {
                 try modelContext.save()
-                logInfo("✅ Auto-cleaned \(deletedCount) duplicate recipe(s) on launch", category: "dedup")
+                AppLog.info("✅ Auto-cleaned \(deletedCount) duplicate recipe(s) on launch", category: .cloudKit)
                 DuplicateScanTracker.recordCleanScan(recipeCount: allRecipes.count - deletedCount)
                 refreshRecipeCache()
             } catch {
-                logError("❌ Failed to auto-clean duplicates: \(error)", category: "dedup")
+                AppLog.error("❌ Failed to auto-clean duplicates: \(error)", category: .cloudKit)
             }
         }
     }
@@ -991,9 +991,9 @@ struct ContentView: View {
     private func importCachedRecipe(_ cachedRecipe: CachedSharedRecipe) {
         do {
             try CloudKitSharingService.shared.importCachedRecipe(cachedRecipe, modelContext: modelContext)
-            logInfo("Imported cached recipe: \(cachedRecipe.title)", category: "sharing")
+            AppLog.info("Imported cached recipe: \(cachedRecipe.title)", category: .sharing)
         } catch {
-            logError("Failed to import cached recipe: \(error)", category: "sharing")
+            AppLog.error("Failed to import cached recipe: \(error)", category: .sharing)
         }
     }
     
@@ -1003,18 +1003,18 @@ struct ContentView: View {
             if recipeIDs.contains(recipe.safeID) {
                 // Remove from book
                 book.removeRecipe(recipe.safeID)
-                logInfo("Removed '\(recipe.safeTitle)' from book '\(book.name ?? "Unknown")'", category: "books")
+                AppLog.info("Removed '\(recipe.safeTitle)' from book '\(book.name ?? "Unknown")'", category: .recipe)
             } else {
                 // Add to book
                 book.addRecipe(recipe.safeID)
-                logInfo("Added '\(recipe.safeTitle)' to book '\(book.name ?? "Unknown")'", category: "books")
+                AppLog.info("Added '\(recipe.safeTitle)' to book '\(book.name ?? "Unknown")'", category: .recipe)
             }
             
             // Save the context
             do {
                 try modelContext.save()
             } catch {
-                logError("Failed to update book membership: \(error)", category: "books")
+                AppLog.error("Failed to update book membership: \(error)", category: .recipe)
             }
         }
     }
@@ -1026,7 +1026,7 @@ struct ContentView: View {
             if let recipe = availableRecipes.first(where: { $0.displayID == recipeId }) {
                 selectedRecipe = recipe
                 selectedRecipeID = recipeId
-                logInfo("Restored selected recipe: \(recipe.displayTitle)", category: "state")
+                AppLog.info("Restored selected recipe: \(recipe.displayTitle)", category: .state)
             } else {
                 // Recipe no longer exists, clear the selection
                 appState.selectedRecipeId = nil
@@ -1037,21 +1037,21 @@ struct ContentView: View {
     
     private func deleteRecipe(_ recipe: RecipeX) {
         withAnimation {
-            logInfo("Deleting recipe: \(recipe.safeTitle) (ID: \(recipe.safeID))", category: "recipe")
+            AppLog.info("Deleting recipe: \(recipe.safeTitle) (ID: \(recipe.safeID))", category: .recipe)
             
             // Delete associated image file if it exists
             if let imageName = recipe.imageName {
                 let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
                 let fileURL = documentsPath.appendingPathComponent(imageName)
                 try? FileManager.default.removeItem(at: fileURL)
-                logInfo("Deleted image file: \(imageName)", category: "storage")
+                AppLog.info("Deleted image file: \(imageName)", category: .storage)
             }
             
             // Delete any RecipeImageAssignments for this recipe
             let assignmentsToDelete = imageAssignments.filter { $0.recipeID == recipe.safeID }
             for assignment in assignmentsToDelete {
                 modelContext.delete(assignment)
-                logDebug("Deleted image assignment for recipe", category: "storage")
+                AppLog.debug("Deleted image assignment for recipe", category: .storage)
             }
             
             // Delete the recipe itself
@@ -1060,9 +1060,9 @@ struct ContentView: View {
             // Save the context to persist the deletion
             do {
                 try modelContext.save()
-                logInfo("Recipe deleted and changes saved", category: "recipe")
+                AppLog.info("Recipe deleted and changes saved", category: .recipe)
             } catch {
-                logError("Failed to save deletion: \(error)", category: "storage")
+                AppLog.error("Failed to save deletion: \(error)", category: .storage)
             }
         }
     }

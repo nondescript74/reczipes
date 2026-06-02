@@ -26,12 +26,12 @@ enum ImageCompressionUtility {
     ///   - maintainAspectRatio: Whether to maintain aspect ratio when resizing (default: true)
     /// - Returns: Compressed image data, or nil if compression fails
     static func compressImage(_ image: UIImage, targetSize: Int = targetMaxSize, maintainAspectRatio: Bool = true) -> Data? {
-        logInfo("Starting compression for image size: \(image.size), scale: \(image.scale), target: \(formatSize(targetSize))", category: "image-compression")
+        AppLog.info("Starting compression for image size: \(image.size), scale: \(image.scale), target: \(formatSize(targetSize))", category: .image)
         
         // First, resize if image is too large
         let resizedImage = resizeIfNeeded(image, maxDimension: maxDimension)
         if resizedImage.size != image.size {
-            logInfo("Resized image from \(image.size) to \(resizedImage.size)", category: "image-compression")
+            AppLog.info("Resized image from \(image.size) to \(resizedImage.size)", category: .image)
         }
 
         // Try progressive compression with quality reduction
@@ -39,13 +39,13 @@ enum ImageCompressionUtility {
         var imageData = resizedImage.jpegData(compressionQuality: compressionQuality)
         
         guard let initialData = imageData else {
-            logError("Failed to create initial JPEG data from image", category: "image-compression")
+            AppLog.error("Failed to create initial JPEG data from image", category: .image)
             return nil
         }
 
         // If already under target, return it
         if initialData.count <= targetSize {
-            logInfo("Image fits target at quality \(compressionQuality): \(formatSize(initialData.count))", category: "image-compression")
+            AppLog.info("Image fits target at quality \(compressionQuality): \(formatSize(initialData.count))", category: .image)
             return initialData
         }
 
@@ -56,14 +56,14 @@ enum ImageCompressionUtility {
             if let data = resizedImage.jpegData(compressionQuality: quality) {
                 imageData = data
                 if data.count <= targetSize {
-                    logInfo("Compressed to \(formatSize(data.count)) at quality \(quality)", category: "image-compression")
+                    AppLog.info("Compressed to \(formatSize(data.count)) at quality \(quality)", category: .image)
                     return data
                 }
             }
         }
 
         // If still too large, progressively resize
-        logInfo("Quality reduction insufficient, starting progressive resize", category: "image-compression")
+        AppLog.info("Quality reduction insufficient, starting progressive resize", category: .image)
         var scaleFactor: CGFloat = 0.9
         var currentImage = resizedImage
 
@@ -78,7 +78,7 @@ enum ImageCompressionUtility {
                 for quality in [0.75, 0.70, 0.65, 0.60, 0.55, 0.50] {
                     if let data = currentImage.jpegData(compressionQuality: quality) {
                         if data.count <= targetSize {
-                            logInfo("Compressed to \(formatSize(data.count)) at scale \(scaleFactor) and quality \(quality)", category: "image-compression")
+                            AppLog.info("Compressed to \(formatSize(data.count)) at scale \(scaleFactor) and quality \(quality)", category: .image)
                             return data
                         }
                     }
@@ -91,9 +91,9 @@ enum ImageCompressionUtility {
         // Last resort: use minimum quality on current image
         let finalData = currentImage.jpegData(compressionQuality: minQuality)
         if let data = finalData {
-            logWarning("Using last resort compression: \(formatSize(data.count)) (may exceed target)", category: "image-compression")
+            AppLog.warning("Using last resort compression: \(formatSize(data.count)) (may exceed target)", category: .image)
         } else {
-            logError("Last resort compression failed to create JPEG data", category: "image-compression")
+            AppLog.error("Last resort compression failed to create JPEG data", category: .image)
         }
         return finalData
     }

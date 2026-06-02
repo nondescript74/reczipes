@@ -61,9 +61,9 @@ class RecipeBookExportService {
                 // The zipURL is a temporary .zip file created by the system
                 // Copy it to our desired destination
                 try FileManager.default.copyItem(at: zipURL, to: destinationURL)
-                logDebug("Created ZIP archive at: \(destinationURL.lastPathComponent)", category: "book-export")
+                AppLog.debug("Created ZIP archive at: \(destinationURL.lastPathComponent)", category: .backup)
             } catch {
-                logError("Failed to copy zip archive: \(error)", category: "book-export")
+                AppLog.error("Failed to copy zip archive: \(error)", category: .backup)
             }
         }
         
@@ -76,7 +76,7 @@ class RecipeBookExportService {
     static func extractZipArchive(from sourceURL: URL, to destinationURL: URL) throws {
         let fileManager = FileManager.default
         
-        logDebug("Starting ZIP extraction from: \(sourceURL.lastPathComponent)", category: "book-import")
+        AppLog.debug("Starting ZIP extraction from: \(sourceURL.lastPathComponent)", category: .batch)
         
         // Create destination directory
         try fileManager.createDirectory(at: destinationURL, withIntermediateDirectories: true)
@@ -99,10 +99,10 @@ class RecipeBookExportService {
                         try fileManager.copyItem(at: itemURL, to: destItemURL)
                     }
                     extractionSucceeded = true
-                    logDebug("Successfully extracted using NSFileCoordinator", category: "book-import")
+                    AppLog.debug("Successfully extracted using NSFileCoordinator", category: .batch)
                     return
                 } catch {
-                    logDebug("NSFileCoordinator extraction failed: \(error)", category: "book-import")
+                    AppLog.debug("NSFileCoordinator extraction failed: \(error)", category: .batch)
                 }
             }
         }
@@ -112,18 +112,18 @@ class RecipeBookExportService {
         }
         
         // Attempt 2: Manual ZIP parsing
-        logDebug("Attempting manual ZIP extraction", category: "book-import")
+        AppLog.debug("Attempting manual ZIP extraction", category: .batch)
         
         do {
             let zipData = try Data(contentsOf: sourceURL)
-            logDebug("ZIP file size: \(zipData.count) bytes", category: "book-import")
+            AppLog.debug("ZIP file size: \(zipData.count) bytes", category: .batch)
             
             // Parse and extract using our custom parser
             try extractZipData(zipData, to: destinationURL)
-            logDebug("Successfully extracted using manual parser", category: "book-import")
+            AppLog.debug("Successfully extracted using manual parser", category: .batch)
             
         } catch {
-            logError("Manual ZIP extraction failed: \(error)", category: "book-import")
+            AppLog.error("Manual ZIP extraction failed: \(error)", category: .batch)
             throw NSError(domain: "RecipeBookExport", code: -7, userInfo: [
                 NSLocalizedDescriptionKey: "Failed to extract ZIP archive: \(error.localizedDescription)"
             ])
@@ -136,12 +136,12 @@ class RecipeBookExportService {
         var filesExtracted = 0
         var dirsCreated = 0
         
-        logDebug("Starting manual ZIP parsing, size: \(data.count) bytes", category: "book-import")
+        AppLog.debug("Starting manual ZIP parsing, size: \(data.count) bytes", category: .batch)
         
         // First, find and parse the central directory to get accurate file information
         let centralDir = try parseCentralDirectory(data)
         
-        logDebug("Found \(centralDir.count) entries in central directory", category: "book-import")
+        AppLog.debug("Found \(centralDir.count) entries in central directory", category: .batch)
         
         // Now extract files using information from central directory
         for entry in centralDir {
@@ -150,7 +150,7 @@ class RecipeBookExportService {
                 let dirURL = destinationURL.appendingPathComponent(entry.fileName)
                 try fileManager.createDirectory(at: dirURL, withIntermediateDirectories: true)
                 dirsCreated += 1
-                logDebug("Created directory: \(entry.fileName)", category: "book-import")
+                AppLog.debug("Created directory: \(entry.fileName)", category: .batch)
             } else {
                 // Extract file
                 let fileURL = destinationURL.appendingPathComponent(entry.fileName)
@@ -173,11 +173,11 @@ class RecipeBookExportService {
                 if entry.compressionMethod == 0 {
                     // No compression
                     fileData = compressedData
-                    logDebug("Extracted (uncompressed): \(entry.fileName) (\(fileData.count) bytes)", category: "book-import")
+                    AppLog.debug("Extracted (uncompressed): \(entry.fileName) (\(fileData.count) bytes)", category: .batch)
                 } else if entry.compressionMethod == 8 {
                     // DEFLATE compression
                     fileData = try decompressDeflate(compressedData, uncompressedSize: entry.uncompressedSize)
-                    logDebug("Extracted (DEFLATE): \(entry.fileName) (\(entry.compressedSize) -> \(fileData.count) bytes)", category: "book-import")
+                    AppLog.debug("Extracted (DEFLATE): \(entry.fileName) (\(entry.compressedSize) -> \(fileData.count) bytes)", category: .batch)
                 } else {
                     throw NSError(domain: "RecipeBookExport", code: -3, userInfo: [
                         NSLocalizedDescriptionKey: "Unsupported compression method: \(entry.compressionMethod)"
@@ -190,7 +190,7 @@ class RecipeBookExportService {
             }
         }
         
-        logInfo("ZIP extraction complete: \(filesExtracted) files, \(dirsCreated) directories", category: "book-import")
+        AppLog.info("ZIP extraction complete: \(filesExtracted) files, \(dirsCreated) directories", category: .batch)
         
         if filesExtracted == 0 && dirsCreated == 0 {
             throw NSError(domain: "RecipeBookExport", code: -5, userInfo: [
@@ -229,13 +229,13 @@ class RecipeBookExportService {
         }
         
         guard eocdOffset >= 0 else {
-            logError("End of Central Directory not found", category: "book-import")
+            AppLog.error("End of Central Directory not found", category: .batch)
             throw NSError(domain: "RecipeBookExport", code: -6, userInfo: [
                 NSLocalizedDescriptionKey: "Invalid ZIP file: End of Central Directory not found"
             ])
         }
         
-        logDebug("Found EOCD at offset \(eocdOffset)", category: "book-import")
+        AppLog.debug("Found EOCD at offset \(eocdOffset)", category: .batch)
         
         var offset = eocdOffset
         offset += 4 // Skip signature
@@ -256,7 +256,7 @@ class RecipeBookExportService {
             buffer.loadUnaligned(fromByteOffset: offset, as: UInt32.self)
         })
         
-        logDebug("Central directory at offset \(centralDirOffset), \(totalEntries) entries", category: "book-import")
+        AppLog.debug("Central directory at offset \(centralDirOffset), \(totalEntries) entries", category: .batch)
         
         // Parse central directory entries
         offset = centralDirOffset
@@ -268,7 +268,7 @@ class RecipeBookExportService {
             }
             
             guard sig == 0x02014b50 else {
-                logError("Invalid central directory entry signature at \(offset)", category: "book-import")
+                AppLog.error("Invalid central directory entry signature at \(offset)", category: .batch)
                 throw NSError(domain: "RecipeBookExport", code: -6, userInfo: [
                     NSLocalizedDescriptionKey: "Corrupted ZIP central directory"
                 ])
@@ -449,7 +449,7 @@ class RecipeBookExportService {
                     // For simplicity, use zeros (won't validate but decompression should work)
                     zlibData.append(contentsOf: [0, 0, 0, 0])
                     
-                    logDebug("Attempting raw DEFLATE decompression with zlib wrapper", category: "book-import")
+                    AppLog.debug("Attempting raw DEFLATE decompression with zlib wrapper", category: .batch)
                     
                     bytesWritten = zlibData.withUnsafeBytes { (zlibBuffer: UnsafeRawBufferPointer) -> Int in
                         guard let zlibPtr = zlibBuffer.baseAddress else { return 0 }
@@ -470,7 +470,7 @@ class RecipeBookExportService {
         }
         
         guard result > 0 else {
-            logError("Decompression failed: result=\(result), compressed=\(data.count) bytes, expected=\(uncompressedSize) bytes", category: "book-import")
+            AppLog.error("Decompression failed: result=\(result), compressed=\(data.count) bytes, expected=\(uncompressedSize) bytes", category: .batch)
             throw NSError(domain: "RecipeBookExport", code: -4, userInfo: [
                 NSLocalizedDescriptionKey: "Could not decompress the file. The archive may be corrupted or use an unsupported compression format."
             ])
@@ -479,7 +479,7 @@ class RecipeBookExportService {
         // Trim to actual decompressed size
         decompressed.count = result
         
-        logDebug("Successfully decompressed \(data.count) -> \(result) bytes", category: "book-import")
+        AppLog.debug("Successfully decompressed \(data.count) -> \(result) bytes", category: .batch)
         
         return decompressed
     }
@@ -497,7 +497,7 @@ class RecipeBookExportService {
         recipes: [RecipeX],
         includeImages: Bool = true
     ) async throws -> URL {
-        logInfo("Starting export of book: \(String(describing: book.name))", category: "book-export")
+        AppLog.info("Starting export of book: \(String(describing: book.name))", category: .backup)
         
         // Create temporary directory for export
         let tempDir = FileManager.default.temporaryDirectory
@@ -638,7 +638,7 @@ class RecipeBookExportService {
         
         try createZipArchive(from: tempDir, to: outputURL)
         
-        logInfo("Successfully exported book to: \(outputURL.lastPathComponent)", category: "book-export")
+        AppLog.info("Successfully exported book to: \(outputURL.lastPathComponent)", category: .backup)
         
         return outputURL
     }
@@ -656,7 +656,7 @@ class RecipeBookExportService {
         modelContext: ModelContext,
         replaceExisting: Bool = false
     ) async throws -> Book {
-        logInfo("Starting import from: \(url.lastPathComponent)", category: "book-import")
+        AppLog.info("Starting import from: \(url.lastPathComponent)", category: .batch)
         
         // Create temporary extraction directory
         let tempDir = FileManager.default.temporaryDirectory
@@ -683,7 +683,7 @@ class RecipeBookExportService {
         
         let exportPackage = try decoder.decode(RecipeBookExportPackage.self, from: jsonData)
         
-        logInfo("Importing book: \(exportPackage.book.name) with \(exportPackage.recipes.count) recipes", category: "book-import")
+        AppLog.info("Importing book: \(exportPackage.book.name) with \(exportPackage.recipes.count) recipes", category: .batch)
         
         // Check for existing book
         let bookID = exportPackage.book.id
@@ -697,11 +697,11 @@ class RecipeBookExportService {
         
         if existingBooks.first != nil, !replaceExisting {
             // Generate new ID to avoid conflicts
-            logInfo("Book already exists, creating as new copy", category: "book-import")
+            AppLog.info("Book already exists, creating as new copy", category: .batch)
             return try await importAsNewBook(exportPackage, tempDir: tempDir, modelContext: modelContext)
         } else if let existingBook = existingBooks.first, replaceExisting {
             // Replace existing book
-            logInfo("Replacing existing book", category: "book-import")
+            AppLog.info("Replacing existing book", category: .batch)
             modelContext.delete(existingBook)
         }
         
@@ -718,7 +718,7 @@ class RecipeBookExportService {
                     // Check if this is the book cover image
                     if entry.type == .bookCover && entry.associatedID == exportPackage.book.id {
                         bookCoverImageData = imageData
-                        logDebug("Loaded book cover image data (\(imageData.count / 1024)KB)", category: "book-import")
+                        AppLog.debug("Loaded book cover image data (\(imageData.count / 1024)KB)", category: .batch)
                     }
                     
                     // Also copy to Documents for legacy support (optional)
@@ -728,7 +728,7 @@ class RecipeBookExportService {
                     }
                 }
             } else {
-                logWarning("Image not found during import: \(entry.fileName)", category: "book-import")
+                AppLog.warning("Image not found during import: \(entry.fileName)", category: .batch)
             }
         }
         
@@ -754,7 +754,7 @@ class RecipeBookExportService {
         
         try modelContext.save()
         
-        logInfo("Successfully imported book: \(newBook.name ?? "Untitled")", category: "book-import")
+        AppLog.info("Successfully imported book: \(newBook.name ?? "Untitled")", category: .batch)
         
         return newBook
     }
@@ -807,14 +807,14 @@ class RecipeBookExportService {
                     if entry.type == .bookCover {
                         newCoverImageName = newFileName
                         newCoverImageData = imageData
-                        logDebug("Loaded book cover image data (\(imageData.count / 1024)KB) for new book", category: "book-import")
+                        AppLog.debug("Loaded book cover image data (\(imageData.count / 1024)KB) for new book", category: .batch)
                     }
                     
                     // Copy file for legacy support (optional)
                     try? FileManager.default.copyItem(at: sourceURL, to: destURL)
                 }
             } else {
-                logWarning("Image not found during import: \(entry.fileName)", category: "book-import")
+                AppLog.warning("Image not found during import: \(entry.fileName)", category: .batch)
             }
         }
         
@@ -898,7 +898,7 @@ class RecipeBookExportService {
                 if FileManager.default.fileExists(atPath: imageURL.path),
                    let loadedImageData = try? Data(contentsOf: imageURL) {
                     imageData = loadedImageData
-                    logDebug("Loaded main image data (\(loadedImageData.count / 1024)KB) for recipe: \(recipeModel.title)", category: "book-import")
+                    AppLog.debug("Loaded main image data (\(loadedImageData.count / 1024)KB) for recipe: \(recipeModel.title)", category: .batch)
                 }
             }
             
@@ -917,7 +917,7 @@ class RecipeBookExportService {
                 if !additionalImages.isEmpty {
                     if let encoded = try? encoder.encode(additionalImages) {
                         additionalImagesData = encoded
-                        logDebug("Loaded \(additionalImages.count) additional images for recipe: \(recipeModel.title)", category: "book-import")
+                        AppLog.debug("Loaded \(additionalImages.count) additional images for recipe: \(recipeModel.title)", category: .batch)
                     }
                 }
             }
@@ -940,18 +940,18 @@ class RecipeBookExportService {
             )
             
             modelContext.insert(newRecipe)
-            logInfo("Imported new recipe: \(recipeModel.title)", category: "book-import")
+            AppLog.info("Imported new recipe: \(recipeModel.title)", category: .batch)
         } else if let existingRecipe = existingRecipes.first {
             // Update existing recipe if the imported one is newer
-            logInfo("Recipe already exists, checking for updates: \(recipeModel.title)", category: "book-import")
+            AppLog.info("Recipe already exists, checking for updates: \(recipeModel.title)", category: .batch)
             
             // Compare and potentially update the existing recipe
             let shouldUpdate = try updateRecipeIfNewer(existingRecipe, with: recipeModel)
             
             if shouldUpdate {
-                logInfo("Updated existing recipe: \(recipeModel.title)", category: "book-import")
+                AppLog.info("Updated existing recipe: \(recipeModel.title)", category: .batch)
             } else {
-                logInfo("Existing recipe is current, no update needed: \(recipeModel.title)", category: "book-import")
+                AppLog.info("Existing recipe is current, no update needed: \(recipeModel.title)", category: .batch)
             }
         }
     }
@@ -997,7 +997,7 @@ class RecipeBookExportService {
             if FileManager.default.fileExists(atPath: imageURL.path),
                let imageData = try? Data(contentsOf: imageURL) {
                 recipe.imageData = imageData
-                logDebug("Updated main image data (\(imageData.count / 1024)KB) for recipe: \(model.title)", category: "book-import")
+                AppLog.debug("Updated main image data (\(imageData.count / 1024)KB) for recipe: \(model.title)", category: .batch)
             }
         }
         
@@ -1018,7 +1018,7 @@ class RecipeBookExportService {
             if !additionalImagesData.isEmpty {
                 if let encoded = try? encoder.encode(additionalImagesData) {
                     recipe.additionalImagesData = encoded
-                    logDebug("Updated \(additionalImagesData.count) additional images for recipe: \(model.title)", category: "book-import")
+                    AppLog.debug("Updated \(additionalImagesData.count) additional images for recipe: \(model.title)", category: .batch)
                 }
             }
         }
@@ -1054,7 +1054,7 @@ class RecipeBookExportService {
         modelContext: ModelContext,
         replaceExisting: Bool = false
     ) async throws -> (books: [Book], summary: String) {
-        logInfo("Starting bulk import from: \(url.lastPathComponent)", category: "book-import")
+        AppLog.info("Starting bulk import from: \(url.lastPathComponent)", category: .batch)
         
         // Create temporary extraction directory
         let tempDir = FileManager.default.temporaryDirectory
@@ -1087,7 +1087,7 @@ class RecipeBookExportService {
             }
         }
         
-        logInfo("Found \(recipeBookFiles.count) recipe books to import", category: "book-import")
+        AppLog.info("Found \(recipeBookFiles.count) recipe books to import", category: .batch)
         
         // Import each book
         var importedBooks: [Book] = []
@@ -1104,12 +1104,12 @@ class RecipeBookExportService {
                 )
                 importedBooks.append(book)
                 successCount += 1
-                logInfo("Successfully imported: \(book.name ?? "Untitled")", category: "book-import")
+                AppLog.info("Successfully imported: \(book.name ?? "Untitled")", category: .batch)
             } catch {
                 errorCount += 1
                 let bookName = bookFile.deletingPathExtension().lastPathComponent
                 failedBooks.append(bookName)
-                logError("Failed to import \(bookFile.lastPathComponent): \(error)", category: "book-import")
+                AppLog.error("Failed to import \(bookFile.lastPathComponent): \(error)", category: .batch)
             }
         }
         
@@ -1135,7 +1135,7 @@ class RecipeBookExportService {
         
         let summary = summaryParts.joined(separator: "\n")
         
-        logInfo("Bulk import complete: \(summary)", category: "book-import")
+        AppLog.info("Bulk import complete: \(summary)", category: .batch)
         
         // Throw error if ALL imports failed
         if successCount == 0 {
@@ -1149,7 +1149,7 @@ class RecipeBookExportService {
     
     /// Detects whether a ZIP file contains multiple recipe books or a single book
     static func detectImportType(from url: URL) throws -> ImportType {
-        logDebug("Detecting import type for: \(url.lastPathComponent)", category: "book-import")
+        AppLog.debug("Detecting import type for: \(url.lastPathComponent)", category: .batch)
         
         // Create temporary extraction directory
         let tempDir = FileManager.default.temporaryDirectory
@@ -1163,9 +1163,9 @@ class RecipeBookExportService {
         // Extract ZIP
         do {
             try extractZipArchive(from: url, to: tempDir)
-            logDebug("ZIP extracted successfully for type detection", category: "book-import")
+            AppLog.debug("ZIP extracted successfully for type detection", category: .batch)
         } catch {
-            logError("Failed to extract ZIP for type detection: \(error)", category: "book-import")
+            AppLog.error("Failed to extract ZIP for type detection: \(error)", category: .batch)
             throw error
         }
         
@@ -1176,19 +1176,19 @@ class RecipeBookExportService {
                 includingPropertiesForKeys: [.isDirectoryKey],
                 options: []
             )
-            logDebug("Extracted \(contents.count) items:", category: "book-import")
+            AppLog.debug("Extracted \(contents.count) items:", category: .batch)
             for item in contents {
                 let isDir = (try? item.resourceValues(forKeys: [.isDirectoryKey]))?.isDirectory ?? false
-                logDebug("  - \(item.lastPathComponent) \(isDir ? "(dir)" : "")", category: "book-import")
+                AppLog.debug("  - \(item.lastPathComponent) \(isDir ? "(dir)" : "")", category: .batch)
             }
         } catch {
-            logWarning("Could not list extracted contents: \(error)", category: "book-import")
+            AppLog.warning("Could not list extracted contents: \(error)", category: .batch)
         }
         
         // Check for book.json in root (single book)
         let jsonURL = tempDir.appendingPathComponent("book.json")
         if FileManager.default.fileExists(atPath: jsonURL.path) {
-            logDebug("Found book.json - single book import", category: "book-import")
+            AppLog.debug("Found book.json - single book import", category: .batch)
             return .singleBook
         }
         
@@ -1196,11 +1196,11 @@ class RecipeBookExportService {
         let recipeBookFiles = try findRecipeBookFiles(in: tempDir)
         
         if recipeBookFiles.count > 0 {
-            logDebug("Found \(recipeBookFiles.count) .recipebook files - multiple book import", category: "book-import")
+            AppLog.debug("Found \(recipeBookFiles.count) .recipebook files - multiple book import", category: .batch)
             return .multipleBooks(count: recipeBookFiles.count)
         }
         
-        logWarning("No book.json or .recipebook files found in ZIP", category: "book-import")
+        AppLog.warning("No book.json or .recipebook files found in ZIP", category: .batch)
         return .unknown
     }
     
@@ -1220,7 +1220,7 @@ class RecipeBookExportService {
                 if let resourceValues = try? fileURL.resourceValues(forKeys: [.isRegularFileKey]),
                    resourceValues.isRegularFile == true {
                     recipeBookFiles.append(fileURL)
-                    logDebug("  Found .recipebook file: \(fileURL.lastPathComponent)", category: "book-import")
+                    AppLog.debug("  Found .recipebook file: \(fileURL.lastPathComponent)", category: .batch)
                 }
             }
         }
@@ -1233,7 +1233,7 @@ class RecipeBookExportService {
         // First check at the root
         let rootBookJSON = directory.appendingPathComponent("book.json")
         if FileManager.default.fileExists(atPath: rootBookJSON.path) {
-            logDebug("Found book.json at root", category: "book-import")
+            AppLog.debug("Found book.json at root", category: .batch)
             return rootBookJSON
         }
         
@@ -1248,7 +1248,7 @@ class RecipeBookExportService {
             if fileURL.lastPathComponent == "book.json" {
                 if let resourceValues = try? fileURL.resourceValues(forKeys: [.isRegularFileKey]),
                    resourceValues.isRegularFile == true {
-                    logDebug("Found book.json at: \(fileURL.path.replacingOccurrences(of: directory.path, with: ""))", category: "book-import")
+                    AppLog.debug("Found book.json at: \(fileURL.path.replacingOccurrences(of: directory.path, with: ""))", category: .batch)
                     return fileURL
                 }
             }

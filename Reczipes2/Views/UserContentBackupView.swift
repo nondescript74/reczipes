@@ -471,7 +471,7 @@ struct UserContentBackupView: View {
         do {
             availableRecipeBackups = try RecipeBackupManager.shared.listAvailableBackups()
         } catch {
-            logError("Failed to load available backups: \(error)", category: "backup")
+            AppLog.error("Failed to load available backups: \(error)", category: .backup)
             availableRecipeBackups = []
         }
         

@@ -55,14 +55,14 @@ class ClaudeAPIClient {
     /// Validate the API key by making a minimal test request to Anthropic
     /// - Returns: true if the API key is valid, false otherwise
     func validateAPIKey() async -> Bool {
-        logInfo("API KEY VALIDATION START", category: "network")
-        logDebug("API key configured: \(apiKey.isEmpty ? "NO" : "YES")", category: "network")
+        AppLog.info("API KEY VALIDATION START", category: .network)
+        AppLog.debug("API key configured: \(apiKey.isEmpty ? "NO" : "YES")", category: .network)
         
         let testPrompt = "Hi"
         
         // Try each model in the fallback list
         for (index, model) in validationModels.enumerated() {
-            logInfo("Attempt \(index + 1)/\(validationModels.count): Trying model '\(model)'", category: "network")
+            AppLog.info("Attempt \(index + 1)/\(validationModels.count): Trying model '\(model)'", category: .network)
             
             let requestBody: [String: Any] = [
                 "model": model,
@@ -76,7 +76,7 @@ class ClaudeAPIClient {
             ]
             
             guard let url = URL(string: baseURL) else {
-                logError("Invalid URL: \(baseURL)", category: "network")
+                AppLog.error("Invalid URL: \(baseURL)", category: .network)
                 continue
             }
             
@@ -88,62 +88,62 @@ class ClaudeAPIClient {
             
             do {
                 request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
-                logDebug("Request body size: \(request.httpBody?.count ?? 0) bytes", category: "network")
-                logInfo("Sending validation request to: \(baseURL)", category: "network")
+                AppLog.debug("Request body size: \(request.httpBody?.count ?? 0) bytes", category: .network)
+                AppLog.info("Sending validation request to: \(baseURL)", category: .network)
                 
                 let (data, response) = try await validationSession.data(for: request)
                 
                 guard let httpResponse = response as? HTTPURLResponse else {
-                    logError("Invalid response type (not HTTPURLResponse)", category: "network")
+                    AppLog.error("Invalid response type (not HTTPURLResponse)", category: .network)
                     continue
                 }
                 
-                logDebug("Response status code: \(httpResponse.statusCode)", category: "network")
-                logDebug("Response headers: \(httpResponse.allHeaderFields)", category: "network")
+                AppLog.debug("Response status code: \(httpResponse.statusCode)", category: .network)
+                AppLog.debug("Response headers: \(httpResponse.allHeaderFields)", category: .network)
                 
                 // Parse and log the response body for debugging
                 if let responseString = String(data: data, encoding: .utf8) {
-                    logDebug("Response body (\(responseString.count) chars): \(responseString)", category: "network")
+                    AppLog.debug("Response body (\(responseString.count) chars): \(responseString)", category: .network)
                     
                     // If it's an error response, parse it nicely
                     if httpResponse.statusCode != 200 {
                         let parsedError = parseAPIError(from: data)
-                        logDebug("Parsed error: \(parsedError)", category: "network")
+                        AppLog.debug("Parsed error: \(parsedError)", category: .network)
                     }
                 } else {
-                    logWarning("Unable to decode response body", category: "network")
+                    AppLog.warning("Unable to decode response body", category: .network)
                 }
                 
                 // Status code 200 means the API key is valid
                 if httpResponse.statusCode == 200 {
-                    logInfo("API key is VALID! Successfully validated with model: \(model)", category: "network")
-                    logInfo("API KEY VALIDATION SUCCESS", category: "network")
+                    AppLog.info("API key is VALID! Successfully validated with model: \(model)", category: .network)
+                    AppLog.info("API KEY VALIDATION SUCCESS", category: .network)
                     return true
                 } else if httpResponse.statusCode == 404 {
                     // Model not found, try next one
-                    logWarning("Model '\(model)' not found (404), trying next model", category: "network")
+                    AppLog.warning("Model '\(model)' not found (404), trying next model", category: .network)
                     continue
                 } else if httpResponse.statusCode == 401 {
                     // Unauthorized - bad API key
-                    logError("API key is INVALID (401 Unauthorized)", category: "network")
-                    logError("API KEY VALIDATION FAILED", category: "network")
+                    AppLog.error("API key is INVALID (401 Unauthorized)", category: .network)
+                    AppLog.error("API KEY VALIDATION FAILED", category: .network)
                     return false
                 } else {
                     // Other error, try next model
-                    logWarning("Validation failed with status \(httpResponse.statusCode), trying next model", category: "network")
+                    AppLog.warning("Validation failed with status \(httpResponse.statusCode), trying next model", category: .network)
                     continue
                 }
             } catch {
-                logError("Validation error with model '\(model)': \(error.localizedDescription)", category: "network")
-                logError("Full error: \(error)", category: "network")
+                AppLog.error("Validation error with model '\(model)': \(error.localizedDescription)", category: .network)
+                AppLog.error("Full error: \(error)", category: .network)
                 // Try next model
                 continue
             }
         }
         
         // If we got here, none of the models worked
-        logError("All validation attempts failed. No models were successful", category: "network")
-        logError("API KEY VALIDATION FAILED", category: "network")
+        AppLog.error("All validation attempts failed. No models were successful", category: .network)
+        AppLog.error("API KEY VALIDATION FAILED", category: .network)
         return false
     }
     
@@ -153,8 +153,8 @@ class ClaudeAPIClient {
     /// - Note: Only available in the main app target (requires SwiftData / RecipeX)
 #if !APPCLIP
     func extractRecipe(from htmlContent: String) async throws -> RecipeX {
-        logInfo("WEB RECIPE EXTRACTION START", category: "extraction")
-        logDebug("Content length: \(htmlContent.count) characters", category: "extraction")
+        AppLog.info("WEB RECIPE EXTRACTION START", category: .extraction)
+        AppLog.debug("Content length: \(htmlContent.count) characters", category: .extraction)
         
         // Use retry manager for API resilience
         let operationID = "claude-extract-web-\(htmlContent.prefix(100).hashValue)"
@@ -297,8 +297,8 @@ class ClaudeAPIClient {
         \(htmlContent)
         """
         
-        logInfo("Building API request", category: "extraction")
-        logDebug("Using model: \(recipeExtractionModel)", category: "extraction")
+        AppLog.info("Building API request", category: .extraction)
+        AppLog.debug("Using model: \(recipeExtractionModel)", category: .extraction)
         let requestBody: [String: Any] = [
             "model": recipeExtractionModel,
             "max_tokens": 8192,
@@ -312,7 +312,7 @@ class ClaudeAPIClient {
         ]
         
         guard let url = URL(string: baseURL) else {
-            logError("Invalid base URL: \(baseURL)", category: "extraction")
+            AppLog.error("Invalid base URL: \(baseURL)", category: .extraction)
             throw ClaudeAPIError.invalidResponse
         }
         
@@ -323,45 +323,45 @@ class ClaudeAPIClient {
         request.setValue("application/json", forHTTPHeaderField: "content-type")
         request.timeoutInterval = 120 // 2 minutes for processing
         
-        logDebug("Serializing request body", category: "extraction")
+        AppLog.debug("Serializing request body", category: .extraction)
         do {
             request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
-            logDebug("Request body size: \(request.httpBody?.count ?? 0) bytes", category: "extraction")
+            AppLog.debug("Request body size: \(request.httpBody?.count ?? 0) bytes", category: .extraction)
         } catch {
-            logError("Failed to serialize request body: \(error)", category: "extraction")
+            AppLog.error("Failed to serialize request body: \(error)", category: .extraction)
             throw ClaudeAPIError.invalidJSON
         }
         
-        logInfo("Sending request to Anthropic", category: "network")
+        AppLog.info("Sending request to Anthropic", category: .network)
         
         // Use do-catch to handle timeouts specifically
         let (data, response): (Data, URLResponse)
         do {
             (data, response) = try await urlSession.data(for: request)
         } catch let error as URLError where error.code == .timedOut {
-            logError("Request timed out after \(requestTimeout) seconds", category: "network")
+            AppLog.error("Request timed out after \(requestTimeout) seconds", category: .network)
             throw ClaudeAPIError.timeout
         } catch let error as URLError {
-            logError("Network error: \(error.localizedDescription)", category: "network")
+            AppLog.error("Network error: \(error.localizedDescription)", category: .network)
             throw ClaudeAPIError.networkError(error)
         } catch {
-            logError("Unexpected error: \(error)", category: "network")
+            AppLog.error("Unexpected error: \(error)", category: .network)
             throw ClaudeAPIError.networkError(error)
         }
         
-        logInfo("Received response", category: "network")
-        logDebug("Response data size: \(data.count) bytes", category: "network")
+        AppLog.info("Received response", category: .network)
+        AppLog.debug("Response data size: \(data.count) bytes", category: .network)
         
         guard let httpResponse = response as? HTTPURLResponse else {
-            logError("Response is not HTTPURLResponse", category: "network")
+            AppLog.error("Response is not HTTPURLResponse", category: .network)
             throw ClaudeAPIError.invalidResponse
         }
         
-        logDebug("HTTP Status Code: \(httpResponse.statusCode)", category: "network")
+        AppLog.debug("HTTP Status Code: \(httpResponse.statusCode)", category: .network)
         
         guard httpResponse.statusCode == 200 else {
             let errorMessage = parseAPIError(from: data)
-            logError("API Error Response: \(errorMessage)", category: "network")
+            AppLog.error("API Error Response: \(errorMessage)", category: .network)
             
             let detailedMessage: String
             switch httpResponse.statusCode {
@@ -380,39 +380,39 @@ class ClaudeAPIClient {
             throw ClaudeAPIError.apiError(statusCode: httpResponse.statusCode, message: detailedMessage)
         }
         
-        logDebug("Decoding Claude response", category: "extraction")
+        AppLog.debug("Decoding Claude response", category: .extraction)
         let claudeResponse = try JSONDecoder().decode(ClaudeResponse.self, from: data)
-        logInfo("Successfully decoded Claude response", category: "extraction")
+        AppLog.info("Successfully decoded Claude response", category: .extraction)
         
         // Extract JSON from Claude's response
-        logDebug("Extracting recipe JSON from response", category: "extraction")
+        AppLog.debug("Extracting recipe JSON from response", category: .extraction)
         guard let textContent = claudeResponse.content.first(where: { $0.type == "text" }),
               let text = textContent.text else {
-            logError("No text content found in response", category: "extraction")
+            AppLog.error("No text content found in response", category: .extraction)
             throw ClaudeAPIError.noRecipeFound
         }
         
-        logDebug("Raw text content length: \(text.count) characters", category: "extraction")
+        AppLog.debug("Raw text content length: \(text.count) characters", category: .extraction)
         
         guard let jsonString = extractJSON(from: text) else {
-            logError("Failed to extract JSON from text", category: "extraction")
+            AppLog.error("Failed to extract JSON from text", category: .extraction)
             throw ClaudeAPIError.noRecipeFound
         }
         
-        logDebug("Extracted JSON string length: \(jsonString.count) characters", category: "extraction")
+        AppLog.debug("Extracted JSON string length: \(jsonString.count) characters", category: .extraction)
         
         // Parse the recipe JSON
         guard let jsonData = jsonString.data(using: .utf8) else {
-            logError("Failed to convert JSON string to Data", category: "extraction")
+            AppLog.error("Failed to convert JSON string to Data", category: .extraction)
             throw ClaudeAPIError.invalidJSON
         }
         
-        logDebug("Parsing recipe JSON", category: "extraction")
+        AppLog.debug("Parsing recipe JSON", category: .extraction)
         let recipeResponse = try JSONDecoder().decode(RecipeResponse.self, from: jsonData)
-        logInfo("Successfully parsed recipe", category: "extraction")
-        logDebug("Recipe title: \(recipeResponse.title)", category: "extraction")
-        logInfo("Web recipe extraction complete", category: "extraction")
-        logInfo("WEB RECIPE EXTRACTION END", category: "extraction")
+        AppLog.info("Successfully parsed recipe", category: .extraction)
+        AppLog.debug("Recipe title: \(recipeResponse.title)", category: .extraction)
+        AppLog.info("Web recipe extraction complete", category: .extraction)
+        AppLog.info("WEB RECIPE EXTRACTION END", category: .extraction)
         
         return recipeResponse
     }
@@ -425,9 +425,9 @@ class ClaudeAPIClient {
     /// - Note: Only available in the main app target (requires SwiftData / RecipeX)
 #if !APPCLIP
     func extractRecipe(from imageData: Data, usePreprocessing: Bool = true) async throws -> RecipeX {
-        logInfo("RECIPE EXTRACTION START", category: "extraction")
-        logDebug("Original image data size: \(imageData.count) bytes", category: "extraction")
-        logDebug("Use preprocessing: \(usePreprocessing)", category: "extraction")
+        AppLog.info("RECIPE EXTRACTION START", category: .extraction)
+        AppLog.debug("Original image data size: \(imageData.count) bytes", category: .extraction)
+        AppLog.debug("Use preprocessing: \(usePreprocessing)", category: .extraction)
         
         // Use retry manager for API resilience
         let operationID = "claude-extract-image-\(imageData.hashValue)"
@@ -506,22 +506,22 @@ class ClaudeAPIClient {
         // Preprocess the image if requested
         let finalImageData: Data
         if usePreprocessing, let uiImage = UIImage(data: imageData) {
-            logDebug("Converting to UIImage for preprocessing", category: "extraction")
+            AppLog.debug("Converting to UIImage for preprocessing", category: .extraction)
             if let processedData = imagePreprocessor.preprocessForOCR(uiImage) {
                 finalImageData = processedData
-                logInfo("Image preprocessed - new size: \(finalImageData.count) bytes", category: "extraction")
+                AppLog.info("Image preprocessed - new size: \(finalImageData.count) bytes", category: .extraction)
             } else {
-                logWarning("Preprocessing failed, using original", category: "extraction")
+                AppLog.warning("Preprocessing failed, using original", category: .extraction)
                 finalImageData = imageData
             }
         } else {
-            logDebug("Using original image data without preprocessing", category: "extraction")
+            AppLog.debug("Using original image data without preprocessing", category: .extraction)
             finalImageData = imageData
         }
         
-        logDebug("Converting image to base64", category: "extraction")
+        AppLog.debug("Converting image to base64", category: .extraction)
         let base64Image = finalImageData.base64EncodedString()
-        logDebug("Base64 string length: \(base64Image.count) characters", category: "extraction")
+        AppLog.debug("Base64 string length: \(base64Image.count) characters", category: .extraction)
         
         let systemPrompt = """
         You are an expert at extracting recipes from images of recipe cards, cookbooks, and handwritten notes. 
@@ -602,8 +602,8 @@ class ClaudeAPIClient {
         Extract ALL text including notes, variations, and tips.
         """
         
-        logInfo("Building API request", category: "extraction")
-        logDebug("Using model: \(recipeExtractionModel)", category: "extraction")
+        AppLog.info("Building API request", category: .extraction)
+        AppLog.debug("Using model: \(recipeExtractionModel)", category: .extraction)
         let requestBody: [String: Any] = [
             "model": recipeExtractionModel,
             "max_tokens": 8192,
@@ -630,7 +630,7 @@ class ClaudeAPIClient {
         ]
         
         guard let url = URL(string: baseURL) else {
-            logError("Invalid base URL: \(baseURL)", category: "extraction")
+            AppLog.error("Invalid base URL: \(baseURL)", category: .extraction)
             throw ClaudeAPIError.invalidResponse
         }
         
@@ -641,17 +641,17 @@ class ClaudeAPIClient {
         request.setValue("application/json", forHTTPHeaderField: "content-type")
         request.timeoutInterval = 120 // 2 minutes for image processing
         
-        logDebug("Serializing request body", category: "extraction")
+        AppLog.debug("Serializing request body", category: .extraction)
         do {
             request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
-            logDebug("Request body size: \(request.httpBody?.count ?? 0) bytes", category: "extraction")
+            AppLog.debug("Request body size: \(request.httpBody?.count ?? 0) bytes", category: .extraction)
         } catch {
-            logError("Failed to serialize request body: \(error)", category: "extraction")
+            AppLog.error("Failed to serialize request body: \(error)", category: .extraction)
             throw ClaudeAPIError.invalidJSON
         }
         
-        logInfo("Sending request to Anthropic", category: "network")
-        logDebug("URL: \(baseURL)", category: "network")
+        AppLog.info("Sending request to Anthropic", category: .network)
+        AppLog.debug("URL: \(baseURL)", category: .network)
         // Note: Not logging headers to protect API key security
         
         // Use do-catch to handle timeouts specifically
@@ -659,31 +659,31 @@ class ClaudeAPIClient {
         do {
             (data, response) = try await urlSession.data(for: request)
         } catch let error as URLError where error.code == .timedOut {
-            logError("Request timed out after \(requestTimeout) seconds", category: "network")
+            AppLog.error("Request timed out after \(requestTimeout) seconds", category: .network)
             throw ClaudeAPIError.timeout
         } catch let error as URLError {
-            logError("Network error: \(error.localizedDescription)", category: "network")
+            AppLog.error("Network error: \(error.localizedDescription)", category: .network)
             throw ClaudeAPIError.networkError(error)
         } catch {
-            logError("Unexpected error: \(error)", category: "network")
+            AppLog.error("Unexpected error: \(error)", category: .network)
             throw ClaudeAPIError.networkError(error)
         }
         
-        logInfo("Received response", category: "network")
-        logDebug("Response data size: \(data.count) bytes", category: "network")
+        AppLog.info("Received response", category: .network)
+        AppLog.debug("Response data size: \(data.count) bytes", category: .network)
         
         guard let httpResponse = response as? HTTPURLResponse else {
-            logError("Response is not HTTPURLResponse", category: "network")
+            AppLog.error("Response is not HTTPURLResponse", category: .network)
             throw ClaudeAPIError.invalidResponse
         }
         
-        logDebug("HTTP Status Code: \(httpResponse.statusCode)", category: "network")
-        logDebug("Response Headers: \(httpResponse.allHeaderFields)", category: "network")
+        AppLog.debug("HTTP Status Code: \(httpResponse.statusCode)", category: .network)
+        AppLog.debug("Response Headers: \(httpResponse.allHeaderFields)", category: .network)
         
         guard httpResponse.statusCode == 200 else {
             let errorMessage = parseAPIError(from: data)
-            logError("API Error Response: \(errorMessage)", category: "network")
-            logError("Status Code: \(httpResponse.statusCode)", category: "network")
+            AppLog.error("API Error Response: \(errorMessage)", category: .network)
+            AppLog.error("Status Code: \(httpResponse.statusCode)", category: .network)
             
             // Provide more detailed error messages based on status code
             let detailedMessage: String
@@ -703,65 +703,65 @@ class ClaudeAPIClient {
             throw ClaudeAPIError.apiError(statusCode: httpResponse.statusCode, message: detailedMessage)
         }
         
-        logDebug("Decoding Claude response", category: "extraction")
+        AppLog.debug("Decoding Claude response", category: .extraction)
         let claudeResponse: ClaudeResponse
         do {
             claudeResponse = try JSONDecoder().decode(ClaudeResponse.self, from: data)
-            logInfo("Successfully decoded Claude response", category: "extraction")
-            logDebug("Response model: \(claudeResponse.model ?? "unknown")", category: "extraction")
-            logDebug("Response role: \(claudeResponse.role ?? "unknown")", category: "extraction")
-            logDebug("Content blocks: \(claudeResponse.content.count)", category: "extraction")
+            AppLog.info("Successfully decoded Claude response", category: .extraction)
+            AppLog.debug("Response model: \(claudeResponse.model ?? "unknown")", category: .extraction)
+            AppLog.debug("Response role: \(claudeResponse.role ?? "unknown")", category: .extraction)
+            AppLog.debug("Content blocks: \(claudeResponse.content.count)", category: .extraction)
         } catch {
-            logError("Failed to decode Claude response: \(error)", category: "extraction")
+            AppLog.error("Failed to decode Claude response: \(error)", category: .extraction)
             if let responseString = String(data: data, encoding: .utf8) {
-                logDebug("Raw response: \(responseString)", category: "extraction")
+                AppLog.debug("Raw response: \(responseString)", category: .extraction)
             }
             throw ClaudeAPIError.invalidResponse
         }
         
         // Extract JSON from Claude's response
-        logDebug("Extracting recipe JSON from response", category: "extraction")
+        AppLog.debug("Extracting recipe JSON from response", category: .extraction)
         guard let textContent = claudeResponse.content.first(where: { $0.type == "text" }),
               let text = textContent.text else {
-            logError("No text content found in response", category: "extraction")
+            AppLog.error("No text content found in response", category: .extraction)
             throw ClaudeAPIError.noRecipeFound
         }
         
-        logDebug("Raw text content length: \(text.count) characters", category: "extraction")
-        logDebug("Raw text preview: \(String(text.prefix(200)))...", category: "extraction")
+        AppLog.debug("Raw text content length: \(text.count) characters", category: .extraction)
+        AppLog.debug("Raw text preview: \(String(text.prefix(200)))...", category: .extraction)
         
         guard let jsonString = extractJSON(from: text) else {
-            logError("Failed to extract JSON from text", category: "extraction")
-            logDebug("Full text: \(text)", category: "extraction")
+            AppLog.error("Failed to extract JSON from text", category: .extraction)
+            AppLog.debug("Full text: \(text)", category: .extraction)
             throw ClaudeAPIError.noRecipeFound
         }
         
-        logDebug("Extracted JSON string length: \(jsonString.count) characters", category: "extraction")
-        logDebug("JSON preview: \(String(jsonString.prefix(200)))...", category: "extraction")
+        AppLog.debug("Extracted JSON string length: \(jsonString.count) characters", category: .extraction)
+        AppLog.debug("JSON preview: \(String(jsonString.prefix(200)))...", category: .extraction)
         
         // Parse the recipe JSON
         guard let jsonData = jsonString.data(using: .utf8) else {
-            logError("Failed to convert JSON string to Data", category: "extraction")
+            AppLog.error("Failed to convert JSON string to Data", category: .extraction)
             throw ClaudeAPIError.invalidJSON
         }
         
-        logDebug("Parsing recipe JSON", category: "extraction")
+        AppLog.debug("Parsing recipe JSON", category: .extraction)
         let recipeResponse: RecipeResponse
         do {
             recipeResponse = try JSONDecoder().decode(RecipeResponse.self, from: jsonData)
-            logInfo("Successfully parsed recipe", category: "extraction")
-            logDebug("Recipe title: \(recipeResponse.title)", category: "extraction")
-            logDebug("Ingredient sections: \(recipeResponse.ingredientSections.count)", category: "extraction")
-            logDebug("Instruction sections: \(recipeResponse.instructionSections.count)", category: "extraction")
+            AppLog.info("Successfully parsed recipe", category: .extraction)
+            AppLog.debug("Recipe title: \(recipeResponse.title)", category: .extraction)
+            AppLog.debug("Ingredient sections: \(recipeResponse.ingredientSections.count)", category: .extraction)
+            AppLog.debug("Instruction sections: \(recipeResponse.instructionSections.count)", category: .extraction)
         } catch {
-            logError("Failed to decode recipe JSON: \(error)", category: "extraction")
-            logDebug("JSON data: \(jsonString)", category: "extraction")
+            AppLog.error("Failed to decode recipe JSON: \(error)", category: .extraction)
+            AppLog.debug("JSON data: \(jsonString)", category: .extraction)
             throw ClaudeAPIError.invalidJSON
         }
         
         // Convert to RecipeX
-        logInfo("Recipe extraction complete", category: "extraction")
-        logInfo("RECIPE EXTRACTION END", category: "extraction")
+        AppLog.info("Recipe extraction complete", category: .extraction)
+        AppLog.info("RECIPE EXTRACTION END", category: .extraction)
         
         return recipeResponse
     }
@@ -1005,7 +1005,7 @@ extension ClaudeAPIClient {
         maxTokens: Int = 4096,
         enableWebSearch: Bool = false
     ) async throws -> String {
-        logInfo("Calling Claude API with custom prompts (web search: \(enableWebSearch))", category: "api")
+        AppLog.info("Calling Claude API with custom prompts (web search: \(enableWebSearch))", category: .api)
         
         var requestBody: [String: Any] = [
             "model": recipeExtractionModel,
@@ -1027,11 +1027,11 @@ extension ClaudeAPIClient {
                     "name": "web_search"
                 ]
             ]
-            logInfo("Web search tool enabled for this request", category: "api")
+            AppLog.info("Web search tool enabled for this request", category: .api)
         }
         
         guard let url = URL(string: baseURL) else {
-            logError("Invalid base URL: \(baseURL)", category: "api")
+            AppLog.error("Invalid base URL: \(baseURL)", category: .api)
             throw ClaudeAPIError.invalidResponse
         }
         
@@ -1045,31 +1045,31 @@ extension ClaudeAPIClient {
         do {
             request.httpBody = try JSONSerialization.data(withJSONObject: requestBody)
         } catch {
-            logError("Failed to serialize request body: \(error)", category: "api")
+            AppLog.error("Failed to serialize request body: \(error)", category: .api)
             throw ClaudeAPIError.invalidJSON
         }
         
-        logInfo("Sending request to Anthropic", category: "network")
+        AppLog.info("Sending request to Anthropic", category: .network)
         
         let (data, response): (Data, URLResponse)
         do {
             (data, response) = try await urlSession.data(for: request)
         } catch let error as URLError where error.code == .timedOut {
-            logError("Request timed out", category: "network")
+            AppLog.error("Request timed out", category: .network)
             throw ClaudeAPIError.timeout
         } catch {
-            logError("Network error: \(error)", category: "network")
+            AppLog.error("Network error: \(error)", category: .network)
             throw ClaudeAPIError.networkError(error)
         }
         
         guard let httpResponse = response as? HTTPURLResponse else {
-            logError("Response is not HTTPURLResponse", category: "network")
+            AppLog.error("Response is not HTTPURLResponse", category: .network)
             throw ClaudeAPIError.invalidResponse
         }
         
         guard httpResponse.statusCode == 200 else {
             let errorMessage = parseAPIError(from: data)
-            logError("API Error: \(errorMessage)", category: "network")
+            AppLog.error("API Error: \(errorMessage)", category: .network)
             throw ClaudeAPIError.apiError(statusCode: httpResponse.statusCode, message: errorMessage)
         }
         
@@ -1077,11 +1077,11 @@ extension ClaudeAPIClient {
         
         guard let textContent = claudeResponse.content.first(where: { $0.type == "text" }),
               let text = textContent.text else {
-            logError("No text content in response", category: "api")
+            AppLog.error("No text content in response", category: .api)
             throw ClaudeAPIError.invalidResponse
         }
         
-        logInfo("Successfully received Claude response", category: "api")
+        AppLog.info("Successfully received Claude response", category: .api)
         return text
     }
 }

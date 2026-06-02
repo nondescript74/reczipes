@@ -1105,7 +1105,7 @@ struct RecipeDetailView: View {
         do {
             // Progress: Preparing request
             analysisProgress = 0.1
-            logInfo("Starting diabetic analysis for recipe: \(recipe.safeTitle)", category: "diabetic")
+            AppLog.info("Starting diabetic analysis for recipe: \(recipe.safeTitle)", category: .recipe)
             
             // Get the model container from the context
             let modelContainer = modelContext.container
@@ -1115,7 +1115,7 @@ struct RecipeDetailView: View {
             
             // Analyze using RecipeX directly
             analysisProgress = 0.3
-            logInfo("Analyzing RecipeX", category: "diabetic")
+            AppLog.info("Analyzing RecipeX", category: .recipe)
             
             diabeticInfo = try await DiabeticAnalyzer.shared.analyzeDiabeticInfo(
                 for: recipe,
@@ -1124,11 +1124,11 @@ struct RecipeDetailView: View {
             
             // Progress: Analysis complete
             analysisProgress = 1.0
-            logInfo("Diabetic analysis completed successfully", category: "diabetic")
+            AppLog.info("Diabetic analysis completed successfully", category: .recipe)
             
         } catch {
             // Handle error - show alert to user
-            logError("Diabetic analysis failed: \(error)", category: "diabetic")
+            AppLog.error("Diabetic analysis failed: \(error)", category: .recipe)
             remindersAlertMessage = "Failed to analyze recipe: \(error.localizedDescription)"
             showingRemindersAlert = true
         }
@@ -1138,7 +1138,7 @@ struct RecipeDetailView: View {
         // Clear existing analysis
         diabeticInfo = nil
         
-        logInfo("Rerunning diabetic analysis for recipe: \(recipe.safeTitle)", category: "diabetic")
+        AppLog.info("Rerunning diabetic analysis for recipe: \(recipe.safeTitle)", category: .recipe)
         
         // Rerun the analysis
         await loadDiabeticInfo()
@@ -1151,7 +1151,7 @@ struct RecipeDetailView: View {
         if let task = appState.activeTask,
            task.taskType == .diabeticAnalysis,
            task.recipeId == recipe.safeID {
-            logInfo("Found pending diabetic analysis for recipe: \(recipe.safeTitle)", category: "state")
+            AppLog.info("Found pending diabetic analysis for recipe: \(recipe.safeTitle)", category: .state)
             showPendingAnalysisAlert = true
         }
     }
@@ -1164,7 +1164,7 @@ struct RecipeDetailView: View {
             return 
         }
         
-        logInfo("Resuming diabetic analysis from progress: \(task.progress)", category: "state")
+        AppLog.info("Resuming diabetic analysis from progress: \(task.progress)", category: .state)
         analysisProgress = task.progress
         
         // Continue analysis from where it left off
@@ -1193,7 +1193,7 @@ struct RecipeDetailView: View {
     
     private func savePendingTipsToExistingRecipe() {
         guard !pendingTips.isEmpty else {
-            logWarning("Cannot save tips - no pending tips", category: "tips")
+            AppLog.warning("Cannot save tips - no pending tips", category: .ui)
             return
         }
         
@@ -1225,7 +1225,7 @@ struct RecipeDetailView: View {
             // Try to save context
             do {
                 try modelContext.save()
-                logInfo("Successfully saved \(tipCount) tip(s) to recipe: \(recipe.safeTitle)", category: "tips")
+                AppLog.info("Successfully saved \(tipCount) tip(s) to recipe: \(recipe.safeTitle)", category: .ui)
                 
                 // Clear pending tips after successful save
                 pendingTips.removeAll()
@@ -1234,7 +1234,7 @@ struct RecipeDetailView: View {
                 remindersAlertMessage = "Successfully added \(tipCount) tip\(tipCount == 1 ? "" : "s") to the recipe!"
                 showingRemindersAlert = true
             } catch {
-                logError("Failed to save tips: \(error)", category: "tips")
+                AppLog.error("Failed to save tips: \(error)", category: .ui)
                 remindersAlertMessage = "Failed to save tips: \(error.localizedDescription)"
                 showingRemindersAlert = true
             }
@@ -1262,7 +1262,7 @@ struct RecipeDetailView: View {
         }
         
         // Debug: Log image count
-        logDebug("Recipe '\(recipe.safeTitle)' has \(uniqueNames.count) images: \(uniqueNames)", category: "images")
+        AppLog.debug("Recipe '\(recipe.safeTitle)' has \(uniqueNames.count) images: \(uniqueNames)", category: .image)
         
         return uniqueNames
     }
@@ -1292,7 +1292,7 @@ struct RecipeDetailView: View {
     private func shareToCloudKitCommunity() {
         // TODO: Implement CloudKit community sharing
         // This will create a SharedRecipe entity and share it via CloudKit
-        logInfo("Community sharing initiated for recipe: \(recipe.safeTitle)", category: "cloudkit")
+        AppLog.info("Community sharing initiated for recipe: \(recipe.safeTitle)", category: .cloudKit)
         
         // For now, show a coming soon alert
         remindersAlertMessage = "Community sharing is coming soon! Once enabled, you'll be able to share your recipes with other users and discover new recipes from the community."

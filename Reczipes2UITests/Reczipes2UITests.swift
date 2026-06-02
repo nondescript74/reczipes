@@ -48,17 +48,20 @@ final class Reczipes2UITests: XCTestCase {
         let tabBar = app.tabBars.firstMatch
         XCTAssertTrue(tabBar.waitForExistence(timeout: 5), "Tab bar should exist")
         logger.info("✅ Tab bar found")
-        
-        // Check for the three main tabs
-        let recipesTab = app.tabBars.buttons["Recipes"]
-        let extractTab = app.tabBars.buttons["Extract"]
-        let settingsTab = app.tabBars.buttons["Settings"]
-        
-        XCTAssertTrue(recipesTab.exists, "Recipes tab should exist")
-        XCTAssertTrue(extractTab.exists, "Extract tab should exist")
-        XCTAssertTrue(settingsTab.exists, "Settings tab should exist")
-        
-        logger.info("✅ All tabs found")
+
+        // The app declares 6 tabs in MainTabView (Recipes, Books, Meals,
+        // Cooking, Extract, Settings). On iPhone, iOS surfaces only the
+        // first 4 as direct tab-bar buttons and rolls the rest under a
+        // "More" menu, so we only assert on the always-visible set here.
+        // Extract and Settings are reachable via "More" and shouldn't be
+        // asserted as top-level tab buttons.
+        let alwaysVisibleTabs = ["Recipes", "Books", "Meals", "Cooking"]
+        for tabName in alwaysVisibleTabs {
+            let tab = app.tabBars.buttons[tabName]
+            XCTAssertTrue(tab.exists, "\(tabName) tab should exist as a top-level tab")
+        }
+
+        logger.info("✅ All always-visible tabs found")
         logger.info("✅ testExample completed successfully")
     }
 

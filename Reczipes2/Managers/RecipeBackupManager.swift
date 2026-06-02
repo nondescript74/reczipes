@@ -117,7 +117,7 @@ class RecipeBackupManager {
             throw RecipeBackupError.noRecipesToBackup
         }
         
-        logInfo("Starting backup of \(recipes.count) recipe(s)", category: "backup")
+        AppLog.info("Starting backup of \(recipes.count) recipe(s)", category: .backup)
         
         var recipeBackups: [RecipeBackup] = []
         _ = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
@@ -131,7 +131,7 @@ class RecipeBackupManager {
             if let imageData = recipe.imageData {
                 let fileName = recipe.imageName ?? "image_\(UUID().uuidString).jpg"
                 mainImageBackup = RecipeBackup.ImageBackup(fileName: fileName, imageData: imageData)
-                logDebug("Loaded main image from SwiftData for '\(String(describing: recipe.title))'", category: "backup")
+                AppLog.debug("Loaded main image from SwiftData for '\(String(describing: recipe.title))'", category: .backup)
             }
             
             // Load additional images if exist
@@ -144,7 +144,7 @@ class RecipeBackupManager {
                 for (index, imageData) in decodedImages.enumerated() {
                     let fileName = "additional_\(index)_\(UUID().uuidString).jpg"
                     imageBackups.append(RecipeBackup.ImageBackup(fileName: fileName, imageData: imageData))
-                    logDebug("Loaded additional image \(index) from SwiftData for '\(String(describing: recipe.title))'", category: "backup")
+                    AppLog.debug("Loaded additional image \(index) from SwiftData for '\(String(describing: recipe.title))'", category: .backup)
                 }
                 if !imageBackups.isEmpty {
                     additionalImageBackups = imageBackups
@@ -176,7 +176,7 @@ class RecipeBackupManager {
         do {
             jsonData = try encoder.encode(package)
         } catch {
-            logError("Failed to encode backup: \(error)", category: "backup")
+            AppLog.error("Failed to encode backup: \(error)", category: .backup)
             throw RecipeBackupError.encodingFailed(error)
         }
         
@@ -226,7 +226,7 @@ class RecipeBackupManager {
                 
                 backupInfos.append(info)
             } catch {
-                logWarning("Could not read attributes for backup file: \(fileURL.lastPathComponent)", category: "backup")
+                AppLog.warning("Could not read attributes for backup file: \(fileURL.lastPathComponent)", category: .backup)
             }
         }
         
@@ -245,14 +245,14 @@ class RecipeBackupManager {
         existingRecipes: [RecipeX],
         overwriteMode: ImportOverwriteMode
     ) async throws -> RecipeImportResult {
-        logInfo("Starting import from \(url.lastPathComponent)", category: "backup")
+        AppLog.info("Starting import from \(url.lastPathComponent)", category: .backup)
         
         // Read and decode the backup file
         let jsonData: Data
         do {
             jsonData = try Data(contentsOf: url)
         } catch {
-            logError("Failed to read backup file: \(error)", category: "backup")
+            AppLog.error("Failed to read backup file: \(error)", category: .backup)
             throw RecipeBackupError.invalidBackupFile
         }
         
@@ -264,11 +264,11 @@ class RecipeBackupManager {
         do {
             package = try decoder.decode(RecipeBackupPackage.self, from: jsonData)
         } catch {
-            logError("Failed to decode backup file: \(error)", category: "backup")
+            AppLog.error("Failed to decode backup file: \(error)", category: .backup)
             throw RecipeBackupError.decodingFailed(error)
         }
         
-        logInfo("Backup package version \(package.version), exported \(package.exportDate), contains \(package.recipeCount) recipe(s)", category: "backup")
+        AppLog.info("Backup package version \(package.version), exported \(package.exportDate), contains \(package.recipeCount) recipe(s)", category: .backup)
         
         var newCount = 0
         var updatedCount = 0
@@ -286,7 +286,7 @@ class RecipeBackupManager {
             let existingRecipe = existingRecipes.first { $0.id == recipe.id }
             
             if let existing = existingRecipe {
-                logInfo("Overwriting existing recipe '\(recipe.safeTitle)'", category: "backup")
+                AppLog.info("Overwriting existing recipe '\(recipe.safeTitle)'", category: .backup)
                 // Delete the existing recipe (images will be overwritten)
                 modelContext.delete(existing)
                 updatedCount += 1
@@ -299,7 +299,7 @@ class RecipeBackupManager {
                 recipe.imageData = mainImage.imageData
                 recipe.imageName = mainImage.fileName
                 recipe.imageHash = RecipeX.calculateImageHash(from: mainImage.imageData)
-                logDebug("Set main image data for '\(recipe.safeTitle)'", category: "backup")
+                AppLog.debug("Set main image data for '\(recipe.safeTitle)'", category: .backup)
             }
             
             if let additionalImages = recipeBackup.additionalImages, !additionalImages.isEmpty {
@@ -313,19 +313,19 @@ class RecipeBackupManager {
                     ])
                 }
                 recipe.additionalImagesData = try? JSONEncoder().encode(additionalImagesArray)
-                logDebug("Set additional images data for '\(recipe.safeTitle)'", category: "backup")
+                AppLog.debug("Set additional images data for '\(recipe.safeTitle)'", category: .backup)
             }
             
             modelContext.insert(recipe)
-            logDebug("Imported recipe '\(recipe.safeTitle)'", category: "backup")
+            AppLog.debug("Imported recipe '\(recipe.safeTitle)'", category: .backup)
         }
         
         // Save the context
         do {
             try modelContext.save()
-            logInfo("Import completed: \(newCount) new, \(updatedCount) updated, \(skippedCount) skipped", category: "backup")
+            AppLog.info("Import completed: \(newCount) new, \(updatedCount) updated, \(skippedCount) skipped", category: .backup)
         } catch {
-            logError("Failed to save imported recipes: \(error)", category: "backup")
+            AppLog.error("Failed to save imported recipes: \(error)", category: .backup)
             throw RecipeBackupError.importFailed(error)
         }
         
@@ -345,7 +345,7 @@ class RecipeBackupManager {
             throw RecipeBackupError.noRecipesToBackup
         }
         
-        logInfo("Starting RecipeX backup of \(recipes.count) recipe(s)", category: "backup")
+        AppLog.info("Starting RecipeX backup of \(recipes.count) recipe(s)", category: .backup)
         
         var recipeBackups: [RecipeBackup] = []
         
@@ -355,7 +355,7 @@ class RecipeBackupManager {
             if let imageData = recipe.imageData {
                 let fileName = recipe.imageName ?? "image_\(recipe.safeID.uuidString).jpg"
                 mainImageBackup = RecipeBackup.ImageBackup(fileName: fileName, imageData: imageData)
-                logDebug("Loaded main image from SwiftData for '\(recipe.safeTitle)'", category: "backup")
+                AppLog.debug("Loaded main image from SwiftData for '\(recipe.safeTitle)'", category: .backup)
             }
             
             // Load additional images if exist
@@ -367,7 +367,7 @@ class RecipeBackupManager {
                     if let imageData = imageDict["data"] {
                         let fileName = "additional_\(index)_\(recipe.safeID.uuidString).jpg"
                         imageBackups.append(RecipeBackup.ImageBackup(fileName: fileName, imageData: imageData))
-                        logDebug("Loaded additional image \(index) from SwiftData for '\(recipe.safeTitle)'", category: "backup")
+                        AppLog.debug("Loaded additional image \(index) from SwiftData for '\(recipe.safeTitle)'", category: .backup)
                     }
                 }
                 if !imageBackups.isEmpty {
@@ -379,12 +379,12 @@ class RecipeBackupManager {
             let recipeData = RecipeData(from: recipe)
             
             // DEBUG: Log what's in RecipeData before encoding
-            logDebug("RecipeData created for '\(recipe.safeTitle)':", category: "backup")
-            logDebug("  - id: \(recipeData.id?.uuidString ?? "nil")", category: "backup")
-            logDebug("  - title: \(recipeData.title ?? "nil")", category: "backup")
-            logDebug("  - ingredientSectionsData: \(recipeData.ingredientSectionsData != nil ? "\(recipeData.ingredientSectionsData!.count) bytes" : "nil")", category: "backup")
-            logDebug("  - instructionSectionsData: \(recipeData.instructionSectionsData != nil ? "\(recipeData.instructionSectionsData!.count) bytes" : "nil")", category: "backup")
-            logDebug("  - notesData: \(recipeData.notesData != nil ? "\(recipeData.notesData!.count) bytes" : "nil")", category: "backup")
+            AppLog.debug("RecipeData created for '\(recipe.safeTitle)':", category: .backup)
+            AppLog.debug("  - id: \(recipeData.id?.uuidString ?? "nil")", category: .backup)
+            AppLog.debug("  - title: \(recipeData.title ?? "nil")", category: .backup)
+            AppLog.debug("  - ingredientSectionsData: \(recipeData.ingredientSectionsData != nil ? "\(recipeData.ingredientSectionsData!.count) bytes" : "nil")", category: .backup)
+            AppLog.debug("  - instructionSectionsData: \(recipeData.instructionSectionsData != nil ? "\(recipeData.instructionSectionsData!.count) bytes" : "nil")", category: .backup)
+            AppLog.debug("  - notesData: \(recipeData.notesData != nil ? "\(recipeData.notesData!.count) bytes" : "nil")", category: .backup)
             
             let backup = RecipeBackup(
                 recipe: recipeData,
@@ -398,9 +398,9 @@ class RecipeBackupManager {
                 let testEncoder = JSONEncoder()
                 testEncoder.dataEncodingStrategy = .base64
                 let testData = try testEncoder.encode(recipeData)
-                logDebug("  - RecipeData encodes successfully: \(testData.count) bytes", category: "backup")
+                AppLog.debug("  - RecipeData encodes successfully: \(testData.count) bytes", category: .backup)
             } catch {
-                logError("  - FAILED to encode RecipeData: \(error)", category: "backup")
+                AppLog.error("  - FAILED to encode RecipeData: \(error)", category: .backup)
             }
             
             recipeBackups.append(backup)
@@ -418,7 +418,7 @@ class RecipeBackupManager {
         do {
             jsonData = try encoder.encode(package)
         } catch {
-            logError("Failed to encode RecipeX backup: \(error)", category: "backup")
+            AppLog.error("Failed to encode RecipeX backup: \(error)", category: .backup)
             throw RecipeBackupError.encodingFailed(error)
         }
         
@@ -435,14 +435,14 @@ class RecipeBackupManager {
         existingRecipes: [RecipeX],
         overwriteMode: ImportOverwriteMode
     ) async throws -> RecipeImportResult {
-        logInfo("Starting RecipeX import from \(url.lastPathComponent)", category: "backup")
+        AppLog.info("Starting RecipeX import from \(url.lastPathComponent)", category: .backup)
         
         // Read and decode the backup file
         let jsonData: Data
         do {
             jsonData = try Data(contentsOf: url)
         } catch {
-            logError("Failed to read backup file: \(error)", category: "backup")
+            AppLog.error("Failed to read backup file: \(error)", category: .backup)
             throw RecipeBackupError.invalidBackupFile
         }
         
@@ -454,11 +454,11 @@ class RecipeBackupManager {
         do {
             package = try decoder.decode(RecipeBackupPackage.self, from: jsonData)
         } catch {
-            logError("Failed to decode backup file: \(error)", category: "backup")
+            AppLog.error("Failed to decode backup file: \(error)", category: .backup)
             throw RecipeBackupError.decodingFailed(error)
         }
         
-        logInfo("Backup package version \(package.version), exported \(package.exportDate), contains \(package.recipeCount) recipe(s)", category: "backup")
+        AppLog.info("Backup package version \(package.version), exported \(package.exportDate), contains \(package.recipeCount) recipe(s)", category: .backup)
         
         var newCount = 0
         var updatedCount = 0
@@ -477,7 +477,7 @@ class RecipeBackupManager {
                 switch overwriteMode {
                     
                 default:
-                    logInfo("Overwriting existing RecipeX '\(recipe.safeTitle)'", category: "backup")
+                    AppLog.info("Overwriting existing RecipeX '\(recipe.safeTitle)'", category: .backup)
                     modelContext.delete(existing)
                     updatedCount += 1
                     
@@ -521,7 +521,7 @@ class RecipeBackupManager {
                 recipe.imageData = mainImage.imageData
                 recipe.imageName = mainImage.fileName
                 recipe.imageHash = RecipeX.calculateImageHash(from: mainImage.imageData)
-                logDebug("Set main image data for RecipeX '\(recipe.safeTitle)'", category: "backup")
+                AppLog.debug("Set main image data for RecipeX '\(recipe.safeTitle)'", category: .backup)
             }
             
             if let additionalImages = recipeBackup.additionalImages, !additionalImages.isEmpty {
@@ -535,22 +535,22 @@ class RecipeBackupManager {
                     ])
                 }
                 recipe.additionalImagesData = try? JSONEncoder().encode(additionalImagesArray)
-                logDebug("Set additional images data for RecipeX '\(recipe.safeTitle)'", category: "backup")
+                AppLog.debug("Set additional images data for RecipeX '\(recipe.safeTitle)'", category: .backup)
             }
             
             // Calculate content fingerprint for duplicate detection
             recipe.updateContentFingerprint()
             
             modelContext.insert(recipe)
-            logDebug("Imported RecipeX '\(recipe.safeTitle)' with CloudKit sync enabled", category: "backup")
+            AppLog.debug("Imported RecipeX '\(recipe.safeTitle)' with CloudKit sync enabled", category: .backup)
         }
         
         // Save the context
         do {
             try modelContext.save()
-            logInfo("RecipeX import completed: \(newCount) new, \(updatedCount) updated, \(skippedCount) skipped", category: "backup")
+            AppLog.info("RecipeX import completed: \(newCount) new, \(updatedCount) updated, \(skippedCount) skipped", category: .backup)
         } catch {
-            logError("Failed to save imported RecipeX recipes: \(error)", category: "backup")
+            AppLog.error("Failed to save imported RecipeX recipes: \(error)", category: .backup)
             throw RecipeBackupError.importFailed(error)
         }
         
@@ -599,12 +599,12 @@ class RecipeBackupManager {
         // Try to create the backup directory
         do {
             try FileManager.default.createDirectory(at: reczipesDirectory, withIntermediateDirectories: true, attributes: nil)
-            logDebug("Backup directory ready at: \(reczipesDirectory.path)", category: "backup")
+            AppLog.debug("Backup directory ready at: \(reczipesDirectory.path)", category: .backup)
         } catch let error as NSError {
-            logError("Failed to create backup directory: \(error) (domain: \(error.domain), code: \(error.code))", category: "backup")
+            AppLog.error("Failed to create backup directory: \(error) (domain: \(error.domain), code: \(error.code))", category: .backup)
             
             // Final fallback - just use temp directory root
-            logWarning("Using fallback: temporary directory root", category: "backup")
+            AppLog.warning("Using fallback: temporary directory root", category: .backup)
             reczipesDirectory = FileManager.default.temporaryDirectory
         }
         
@@ -621,10 +621,10 @@ class RecipeBackupManager {
         
         do {
             try jsonData.write(to: fileURL)
-            logInfo("Backup created successfully: \(fileName) (\(jsonData.count) bytes) at \(fileURL.path)", category: "backup")
+            AppLog.info("Backup created successfully: \(fileName) (\(jsonData.count) bytes) at \(fileURL.path)", category: .backup)
             return fileURL
         } catch {
-            logError("Failed to write backup file: \(error)", category: "backup")
+            AppLog.error("Failed to write backup file: \(error)", category: .backup)
             throw RecipeBackupError.fileCreationFailed
         }
     }
@@ -742,7 +742,7 @@ class BookBackupManager {
             throw RecipeBackupError.noRecipesToBackup
         }
         
-        logInfo("Starting Book backup of \(books.count) book(s)", category: "backup")
+        AppLog.info("Starting Book backup of \(books.count) book(s)", category: .backup)
         
         var bookBackups: [BookBackup] = []
         
@@ -752,7 +752,7 @@ class BookBackupManager {
             
             let recipeCount = book.recipeIDs?.count ?? 0
             let imageSizeKB = (book.coverImageData?.count ?? 0) / 1024
-            logDebug("Prepared book '\(book.name ?? "Untitled")' with \(recipeCount) recipes, cover image: \(imageSizeKB)KB", category: "backup")
+            AppLog.debug("Prepared book '\(book.name ?? "Untitled")' with \(recipeCount) recipes, cover image: \(imageSizeKB)KB", category: .backup)
         }
         
         let package = BookBackupPackage(books: bookBackups)
@@ -766,13 +766,13 @@ class BookBackupManager {
         do {
             jsonData = try encoder.encode(package)
         } catch {
-            logError("Failed to encode Book backup: \(error)", category: "backup")
+            AppLog.error("Failed to encode Book backup: \(error)", category: .backup)
             throw RecipeBackupError.encodingFailed(error)
         }
         
         // Save to file with .bookbackup extension
         let url = try await saveBookBackupFile(jsonData: jsonData, prefix: "BookBackup")
-        logInfo("Book backup created successfully: \(url.lastPathComponent) (\(jsonData.count) bytes)", category: "backup")
+        AppLog.info("Book backup created successfully: \(url.lastPathComponent) (\(jsonData.count) bytes)", category: .backup)
         
         return url
     }
@@ -786,14 +786,14 @@ class BookBackupManager {
         existingBooks: [Book],
         overwriteMode: ImportOverwriteMode
     ) async throws -> BookImportResult_RBM {
-        logInfo("Starting Book import from \(url.lastPathComponent)", category: "backup")
+        AppLog.info("Starting Book import from \(url.lastPathComponent)", category: .backup)
         
         // Read and decode the backup file
         let jsonData: Data
         do {
             jsonData = try Data(contentsOf: url)
         } catch {
-            logError("Failed to read backup file: \(error)", category: "backup")
+            AppLog.error("Failed to read backup file: \(error)", category: .backup)
             throw RecipeBackupError.invalidBackupFile
         }
         
@@ -804,11 +804,11 @@ class BookBackupManager {
         do {
             package = try decoder.decode(BookBackupPackage.self, from: jsonData)
         } catch {
-            logError("Failed to decode backup file: \(error)", category: "backup")
+            AppLog.error("Failed to decode backup file: \(error)", category: .backup)
             throw RecipeBackupError.decodingFailed(error)
         }
         
-        logInfo("Backup package version \(package.version), exported \(package.exportDate), contains \(package.bookCount) book(s)", category: "backup")
+        AppLog.info("Backup package version \(package.version), exported \(package.exportDate), contains \(package.bookCount) book(s)", category: .backup)
         
         var newCount = 0
         var updatedCount = 0
@@ -822,7 +822,7 @@ class BookBackupManager {
                 switch overwriteMode {
                     
                 case .overwrite:
-                    logInfo("Overwriting existing Book '\(bookBackup.name)'", category: "backup")
+                    AppLog.info("Overwriting existing Book '\(bookBackup.name)'", category: .backup)
                     modelContext.delete(existing)
                     updatedCount += 1
                 }
@@ -866,7 +866,7 @@ class BookBackupManager {
             if let coverImageData = bookToImport.coverImageData {
                 newBook.coverImageData = coverImageData
                 newBook.coverImageName = bookToImport.coverImageFileName
-                logDebug("Set cover image data (\(coverImageData.count / 1024)KB) for '\(bookToImport.name)'", category: "backup")
+                AppLog.debug("Set cover image data (\(coverImageData.count / 1024)KB) for '\(bookToImport.name)'", category: .backup)
             }
             
             // Set CloudKit properties
@@ -880,15 +880,15 @@ class BookBackupManager {
             newBook.lastSyncedToCloud = nil
             
             modelContext.insert(newBook)
-            logDebug("Imported Book '\(bookToImport.name)' with \(bookToImport.recipeIDs.count) recipes", category: "backup")
+            AppLog.debug("Imported Book '\(bookToImport.name)' with \(bookToImport.recipeIDs.count) recipes", category: .backup)
         }
         
         // Save the context
         do {
             try modelContext.save()
-            logInfo("Book import completed: \(newCount) new, \(updatedCount) updated, \(skippedCount) skipped", category: "backup")
+            AppLog.info("Book import completed: \(newCount) new, \(updatedCount) updated, \(skippedCount) skipped", category: .backup)
         } catch {
-            logError("Failed to save imported Books: \(error)", category: "backup")
+            AppLog.error("Failed to save imported Books: \(error)", category: .backup)
             throw RecipeBackupError.importFailed(error)
         }
         
@@ -910,9 +910,9 @@ class BookBackupManager {
         // Try to create the backup directory
         do {
             try FileManager.default.createDirectory(at: reczipesDirectory, withIntermediateDirectories: true, attributes: nil)
-            logDebug("Backup directory ready at: \(reczipesDirectory.path)", category: "backup")
+            AppLog.debug("Backup directory ready at: \(reczipesDirectory.path)", category: .backup)
         } catch let error as NSError {
-            logError("Failed to create backup directory: \(error) (domain: \(error.domain), code: \(error.code))", category: "backup")
+            AppLog.error("Failed to create backup directory: \(error) (domain: \(error.domain), code: \(error.code))", category: .backup)
             throw RecipeBackupError.fileCreationFailed
         }
         
@@ -929,10 +929,10 @@ class BookBackupManager {
         
         do {
             try jsonData.write(to: fileURL)
-            logInfo("Book backup created successfully: \(fileName) (\(jsonData.count) bytes) at \(fileURL.path)", category: "backup")
+            AppLog.info("Book backup created successfully: \(fileName) (\(jsonData.count) bytes) at \(fileURL.path)", category: .backup)
             return fileURL
         } catch {
-            logError("Failed to write backup file: \(error)", category: "backup")
+            AppLog.error("Failed to write backup file: \(error)", category: .backup)
             throw RecipeBackupError.fileCreationFailed
         }
     }

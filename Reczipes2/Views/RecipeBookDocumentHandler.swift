@@ -22,11 +22,11 @@ final class RecipeBookDocumentHandler: ObservableObject {
     
     /// Call this when a .recipebook file is opened
     func handleIncomingDocument(_ url: URL) {
-        logInfo("Received recipe book document: \(url.lastPathComponent)", category: "book-import")
+        AppLog.info("Received recipe book document: \(url.lastPathComponent)", category: .batch)
         
         // Security-scoped resource access
         guard url.startAccessingSecurityScopedResource() else {
-            logError("Failed to access security-scoped resource: \(url)", category: "book-import")
+            AppLog.error("Failed to access security-scoped resource: \(url)", category: .batch)
             return
         }
         
@@ -51,10 +51,10 @@ final class RecipeBookDocumentHandler: ObservableObject {
             pendingImportURL = tempURL
             showImportSheet = true
             
-            logInfo("Prepared recipe book for import: \(tempURL.lastPathComponent)", category: "book-import")
+            AppLog.info("Prepared recipe book for import: \(tempURL.lastPathComponent)", category: .batch)
             
         } catch {
-            logError("Failed to prepare recipe book for import: \(error)", category: "book-import")
+            AppLog.error("Failed to prepare recipe book for import: \(error)", category: .batch)
             importError = error
         }
     }
@@ -238,7 +238,7 @@ struct RecipeBookImportSheet: View {
             
             importedBook = book
             
-            logInfo("Successfully imported recipe book: \(String(describing: book.name))", category: "book-import")
+            AppLog.info("Successfully imported recipe book: \(String(describing: book.name))", category: .batch)
             
             // Log user diagnostic
             logUserDiagnostic(
@@ -252,7 +252,7 @@ struct RecipeBookImportSheet: View {
         } catch {
             importError = error
             
-            logError("Failed to import recipe book: \(error)", category: "book-import")
+            AppLog.error("Failed to import recipe book: \(error)", category: .batch)
             
             logUserDiagnostic(
                 .error,

@@ -40,7 +40,7 @@ class DatabaseRecoveryLogger {
     /// Start tracking a recovery attempt
     func beginRecoveryAttempt() {
         currentAttemptStart = Date()
-        logInfo("📊 Starting database recovery attempt #\(recoveryHistory.count + 1)", category: "storage")
+        AppLog.info("📊 Starting database recovery attempt #\(recoveryHistory.count + 1)", category: .storage)
     }
     
     /// Log successful recovery
@@ -69,12 +69,12 @@ class DatabaseRecoveryLogger {
         recoveryHistory.append(attempt)
         saveRecoveryHistory()
         
-        logInfo("✅ RECOVERY SUCCESS", category: "storage")
-        logInfo("   Duration: \(String(format: "%.2f", duration))s", category: "storage")
-        logInfo("   Files deleted: \(filesDeleted.count)", category: "storage")
-        logInfo("   CloudKit: \(cloudKitEnabled ? "enabled" : "disabled")", category: "storage")
+        AppLog.info("✅ RECOVERY SUCCESS", category: .storage)
+        AppLog.info("   Duration: \(String(format: "%.2f", duration))s", category: .storage)
+        AppLog.info("   Files deleted: \(filesDeleted.count)", category: .storage)
+        AppLog.info("   CloudKit: \(cloudKitEnabled ? "enabled" : "disabled")", category: .storage)
         if let sizeMB = databaseSizeMB {
-            logInfo("   Database size: \(String(format: "%.1f", sizeMB)) MB", category: "storage")
+            AppLog.info("   Database size: \(String(format: "%.1f", sizeMB)) MB", category: .storage)
         }
         
         // Log user-facing diagnostic
@@ -133,13 +133,13 @@ class DatabaseRecoveryLogger {
         recoveryHistory.append(attempt)
         saveRecoveryHistory()
         
-        logError("❌ RECOVERY FAILED", category: "storage")
-        logError("   Duration: \(String(format: "%.2f", duration))s", category: "storage")
-        logError("   Files deleted: \(filesDeleted.count)", category: "storage")
+        AppLog.error("❌ RECOVERY FAILED", category: .storage)
+        AppLog.error("   Duration: \(String(format: "%.2f", duration))s", category: .storage)
+        AppLog.error("   Files deleted: \(filesDeleted.count)", category: .storage)
         if let secondaryError = secondaryError {
-            logError("   Secondary error: \(secondaryError.localizedDescription)", category: "storage")
+            AppLog.error("   Secondary error: \(secondaryError.localizedDescription)", category: .storage)
         } else {
-            logError("   Secondary error: None (no files found to delete)", category: "storage")
+            AppLog.error("   Secondary error: None (no files found to delete)", category: .storage)
         }
         
         // Log critical user-facing diagnostic
@@ -224,20 +224,20 @@ class DatabaseRecoveryLogger {
     func logRecoveryStatistics() {
         let stats = getRecoveryStatistics()
         
-        logInfo("📊 RECOVERY STATISTICS", category: "storage")
-        logInfo("   Total attempts: \(stats.totalAttempts)", category: "storage")
-        logInfo("   Successful: \(stats.successfulAttempts)", category: "storage")
-        logInfo("   Failed: \(stats.failedAttempts)", category: "storage")
-        logInfo("   Success rate: \(String(format: "%.1f", stats.successRate * 100))%", category: "storage")
-        logInfo("   Average duration: \(String(format: "%.2f", stats.averageDurationSeconds))s", category: "storage")
+        AppLog.info("📊 RECOVERY STATISTICS", category: .storage)
+        AppLog.info("   Total attempts: \(stats.totalAttempts)", category: .storage)
+        AppLog.info("   Successful: \(stats.successfulAttempts)", category: .storage)
+        AppLog.info("   Failed: \(stats.failedAttempts)", category: .storage)
+        AppLog.info("   Success rate: \(String(format: "%.1f", stats.successRate * 100))%", category: .storage)
+        AppLog.info("   Average duration: \(String(format: "%.2f", stats.averageDurationSeconds))s", category: .storage)
         
         if let last = stats.lastAttempt {
             let timeAgo = Date().timeIntervalSince(last.timestamp)
-            logInfo("   Last attempt: \(last.success ? "✅ Success" : "❌ Failed") (\(formatTimeAgo(timeAgo)))", category: "storage")
+            AppLog.info("   Last attempt: \(last.success ? "✅ Success" : "❌ Failed") (\(formatTimeAgo(timeAgo)))", category: .storage)
         }
         
         if stats.hasRecentFailures {
-            logWarning("   ⚠️ Recent recovery failures detected - may need manual intervention", category: "storage")
+            AppLog.warning("   ⚠️ Recent recovery failures detected - may need manual intervention", category: .storage)
         }
     }
     
@@ -262,7 +262,7 @@ class DatabaseRecoveryLogger {
     func clearHistory() {
         recoveryHistory.removeAll()
         UserDefaults.standard.removeObject(forKey: "DatabaseRecoveryHistory")
-        logInfo("🗑️ Recovery history cleared", category: "storage")
+        AppLog.info("🗑️ Recovery history cleared", category: .storage)
     }
     
     // MARK: - Helper Methods
@@ -327,15 +327,15 @@ extension DatabaseRecoveryLogger {
         let suggestedResolution: String
         
         func logAnalysis() {
-            logError("🔍 ERROR ANALYSIS:", category: "storage")
-            logError("   Error chain depth: \(errorChain.count)", category: "storage")
+            AppLog.error("🔍 ERROR ANALYSIS:", category: .storage)
+            AppLog.error("   Error chain depth: \(errorChain.count)", category: .storage)
             for (index, errorString) in errorChain.enumerated() {
-                logError("   [\(index)] \(errorString)", category: "storage")
+                AppLog.error("   [\(index)] \(errorString)", category: .storage)
             }
-            logError("   Schema issue: \(isSchemaIssue ? "YES ⚠️" : "NO")", category: "storage")
-            logError("   SwiftData wrapper: \(isSwiftDataWrapper ? "YES" : "NO")", category: "storage")
-            logError("   Core Data issue: \(isCoreDataIssue ? "YES" : "NO")", category: "storage")
-            logError("   Suggested resolution: \(suggestedResolution)", category: "storage")
+            AppLog.error("   Schema issue: \(isSchemaIssue ? "YES ⚠️" : "NO")", category: .storage)
+            AppLog.error("   SwiftData wrapper: \(isSwiftDataWrapper ? "YES" : "NO")", category: .storage)
+            AppLog.error("   Core Data issue: \(isCoreDataIssue ? "YES" : "NO")", category: .storage)
+            AppLog.error("   Suggested resolution: \(suggestedResolution)", category: .storage)
         }
     }
 }

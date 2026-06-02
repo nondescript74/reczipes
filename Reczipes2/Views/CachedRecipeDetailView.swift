@@ -208,9 +208,9 @@ struct CachedRecipeDetailView: View {
     private func importRecipe() {
         do {
             try CloudKitSharingService.shared.importCachedRecipe(cachedRecipe, modelContext: modelContext)
-            logInfo("Imported cached recipe: \(cachedRecipe.title)", category: "sharing")
+            AppLog.info("Imported cached recipe: \(cachedRecipe.title)", category: .sharing)
         } catch {
-            logError("Failed to import cached recipe: \(error)", category: "sharing")
+            AppLog.error("Failed to import cached recipe: \(error)", category: .sharing)
         }
     }
     

@@ -67,7 +67,7 @@ class BatchExtractionManager: ObservableObject {
     // MARK: - Initialization
     
     private init() {
-        logInfo("BatchExtractionManager initialized", category: "batch-extraction")
+        AppLog.info("BatchExtractionManager initialized", category: .batch)
     }
     
     // MARK: - Configuration
@@ -82,18 +82,18 @@ class BatchExtractionManager: ObservableObject {
     /// Start batch extraction in the background
     func startBatchExtraction(links: [SavedLink]) {
         guard !isExtracting else {
-            logWarning("Extraction already in progress", category: "batch-extraction")
+            AppLog.warning("Extraction already in progress", category: .batch)
             return
         }
         
         guard let apiKey = apiKey, let modelContext = modelContext else {
-            logError("BatchExtractionManager not configured", category: "batch-extraction")
+            AppLog.error("BatchExtractionManager not configured", category: .batch)
             return
         }
         
         let unprocessedLinks = links.filter { !$0.isProcessed }
         guard !unprocessedLinks.isEmpty else {
-            logInfo("No unprocessed links to extract", category: "batch-extraction")
+            AppLog.info("No unprocessed links to extract", category: .batch)
             return
         }
         
@@ -109,7 +109,7 @@ class BatchExtractionManager: ObservableObject {
         recentlyExtracted = []
         startTime = Date()
         
-        logInfo("Starting batch extraction of \(linksToProcess.count) links", category: "batch-extraction")
+        AppLog.info("Starting batch extraction of \(linksToProcess.count) links", category: .batch)
         
         // Start extraction task that runs independently
         // Use Task (inherits actor context) instead of Task.detached to avoid data races
@@ -121,13 +121,13 @@ class BatchExtractionManager: ObservableObject {
     /// Pause the batch extraction
     func pause() {
         isPaused = true
-        logInfo("Batch extraction paused", category: "batch-extraction")
+        AppLog.info("Batch extraction paused", category: .batch)
     }
     
     /// Resume the batch extraction
     func resume() {
         isPaused = false
-        logInfo("Batch extraction resumed", category: "batch-extraction")
+        AppLog.info("Batch extraction resumed", category: .batch)
     }
     
     /// Stop the batch extraction
@@ -139,7 +139,7 @@ class BatchExtractionManager: ObservableObject {
             self.isExtracting = false
             self.isPaused = false
             self.currentStatus = nil
-            logInfo("Batch extraction stopped", category: "batch-extraction")
+            AppLog.info("Batch extraction stopped", category: .batch)
         }
     }
     
@@ -170,7 +170,7 @@ class BatchExtractionManager: ObservableObject {
                 await MainActor.run {
                     self.isExtracting = false
                 }
-                logInfo("Batch extraction cancelled", category: "batch-extraction")
+                AppLog.info("Batch extraction cancelled", category: .batch)
                 break
             }
             
@@ -209,7 +209,7 @@ class BatchExtractionManager: ObservableObject {
         if !Task.isCancelled {
             await MainActor.run {
                 self.isExtracting = false
-                logInfo("Batch extraction complete: \(self.successCount) succeeded, \(self.failureCount) failed", category: "batch-extraction")
+                AppLog.info("Batch extraction complete: \(self.successCount) succeeded, \(self.failureCount) failed", category: .batch)
             }
         }
     }
@@ -251,10 +251,10 @@ class BatchExtractionManager: ObservableObject {
             
             // Get image URLs
             let imageURLs = extractor.extractedImageURLs
-            logInfo("DEBUG: extractor.extractedImageURLs has \(imageURLs.count) URLs", category: "batch-extraction")
+            AppLog.info("DEBUG: extractor.extractedImageURLs has \(imageURLs.count) URLs", category: .batch)
             if !imageURLs.isEmpty {
                 let firstThree = Array(imageURLs.prefix(3))
-                logInfo("DEBUG: First 3 URLs: \(firstThree)", category: "batch-extraction")
+                AppLog.info("DEBUG: First 3 URLs: \(firstThree)", category: .batch)
             }
             
             await updateStatus(
@@ -271,11 +271,11 @@ class BatchExtractionManager: ObservableObject {
             // Step 2: Download images
             var downloadedImages: [UIImage] = []
             
-            logInfo("Found \(imageURLs.count) image URL(s) from extractor for '\(link.title)'", category: "batch-extraction")
+            AppLog.info("Found \(imageURLs.count) image URL(s) from extractor for '\(link.title)'", category: .batch)
             if imageURLs.isEmpty {
-                logWarning("No images found for '\(link.title)' - recipe will be saved without images", category: "batch-extraction")
+                AppLog.warning("No images found for '\(link.title)' - recipe will be saved without images", category: .batch)
             } else {
-                logInfo("Image URLs: \(imageURLs.prefix(3).joined(separator: ", "))", category: "batch-extraction")
+                AppLog.info("Image URLs: \(imageURLs.prefix(3).joined(separator: ", "))", category: .batch)
             }
             
             if !imageURLs.isEmpty {
@@ -304,7 +304,7 @@ class BatchExtractionManager: ObservableObject {
                             totalImages: imageURLs.count
                         )
                     } catch {
-                        logWarning("Failed to download image \(imgIndex + 1): \(error)", category: "batch-extraction")
+                        AppLog.warning("Failed to download image \(imgIndex + 1): \(error)", category: .batch)
                     }
                 }
             }
@@ -337,7 +337,7 @@ class BatchExtractionManager: ObservableObject {
             link.isProcessed = true
             link.processingError = nil
             
-            logInfo("Successfully extracted: \(String(describing: recipe.title))", category: "batch-extraction")
+            AppLog.info("Successfully extracted: \(String(describing: recipe.title))", category: .batch)
             
         } catch {
             // Mark as failure
@@ -348,14 +348,14 @@ class BatchExtractionManager: ObservableObject {
             link.isProcessed = true
             link.processingError = error.localizedDescription
             
-            logError("Failed to extract \(link.title): \(error)", category: "batch-extraction")
+            AppLog.error("Failed to extract \(link.title): \(error)", category: .batch)
         }
         
         // Save link status
         do {
             try modelContext.save()
         } catch {
-            logError("Failed to save link status: \(error)", category: "batch-extraction")
+            AppLog.error("Failed to save link status: \(error)", category: .batch)
         }
     }
     
@@ -394,7 +394,7 @@ class BatchExtractionManager: ObservableObject {
             if index == 0 {
                 // First image is the main thumbnail
                 recipe.setImage(image, isMainImage: true)
-                logInfo("Set main image for '\(recipe.safeTitle)' (size: \(image.size))", category: "batch-extraction")
+                AppLog.info("Set main image for '\(recipe.safeTitle)' (size: \(image.size))", category: .batch)
             } else {
                 // Additional images
                 recipe.setImage(image, isMainImage: false)
@@ -403,10 +403,10 @@ class BatchExtractionManager: ObservableObject {
         
         // Verify images were saved
         if images.isEmpty {
-            logWarning("⚠️ No images saved for '\(recipe.safeTitle)'", category: "batch-extraction")
+            AppLog.warning("⚠️ No images saved for '\(recipe.safeTitle)'", category: .batch)
         } else {
-            logInfo("✅ Saved \(images.count) image(s) using setImage() (CloudKit-synced)", category: "batch-extraction")
-            logInfo("Recipe imageData is \(recipe.imageData != nil ? "set" : "nil"), imageName is '\(recipe.imageName ?? "nil")'", category: "batch-extraction")
+            AppLog.info("✅ Saved \(images.count) image(s) using setImage() (CloudKit-synced)", category: .batch)
+            AppLog.info("Recipe imageData is \(recipe.imageData != nil ? "set" : "nil"), imageName is '\(recipe.imageName ?? "nil")'", category: .batch)
         }
         
         // Calculate content fingerprint for duplicate detection
@@ -417,7 +417,7 @@ class BatchExtractionManager: ObservableObject {
         link.extractedRecipeID = recipe.safeID
         
         try modelContext.save()
-        logInfo("Recipe saved: \(recipe.safeTitle) (RecipeX with CloudKit sync enabled)", category: "batch-extraction")
+        AppLog.info("Recipe saved: \(recipe.safeTitle) (RecipeX with CloudKit sync enabled)", category: .batch)
     }
     
     // MARK: - Deprecated Image Methods (kept for reference)
@@ -425,7 +425,7 @@ class BatchExtractionManager: ObservableObject {
     @available(*, deprecated, message: "Use recipe.setImage() instead")
     private func saveImageToDisk(_ image: UIImage, filename: String) {
         guard let imageData = image.jpegData(compressionQuality: 0.8) else {
-            logError("Failed to convert image to JPEG data", category: "batch-extraction")
+            AppLog.error("Failed to convert image to JPEG data", category: .batch)
             return
         }
         
@@ -435,7 +435,7 @@ class BatchExtractionManager: ObservableObject {
         do {
             try imageData.write(to: fileURL)
         } catch {
-            logError("Failed to save image \(filename): \(error)", category: "batch-extraction")
+            AppLog.error("Failed to save image \(filename): \(error)", category: .batch)
         }
     }
     

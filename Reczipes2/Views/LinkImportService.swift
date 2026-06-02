@@ -44,11 +44,11 @@ class LinkImportService {
         validate: Bool = true,
         autoClean: Bool = false
     ) async throws -> Int {
-        logInfo("Starting import from bundle file: \(filename)", category: "import")
+        AppLog.info("Starting import from bundle file: \(filename)", category: .batch)
         
         // Locate the file in the bundle
         guard let url = Bundle.main.url(forResource: filename.replacingOccurrences(of: ".json", with: ""), withExtension: "json") else {
-            logError("Could not find \(filename) in app bundle", category: "import")
+            AppLog.error("Could not find \(filename) in app bundle", category: .batch)
             throw LinkImportError.fileNotFound
         }
         
@@ -69,7 +69,7 @@ class LinkImportService {
         validate: Bool = true,
         autoClean: Bool = false
     ) async throws -> Int {
-        logInfo("Importing links from: \(url.path)", category: "import")
+        AppLog.info("Importing links from: \(url.path)", category: .batch)
         
         // Read and sanitize the raw file data first (strips trailing commas etc.)
         let rawData = try Data(contentsOf: url)
@@ -77,21 +77,21 @@ class LinkImportService {
         
         // Validate the sanitized data if requested
         if validate {
-            logInfo("Validating JSON file...", category: "import")
+            AppLog.info("Validating JSON file...", category: .batch)
             let validationResult = JSONLinkValidator.validate(data: sanitizedData)
             
             if !validationResult.isValid {
-                logError("Validation failed: \(validationResult.errors.joined(separator: ", "))", category: "import")
+                AppLog.error("Validation failed: \(validationResult.errors.joined(separator: ", "))", category: .batch)
                 throw LinkImportError.invalidJSON
             }
             
-            logInfo("Validation passed: \(validationResult.linkCount) links, \(validationResult.warnings.count) warnings, \(validationResult.duplicateURLs.count) duplicates in file", category: "import")
+            AppLog.info("Validation passed: \(validationResult.linkCount) links, \(validationResult.warnings.count) warnings, \(validationResult.duplicateURLs.count) duplicates in file", category: .batch)
         }
         
         // Use sanitized data (with optional duplicate-removal cleaning)
         let data: Data
         if autoClean {
-            logInfo("Auto-cleaning data before import...", category: "import")
+            AppLog.info("Auto-cleaning data before import...", category: .batch)
             // Write sanitized data to a temp file so the cleaner can read it
             let tempInput = FileManager.default.temporaryDirectory.appendingPathComponent("sanitized_links_\(UUID().uuidString).json")
             let tempOutput = FileManager.default.temporaryDirectory.appendingPathComponent("cleaned_links_\(UUID().uuidString).json")
@@ -102,23 +102,23 @@ class LinkImportService {
             // Clean up temp files
             try? FileManager.default.removeItem(at: tempInput)
             try? FileManager.default.removeItem(at: tempOutput)
-            logInfo("Used cleaned data for import", category: "import")
+            AppLog.info("Used cleaned data for import", category: .batch)
         } else {
             data = sanitizedData
         }
         
-        logDebug("Read \(data.count) bytes from file", category: "import")
+        AppLog.debug("Read \(data.count) bytes from file", category: .batch)
         
         // Decode JSON
         let decoder = JSONDecoder()
         let jsonLinks = try decoder.decode([JSONLink].self, from: data)
-        logInfo("Decoded \(jsonLinks.count) links from JSON", category: "import")
+        AppLog.info("Decoded \(jsonLinks.count) links from JSON", category: .batch)
         
         // Filter out already-imported links
         let existingURLs = try await getExistingURLs(from: modelContext)
         let newLinks = jsonLinks.filter { !existingURLs.contains($0.url) }
         
-        logInfo("Found \(newLinks.count) new links to import (skipping \(jsonLinks.count - newLinks.count) duplicates)", category: "import")
+        AppLog.info("Found \(newLinks.count) new links to import (skipping \(jsonLinks.count - newLinks.count) duplicates)", category: .batch)
         
         // Convert to SavedLink models and insert
         var importCount = 0
@@ -130,7 +130,7 @@ class LinkImportService {
         
         // Save the context
         try modelContext.save()
-        logInfo("Successfully imported \(importCount) links", category: "import")
+        AppLog.info("Successfully imported \(importCount) links", category: .batch)
         
         return importCount
     }
@@ -147,31 +147,31 @@ class LinkImportService {
         into modelContext: ModelContext,
         validate: Bool = true
     ) async throws -> Int {
-        logInfo("Importing links from data (\(data.count) bytes)", category: "import")
+        AppLog.info("Importing links from data (\(data.count) bytes)", category: .batch)
         
         // Validate the data if requested
         if validate {
-            logInfo("Validating JSON data...", category: "import")
+            AppLog.info("Validating JSON data...", category: .batch)
             let validationResult = JSONLinkValidator.validate(data: data)
             
             if !validationResult.isValid {
-                logError("Validation failed: \(validationResult.errors.joined(separator: ", "))", category: "import")
+                AppLog.error("Validation failed: \(validationResult.errors.joined(separator: ", "))", category: .batch)
                 throw LinkImportError.invalidJSON
             }
             
-            logInfo("Validation passed: \(validationResult.linkCount) links, \(validationResult.warnings.count) warnings", category: "import")
+            AppLog.info("Validation passed: \(validationResult.linkCount) links, \(validationResult.warnings.count) warnings", category: .batch)
         }
         
         // Decode JSON
         let decoder = JSONDecoder()
         let jsonLinks = try decoder.decode([JSONLink].self, from: data)
-        logInfo("Decoded \(jsonLinks.count) links from JSON", category: "import")
+        AppLog.info("Decoded \(jsonLinks.count) links from JSON", category: .batch)
         
         // Filter out already-imported links
         let existingURLs = try await getExistingURLs(from: modelContext)
         let newLinks = jsonLinks.filter { !existingURLs.contains($0.url) }
         
-        logInfo("Found \(newLinks.count) new links to import (skipping \(jsonLinks.count - newLinks.count) duplicates)", category: "import")
+        AppLog.info("Found \(newLinks.count) new links to import (skipping \(jsonLinks.count - newLinks.count) duplicates)", category: .batch)
         
         // Convert to SavedLink models and insert
         var importCount = 0
@@ -183,7 +183,7 @@ class LinkImportService {
         
         // Save the context
         try modelContext.save()
-        logInfo("Successfully imported \(importCount) links", category: "import")
+        AppLog.info("Successfully imported \(importCount) links", category: .batch)
         
         return importCount
     }
@@ -197,7 +197,7 @@ class LinkImportService {
     
     /// Delete all saved links (useful for re-importing)
     static func clearAllLinks(from modelContext: ModelContext) throws {
-        logWarning("Clearing all saved links", category: "import")
+        AppLog.warning("Clearing all saved links", category: .batch)
         
         let descriptor = FetchDescriptor<SavedLink>()
         let allLinks = try modelContext.fetch(descriptor)
@@ -207,7 +207,7 @@ class LinkImportService {
         }
         
         try modelContext.save()
-        logInfo("Cleared \(allLinks.count) links", category: "import")
+        AppLog.info("Cleared \(allLinks.count) links", category: .batch)
     }
 }
 

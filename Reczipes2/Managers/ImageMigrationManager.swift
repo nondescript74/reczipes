@@ -48,7 +48,7 @@ class ImageMigrationManager: ObservableObject {
     /// Mark migration as completed
     private func markMigrationCompleted() {
         UserDefaults.standard.set(currentMigrationVersion, forKey: migrationVersionKey)
-        logInfo("✅ Image migration v\(currentMigrationVersion) marked as completed", category: "image")
+        AppLog.info("✅ Image migration v\(currentMigrationVersion) marked as completed", category: .image)
     }
 
     // MARK: - Migration Execution
@@ -56,12 +56,12 @@ class ImageMigrationManager: ObservableObject {
     /// Start background image recompression
     func startMigration(modelContext: ModelContext) async {
         guard !isRunning else {
-            logWarning("Migration already running", category: "image")
+            AppLog.warning("Migration already running", category: .image)
             return
         }
 
         guard needsMigration() else {
-            logInfo("Image migration not needed - already at version \(currentMigrationVersion)", category: "image")
+            AppLog.info("Image migration not needed - already at version \(currentMigrationVersion)", category: .image)
             return
         }
 
@@ -70,17 +70,17 @@ class ImageMigrationManager: ObservableObject {
         processedRecipes = 0
         totalBytesSaved = 0
 
-        logInfo("🔄 Starting image migration v\(currentMigrationVersion)...", category: "image")
+        AppLog.info("🔄 Starting image migration v\(currentMigrationVersion)...", category: .image)
 
         do {
             // Fetch all recipes
             let recipes = try await fetchAllRecipes(modelContext: modelContext)
             totalRecipes = recipes.count
 
-            logInfo("📊 Found \(totalRecipes) recipes to process", category: "image")
+            AppLog.info("📊 Found \(totalRecipes) recipes to process", category: .image)
 
             if totalRecipes == 0 {
-                logInfo("No recipes to migrate", category: "image")
+                AppLog.info("No recipes to migrate", category: .image)
                 markMigrationCompleted()
                 isRunning = false
                 return
@@ -98,7 +98,7 @@ class ImageMigrationManager: ObservableObject {
                 // Save periodically (every 10 recipes)
                 if (index + 1) % 10 == 0 {
                     try modelContext.save()
-                    logInfo("💾 Progress saved: \(processedRecipes)/\(totalRecipes) recipes processed", category: "image")
+                    AppLog.info("💾 Progress saved: \(processedRecipes)/\(totalRecipes) recipes processed", category: .image)
                 }
 
                 // Yield to avoid blocking UI
@@ -110,14 +110,14 @@ class ImageMigrationManager: ObservableObject {
 
             // Log completion
             let savedMB = Double(totalBytesSaved) / 1_048_576 // Convert to MB
-            logInfo("✅ Image migration completed successfully!", category: "image")
-            logInfo("📊 Processed: \(processedRecipes) recipes", category: "image")
-            logInfo("💾 Storage saved: \(String(format: "%.2f", savedMB)) MB", category: "image")
+            AppLog.info("✅ Image migration completed successfully!", category: .image)
+            AppLog.info("📊 Processed: \(processedRecipes) recipes", category: .image)
+            AppLog.info("💾 Storage saved: \(String(format: "%.2f", savedMB)) MB", category: .image)
 
             markMigrationCompleted()
 
         } catch {
-            logError("❌ Image migration failed: \(error.localizedDescription)", category: "image")
+            AppLog.error("❌ Image migration failed: \(error.localizedDescription)", category: .image)
         }
 
         isRunning = false
@@ -156,7 +156,7 @@ class ImageMigrationManager: ObservableObject {
                         recipeBytesSaved += saved
                         totalBytesSaved += saved
 
-                        logDebug("  Main image: \(originalSize / 1024)KB → \(newSize / 1024)KB (saved \(saved / 1024)KB)", category: "image")
+                        AppLog.debug("  Main image: \(originalSize / 1024)KB → \(newSize / 1024)KB (saved \(saved / 1024)KB)", category: .image)
                     }
                 }
             }
@@ -189,7 +189,7 @@ class ImageMigrationManager: ObservableObject {
                             totalBytesSaved += saved
                             hasChanges = true
 
-                            logDebug("  Additional image: \(originalSize / 1024)KB → \(newSize / 1024)KB (saved \(saved / 1024)KB)", category: "image")
+                            AppLog.debug("  Additional image: \(originalSize / 1024)KB → \(newSize / 1024)KB (saved \(saved / 1024)KB)", category: .image)
                         } else {
                             recompressedImages.append(imageDict)
                         }
@@ -209,7 +209,7 @@ class ImageMigrationManager: ObservableObject {
         }
 
         if recipeBytesSaved > 0 {
-            logDebug("✓ \(recipe.title ?? "Unknown"): saved \(recipeBytesSaved / 1024)KB", category: "image")
+            AppLog.debug("✓ \(recipe.title ?? "Unknown"): saved \(recipeBytesSaved / 1024)KB", category: .image)
         }
     }
 
@@ -218,17 +218,17 @@ class ImageMigrationManager: ObservableObject {
     /// Start book image migration
     func startBookMigration(modelContext: ModelContext) async {
         guard !isRunning else {
-            logWarning("Migration already running", category: "image")
+            AppLog.warning("Migration already running", category: .image)
             return
         }
 
-        logInfo("🔄 Starting book cover migration...", category: "image")
+        AppLog.info("🔄 Starting book cover migration...", category: .image)
 
         do {
             let books = try await fetchAllBooks(modelContext: modelContext)
             let totalBooks = books.count
 
-            logInfo("📊 Found \(totalBooks) books to process", category: "image")
+            AppLog.info("📊 Found \(totalBooks) books to process", category: .image)
 
             var booksProcessed = 0
             var totalSaved = 0
@@ -252,7 +252,7 @@ class ImageMigrationManager: ObservableObject {
                             totalSaved += saved
                             booksProcessed += 1
 
-                            logDebug("✓ Book '\(book.name ?? "Unknown")': \(originalSize / 1024)KB → \(newSize / 1024)KB (saved \(saved / 1024)KB)", category: "image")
+                            AppLog.debug("✓ Book '\(book.name ?? "Unknown")': \(originalSize / 1024)KB → \(newSize / 1024)KB (saved \(saved / 1024)KB)", category: .image)
                         }
                     }
                 }
@@ -261,10 +261,10 @@ class ImageMigrationManager: ObservableObject {
             try modelContext.save()
 
             let savedMB = Double(totalSaved) / 1_048_576
-            logInfo("✅ Book migration completed: \(booksProcessed) books optimized, saved \(String(format: "%.2f", savedMB)) MB", category: "image")
+            AppLog.info("✅ Book migration completed: \(booksProcessed) books optimized, saved \(String(format: "%.2f", savedMB)) MB", category: .image)
 
         } catch {
-            logError("❌ Book migration failed: \(error.localizedDescription)", category: "image")
+            AppLog.error("❌ Book migration failed: \(error.localizedDescription)", category: .image)
         }
     }
 
@@ -279,11 +279,11 @@ class ImageMigrationManager: ObservableObject {
     /// Run both recipe and book migrations
     func runFullMigration(modelContext: ModelContext) async {
         guard needsMigration() else {
-            logInfo("No migration needed", category: "image")
+            AppLog.info("No migration needed", category: .image)
             return
         }
 
-        logInfo("🚀 Starting full image optimization migration...", category: "image")
+        AppLog.info("🚀 Starting full image optimization migration...", category: .image)
 
         // Migrate recipes
         await startMigration(modelContext: modelContext)
@@ -291,7 +291,7 @@ class ImageMigrationManager: ObservableObject {
         // Migrate books
         await startBookMigration(modelContext: modelContext)
 
-        logInfo("🎉 Full migration completed!", category: "image")
+        AppLog.info("🎉 Full migration completed!", category: .image)
     }
 
     // MARK: - Manual Trigger
@@ -301,7 +301,7 @@ class ImageMigrationManager: ObservableObject {
         // Reset migration flag to force re-run
         UserDefaults.standard.set(0, forKey: migrationVersionKey)
 
-        logInfo("🔧 Manual migration triggered", category: "image")
+        AppLog.info("🔧 Manual migration triggered", category: .image)
 
         await runFullMigration(modelContext: modelContext)
     }

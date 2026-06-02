@@ -28,11 +28,11 @@ class SharedRecipeViewService: ObservableObject {
     /// Fetch full recipe data from CloudKit for viewing
     /// Downloads on-demand when user taps a recipe preview
     func fetchRecipeForViewing(preview: CloudKitRecipePreview) async throws -> CloudKitRecipe {
-        logInfo("📖 Fetching full recipe for viewing: '\(preview.title)'", category: "sharing")
+        AppLog.info("📖 Fetching full recipe for viewing: '\(preview.title)'", category: .sharing)
         
         // Check cache first
         if let cached = recipeCache[preview.id] {
-            logInfo("📖 Using cached recipe data", category: "sharing")
+            AppLog.info("📖 Using cached recipe data", category: .sharing)
             return cached
         }
         
@@ -43,12 +43,12 @@ class SharedRecipeViewService: ObservableObject {
         if let cloudRecordID = preview.cloudRecordID {
             let recipe = try await fetchRecipeByCloudRecordID(cloudRecordID)
             recipeCache[preview.id] = recipe
-            logInfo("✅ Recipe fetched successfully", category: "sharing")
+            AppLog.info("✅ Recipe fetched successfully", category: .sharing)
             return recipe
         }
         
         // Option 2: Search by recipe ID (slower)
-        logInfo("⚠️ No cloudRecordID, searching by recipe ID...", category: "sharing")
+        AppLog.info("⚠️ No cloudRecordID, searching by recipe ID...", category: .sharing)
         let recipe = try await searchRecipeByID(preview.id)
         recipeCache[preview.id] = recipe
         return recipe
@@ -84,23 +84,23 @@ class SharedRecipeViewService: ObservableObject {
     /// Clear cache to free memory
     func clearCache() {
         recipeCache.removeAll()
-        logInfo("🧹 Recipe view cache cleared", category: "sharing")
+        AppLog.info("🧹 Recipe view cache cleared", category: .sharing)
     }
     
     /// Pre-fetch recipes for a book (optional optimization)
     func prefetchRecipesForBook(previews: [CloudKitRecipePreview]) async {
-        logInfo("🔄 Pre-fetching \(previews.count) recipes in background...", category: "sharing")
+        AppLog.info("🔄 Pre-fetching \(previews.count) recipes in background...", category: .sharing)
         
         for preview in previews {
             do {
                 let recipe = try await fetchRecipeForViewing(preview: preview)
                 recipeCache[preview.id] = recipe
             } catch {
-                logWarning("Failed to prefetch '\(preview.title)': \(error)", category: "sharing")
+                AppLog.warning("Failed to prefetch '\(preview.title)': \(error)", category: .sharing)
             }
         }
         
-        logInfo("✅ Pre-fetch complete: \(recipeCache.count) recipes cached", category: "sharing")
+        AppLog.info("✅ Pre-fetch complete: \(recipeCache.count) recipes cached", category: .sharing)
     }
 }
 

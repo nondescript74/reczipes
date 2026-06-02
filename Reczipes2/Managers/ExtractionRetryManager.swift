@@ -91,7 +91,7 @@ actor ExtractionRetryManager {
         configuration: RetryConfiguration = .default,
         operation: @Sendable () async throws -> T
     ) async throws -> T {
-        await logInfo("Starting operation with retry: \(operationID)", category: "retry")
+        AppLog.info("Starting operation with retry: \(operationID)", category: .network)
         
         var lastError: Error?
         var attempt = 0
@@ -100,12 +100,12 @@ actor ExtractionRetryManager {
             attempt += 1
             
             do {
-                await logDebug("Attempt \(attempt)/\(configuration.maxAttempts) for: \(operationID)", category: "retry")
+                AppLog.debug("Attempt \(attempt)/\(configuration.maxAttempts) for: \(operationID)", category: .network)
                 let result = try await operation()
                 
                 // Success! Log and return
                 if attempt > 1 {
-                    await logInfo("✓ Operation succeeded on attempt \(attempt): \(operationID)", category: "retry")
+                    AppLog.info("✓ Operation succeeded on attempt \(attempt): \(operationID)", category: .network)
                 }
                 
                 // Record successful attempt
@@ -115,7 +115,7 @@ actor ExtractionRetryManager {
                 
             } catch {
                 lastError = error
-                await logWarning("✗ Attempt \(attempt) failed for \(operationID): \(error)", category: "retry")
+                AppLog.warning("✗ Attempt \(attempt) failed for \(operationID): \(error)", category: .network)
                 
                 // Record failed attempt
                 recordAttempt(operationID: operationID)
@@ -125,13 +125,13 @@ actor ExtractionRetryManager {
                 
                 // Check if we should retry
                 guard classification.shouldRetry else {
-                    await logError("Terminal error - not retrying: \(error)", category: "retry")
+                    AppLog.error("Terminal error - not retrying: \(error)", category: .network)
                     throw error
                 }
                 
                 // Check if we have more attempts
                 guard attempt < configuration.maxAttempts else {
-                    await logError("Max attempts (\(configuration.maxAttempts)) reached for: \(operationID)", category: "retry")
+                    AppLog.error("Max attempts (\(configuration.maxAttempts)) reached for: \(operationID)", category: .network)
                     break
                 }
                 
@@ -142,7 +142,7 @@ actor ExtractionRetryManager {
                     configuration: configuration
                 )
                 
-                await logInfo("Retrying after \(String(format: "%.1f", delay))s delay...", category: "retry")
+                AppLog.info("Retrying after \(String(format: "%.1f", delay))s delay...", category: .network)
                 
                 // Wait before retry
                 try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
@@ -151,10 +151,10 @@ actor ExtractionRetryManager {
         
         // All retries exhausted
         if let error = lastError {
-            await logError("All retries exhausted for: \(operationID). Final error: \(error)", category: "retry")
+            AppLog.error("All retries exhausted for: \(operationID). Final error: \(error)", category: .network)
             throw error
         } else {
-            await logError("All retries exhausted for: \(operationID). No error recorded.", category: "retry")
+            AppLog.error("All retries exhausted for: \(operationID). No error recorded.", category: .network)
             throw ExtractionRetryError.allRetriesFailed
         }
     }

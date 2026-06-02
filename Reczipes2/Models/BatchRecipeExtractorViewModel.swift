@@ -53,7 +53,7 @@ class BatchRecipeExtractorViewModel: ObservableObject {
         
         let unprocessedLinks = links.filter { !$0.isProcessed }
         guard !unprocessedLinks.isEmpty else {
-            logInfo("No unprocessed links to extract", category: "batch-extraction")
+            AppLog.info("No unprocessed links to extract", category: .batch)
             return
         }
         
@@ -71,10 +71,10 @@ class BatchRecipeExtractorViewModel: ObservableObject {
         
         if remainingCount > 0 {
             currentStatus = "Starting batch extraction (limited to \(maxBatchSize) recipes, \(remainingCount) will remain)..."
-            logInfo("Starting batch extraction of \(totalToExtract) links (limited from \(unprocessedLinks.count))", category: "batch-extraction")
+            AppLog.info("Starting batch extraction of \(totalToExtract) links (limited from \(unprocessedLinks.count))", category: .batch)
         } else {
             currentStatus = "Starting batch extraction..."
-            logInfo("Starting batch extraction of \(totalToExtract) links", category: "batch-extraction")
+            AppLog.info("Starting batch extraction of \(totalToExtract) links", category: .batch)
         }
         
         extractionTask = Task {
@@ -86,14 +86,14 @@ class BatchRecipeExtractorViewModel: ObservableObject {
     func pause() {
         isPaused = true
         currentStatus = "Paused"
-        logInfo("Batch extraction paused", category: "batch-extraction")
+        AppLog.info("Batch extraction paused", category: .batch)
     }
     
     /// Resume the batch extraction
     func resume() {
         isPaused = false
         currentStatus = "Resuming..."
-        logInfo("Batch extraction resumed", category: "batch-extraction")
+        AppLog.info("Batch extraction resumed", category: .batch)
     }
     
     /// Stop the batch extraction
@@ -105,7 +105,7 @@ class BatchRecipeExtractorViewModel: ObservableObject {
         currentLink = nil
         currentRecipe = nil
         currentStatus = "Stopped"
-        logInfo("Batch extraction stopped", category: "batch-extraction")
+        AppLog.info("Batch extraction stopped", category: .batch)
     }
     
     /// Reset all counters and state
@@ -128,7 +128,7 @@ class BatchRecipeExtractorViewModel: ObservableObject {
             // Check if task was cancelled
             guard !Task.isCancelled else {
                 currentStatus = "Cancelled"
-                logInfo("Batch extraction cancelled", category: "batch-extraction")
+                AppLog.info("Batch extraction cancelled", category: .batch)
                 break
             }
             
@@ -143,7 +143,7 @@ class BatchRecipeExtractorViewModel: ObservableObject {
             currentProgress = index + 1
             currentStatus = "Extracting \(index + 1) of \(totalToExtract): \(link.title)"
             
-            logInfo("Extracting link \(index + 1)/\(totalToExtract): \(link.title)", category: "batch-extraction")
+            AppLog.info("Extracting link \(index + 1)/\(totalToExtract): \(link.title)", category: .batch)
             
             // Extract the recipe
             await extractSingleLink(link)
@@ -151,7 +151,7 @@ class BatchRecipeExtractorViewModel: ObservableObject {
             // Wait for the interval before next extraction (except for last one)
             if index < links.count - 1 && !Task.isCancelled {
                 currentStatus = "Waiting \(Int(extractionInterval)) seconds before next extraction..."
-                logInfo("Waiting \(extractionInterval) seconds before next extraction", category: "batch-extraction")
+                AppLog.info("Waiting \(extractionInterval) seconds before next extraction", category: .batch)
                 
                 // Use a loop to check for pause/cancel during wait
                 let intervalSteps = Int(extractionInterval * 2) // Check every 0.5 seconds
@@ -178,7 +178,7 @@ class BatchRecipeExtractorViewModel: ObservableObject {
         if !Task.isCancelled {
             isExtracting = false
             currentStatus = "Complete! ✓ \(successCount) succeeded, ✗ \(failureCount) failed"
-            logInfo("Batch extraction complete: \(successCount) succeeded, \(failureCount) failed", category: "batch-extraction")
+            AppLog.info("Batch extraction complete: \(successCount) succeeded, \(failureCount) failed", category: .batch)
         }
     }
     
@@ -214,9 +214,9 @@ class BatchRecipeExtractorViewModel: ObservableObject {
                 link.processingError = nil
                 
                 if attempt > 1 {
-                    logInfo("Successfully extracted '\(String(describing: recipe.title))' after \(attempt) attempts", category: "batch-extraction")
+                    AppLog.info("Successfully extracted '\(String(describing: recipe.title))' after \(attempt) attempts", category: .batch)
                 } else {
-                    logInfo("Successfully extracted and saved: \(String(describing: recipe.title))", category: "batch-extraction")
+                    AppLog.info("Successfully extracted and saved: \(String(describing: recipe.title))", category: .batch)
                 }
                 
                 // Success - break out of retry loop
@@ -226,7 +226,7 @@ class BatchRecipeExtractorViewModel: ObservableObject {
                 // Check if we should retry
                 if attempt < maxAttempts {
                     let delay = calculateRetryDelay(attempt: attempt)
-                    logWarning("Extraction attempt \(attempt) failed for '\(linkTitle)', retrying in \(delay)s: \(error)", category: "batch-extraction")
+                    AppLog.warning("Extraction attempt \(attempt) failed for '\(linkTitle)', retrying in \(delay)s: \(error)", category: .batch)
                     currentStatus = "Attempt \(attempt) failed, retrying in \(Int(delay))s..."
                     
                     try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
@@ -237,7 +237,7 @@ class BatchRecipeExtractorViewModel: ObservableObject {
                     link.processingError = error.localizedDescription
                     errorLog.append((link: link.title, error: error.localizedDescription))
                     
-                    logError("Failed to extract '\(link.title)' after \(attempt) attempt(s): \(error)", category: "batch-extraction")
+                    AppLog.error("Failed to extract '\(link.title)' after \(attempt) attempt(s): \(error)", category: .batch)
                 }
             }
         }
@@ -246,7 +246,7 @@ class BatchRecipeExtractorViewModel: ObservableObject {
         do {
             try modelContext.save()
         } catch {
-            logError("Failed to save link status: \(error)", category: "batch-extraction")
+            AppLog.error("Failed to save link status: \(error)", category: .batch)
         }
     }
     
@@ -304,16 +304,16 @@ class BatchRecipeExtractorViewModel: ObservableObject {
         
         // Get image URLs from extractor (new method - more reliable than notes)
         let imageURLs = extractor.extractedImageURLs
-        logInfo("Found \(imageURLs.count) image URL(s) from extractor for '\(title)'", category: "batch-extraction")
+        AppLog.info("Found \(imageURLs.count) image URL(s) from extractor for '\(title)'", category: .batch)
         if !imageURLs.isEmpty {
-            logInfo("First 3 image URLs: \(Array(imageURLs.prefix(3)))", category: "batch-extraction")
+            AppLog.info("First 3 image URLs: \(Array(imageURLs.prefix(3)))", category: .batch)
         }
         
         // Download images if available
         var downloadedImages: [UIImage] = []
         if !imageURLs.isEmpty {
             currentStatus = "Downloading \(imageURLs.count) image(s)..."
-            logInfo("Downloading \(imageURLs.count) images for: \(String(describing: recipe.title))", category: "batch-extraction")
+            AppLog.info("Downloading \(imageURLs.count) images for: \(String(describing: recipe.title))", category: .batch)
             
             for (_ , imageURL) in imageURLs.enumerated() {
                 // Try to download each image with basic retry
@@ -329,10 +329,10 @@ class BatchRecipeExtractorViewModel: ObservableObject {
                         break // Success
                     } catch {
                         if imageAttempt < maxImageAttempts {
-                            logWarning("Image download attempt \(imageAttempt) failed, retrying: \(error)", category: "batch-extraction")
+                            AppLog.warning("Image download attempt \(imageAttempt) failed, retrying: \(error)", category: .batch)
                             try? await Task.sleep(nanoseconds: 1_000_000_000) // 1 second
                         } else {
-                            logWarning("Failed to download image after \(imageAttempt) attempts: \(error)", category: "batch-extraction")
+                            AppLog.warning("Failed to download image after \(imageAttempt) attempts: \(error)", category: .batch)
                             // Continue with other images - don't fail the whole extraction
                         }
                     }
@@ -375,7 +375,7 @@ class BatchRecipeExtractorViewModel: ObservableObject {
             }
         }
         
-        logInfo("✅ Saved \(images.count) image(s) using setImage() (CloudKit-synced)", category: "batch-extraction")
+        AppLog.info("✅ Saved \(images.count) image(s) using setImage() (CloudKit-synced)", category: .batch)
         
         // Insert into SwiftData context
         modelContext.insert(recipe)
@@ -386,9 +386,9 @@ class BatchRecipeExtractorViewModel: ObservableObject {
         // Save the context
         do {
             try modelContext.save()
-            logInfo("Recipe saved successfully: \(String(describing: recipe.title)) with \(images.count) image(s) in SwiftData", category: "batch-extraction")
+            AppLog.info("Recipe saved successfully: \(String(describing: recipe.title)) with \(images.count) image(s) in SwiftData", category: .batch)
         } catch {
-            logError("Failed to save recipe to database: \(error)", category: "batch-extraction")
+            AppLog.error("Failed to save recipe to database: \(error)", category: .batch)
             throw error
         }
     }

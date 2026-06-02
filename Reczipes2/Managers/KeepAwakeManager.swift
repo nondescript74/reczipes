@@ -28,7 +28,7 @@ final class KeepAwakeManager {
         
         UIApplication.shared.isIdleTimerDisabled = true
         isKeepAwakeEnabled = true
-        logInfo("Keep awake enabled - device will not sleep", category: "ui")
+        AppLog.info("Keep awake enabled - device will not sleep", category: .ui)
     }
     
     /// Disable keep awake - allows normal sleep behavior
@@ -37,7 +37,7 @@ final class KeepAwakeManager {
         
         UIApplication.shared.isIdleTimerDisabled = false
         isKeepAwakeEnabled = false
-        logInfo("Keep awake disabled - normal sleep behavior restored", category: "ui")
+        AppLog.info("Keep awake disabled - normal sleep behavior restored", category: .ui)
     }
     
     /// Toggle keep awake state

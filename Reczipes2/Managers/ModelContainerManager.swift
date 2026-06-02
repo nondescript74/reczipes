@@ -26,9 +26,9 @@ class ModelContainerManager: ObservableObject {
     private init() {
         // IMPORTANT: Try CloudKit first for community sharing features
         // Only fall back to local-only if CloudKit is genuinely unavailable
-        logInfo("🚀 ModelContainerManager initializing...", category: "storage")
-        logInfo("   Attempting CloudKit container first (required for community sharing)", category: "storage")
-        logInfo("   Will fall back to local-only if CloudKit unavailable", category: "storage")
+        AppLog.info("🚀 ModelContainerManager initializing...", category: .storage)
+        AppLog.info("   Attempting CloudKit container first (required for community sharing)", category: .storage)
+        AppLog.info("   Will fall back to local-only if CloudKit unavailable", category: .storage)
         
         let (container, cloudKitEnabled) = Self.createModelContainer(forceCloudKit: true)
         self.container = container
@@ -56,35 +56,35 @@ class ModelContainerManager: ObservableObject {
             
             // Check if task was cancelled (e.g., due to backgrounding)
             guard !Task.isCancelled else {
-                logInfo("🔍 Startup health check cancelled (app may have been backgrounded)", category: "storage")
+                AppLog.info("🔍 Startup health check cancelled (app may have been backgrounded)", category: .storage)
                 return
             }
             
-            logInfo("🔍 Performing startup health check...", category: "storage")
+            AppLog.info("🔍 Performing startup health check...", category: .storage)
             let isHealthy = await self.verifyContainerHealth()
             
             // Check cancellation again after async work
             guard !Task.isCancelled else {
-                logInfo("🔍 Startup health check cancelled after verification", category: "storage")
+                AppLog.info("🔍 Startup health check cancelled after verification", category: .storage)
                 return
             }
             
             if !isHealthy {
-                logWarning("⚠️ Container health check failed on startup", category: "storage")
-                logWarning("   Attempting automatic recovery...", category: "storage")
+                AppLog.warning("⚠️ Container health check failed on startup", category: .storage)
+                AppLog.warning("   Attempting automatic recovery...", category: .storage)
                 
                 let recovered = await self.attemptContainerRecovery()
                 
                 // Check cancellation after recovery attempt
                 guard !Task.isCancelled else {
-                    logInfo("🔍 Container recovery cancelled", category: "storage")
+                    AppLog.info("🔍 Container recovery cancelled", category: .storage)
                     return
                 }
                 
                 if !recovered {
-                    logCritical("❌ CRITICAL: Container recovery failed!", category: "storage")
-                    logCritical("   App may not function correctly", category: "storage")
-                    logCritical("   User should delete and reinstall app to resolve", category: "storage")
+                    AppLog.critical("❌ CRITICAL: Container recovery failed!", category: .storage)
+                    AppLog.critical("   App may not function correctly", category: .storage)
+                    AppLog.critical("   User should delete and reinstall app to resolve", category: .storage)
                     
                     // Log user-facing critical diagnostic
                     logUserDiagnostic(
@@ -116,7 +116,7 @@ class ModelContainerManager: ObservableObject {
                     await self.logDiagnosticInfo()
                 }
             } else {
-                logInfo("✅ Startup health check passed", category: "storage")
+                AppLog.info("✅ Startup health check passed", category: .storage)
             }
         }
     }
@@ -131,22 +131,22 @@ class ModelContainerManager: ObservableObject {
     
     private static func createModelContainer(forceCloudKit: Bool? = nil) -> (ModelContainer, Bool) {
         // Log schema version information
-        logInfo("🚀 STARTING MODEL CONTAINER INITIALIZATION", category: "storage")
-        logInfo("   Schema Version: \(SchemaVersionManager.versionString(SchemaVersionManager.currentVersion))", category: "storage")
+        AppLog.info("🚀 STARTING MODEL CONTAINER INITIALIZATION", category: .storage)
+        AppLog.info("   Schema Version: \(SchemaVersionManager.versionString(SchemaVersionManager.currentVersion))", category: .storage)
         SchemaVersionManager.logSchemaInfo()
         
         // Use the forced CloudKit setting
         let shouldUseCloudKit = forceCloudKit ?? false
         
         if shouldUseCloudKit {
-            logInfo("📦 Creating container with CloudKit enabled", category: "storage")
+            AppLog.info("📦 Creating container with CloudKit enabled", category: .storage)
             // Try CloudKit configuration
             if let container = tryCreateCloudKitContainer() {
                 return (container, true)
             }
-            logWarning("⚠️ CloudKit container creation failed, falling back to local-only", category: "storage")
+            AppLog.warning("⚠️ CloudKit container creation failed, falling back to local-only", category: .storage)
         } else {
-            logInfo("📦 Creating local-only container (CloudKit will be checked asynchronously)", category: "storage")
+            AppLog.info("📦 Creating local-only container (CloudKit will be checked asynchronously)", category: .storage)
         }
         
         // Fall back to local-only configuration
@@ -165,7 +165,7 @@ class ModelContainerManager: ObservableObject {
             cloudKitDatabase: .private("iCloud.com.headydiscy.reczipes")
         )
         
-        logInfo("📦 Attempting to create ModelContainer with CloudKit...", category: "storage")
+        AppLog.info("📦 Attempting to create ModelContainer with CloudKit...", category: .storage)
         do {
             let container = try ModelContainer(
                 for: RecipeX.self,              // Unified recipe model (CloudKit compatible)
@@ -185,15 +185,15 @@ class ModelContainerManager: ObservableObject {
                 migrationPlan: Reczipes2MigrationPlan.self,
                 configurations: cloudKitConfiguration
             )
-            logInfo("✅ ModelContainer created successfully with CloudKit sync enabled", category: "storage")
-            logInfo("   Container: iCloud.com.headydiscy.reczipes", category: "storage")
-            logInfo("   Database: CloudKitModel.sqlite", category: "storage")
+            AppLog.info("✅ ModelContainer created successfully with CloudKit sync enabled", category: .storage)
+            AppLog.info("   Container: iCloud.com.headydiscy.reczipes", category: .storage)
+            AppLog.info("   Database: CloudKitModel.sqlite", category: .storage)
             return container
         } catch let error as NSError {
             // Log the full error details for debugging
-            logError("❌ CloudKit ModelContainer creation failed: \(error.localizedDescription)", category: "storage")
-            logError("   Error domain: \(error.domain), code: \(error.code)", category: "storage")
-            logError("   Underlying error: \(String(describing: error.userInfo[NSUnderlyingErrorKey]))", category: "storage")
+            AppLog.error("❌ CloudKit ModelContainer creation failed: \(error.localizedDescription)", category: .storage)
+            AppLog.error("   Error domain: \(error.domain), code: \(error.code)", category: .storage)
+            AppLog.error("   Underlying error: \(String(describing: error.userInfo[NSUnderlyingErrorKey]))", category: .storage)
             
             // ✨ NEW: Analyze error chain
             let analysis = DatabaseRecoveryLogger.analyzeError(error)
@@ -206,9 +206,9 @@ class ModelContainerManager: ObservableObject {
                 // ✨ NEW: Capture database size before deletion
                 let databaseSizeMB = DatabaseRecoveryLogger.getDatabaseSize(at: cloudKitURL)
                 
-                logWarning("⚠️ Database incompatible with current schema (unknown model version)", category: "storage")
-                logWarning("   This usually happens when the database was created with a schema version that no longer exists", category: "storage")
-                logWarning("   Attempting to delete incompatible database and start fresh...", category: "storage")
+                AppLog.warning("⚠️ Database incompatible with current schema (unknown model version)", category: .storage)
+                AppLog.warning("   This usually happens when the database was created with a schema version that no longer exists", category: .storage)
+                AppLog.warning("   Attempting to delete incompatible database and start fresh...", category: .storage)
                 
                 // Try to delete the old database files
                 let fileManager = FileManager.default
@@ -226,9 +226,9 @@ class ModelContainerManager: ObservableObject {
                         do {
                             try fileManager.removeItem(atPath: filePath)
                             filesDeleted.append(filePath.split(separator: "/").last.map(String.init) ?? filePath)
-                            logInfo("   ✅ Deleted: \(filesDeleted.last!)", category: "storage")
+                            AppLog.info("   ✅ Deleted: \(filesDeleted.last!)", category: .storage)
                         } catch {
-                            logError("   ❌ Failed to delete \(filePath): \(error)", category: "storage")
+                            AppLog.error("   ❌ Failed to delete \(filePath): \(error)", category: .storage)
                         }
                     }
                 }
@@ -296,7 +296,7 @@ class ModelContainerManager: ObservableObject {
                 if error.domain == "SwiftData.SwiftDataError" && error.code == 1 {
                     // SwiftData error code 1 is loadIssueModelContainer
                     // This often wraps a Core Data migration error
-                    logWarning("   SwiftData loadIssueModelContainer error detected", category: "storage")
+                    AppLog.warning("   SwiftData loadIssueModelContainer error detected", category: .storage)
                     return true
                 }
                 
@@ -306,9 +306,9 @@ class ModelContainerManager: ObservableObject {
             let isUnknownModelVersion = containsUnknownModelError(error)
             
             if isUnknownModelVersion {
-                logWarning("⚠️ Database incompatible with current schema (unknown model version)", category: "storage")
-                logWarning("   This usually happens when the database was created with a schema version that no longer exists", category: "storage")
-                logWarning("   Attempting to delete incompatible database and start fresh...", category: "storage")
+                AppLog.warning("⚠️ Database incompatible with current schema (unknown model version)", category: .storage)
+                AppLog.warning("   This usually happens when the database was created with a schema version that no longer exists", category: .storage)
+                AppLog.warning("   Attempting to delete incompatible database and start fresh...", category: .storage)
                 
                 // Try to delete the old database files
                 let fileManager = FileManager.default
@@ -324,15 +324,15 @@ class ModelContainerManager: ObservableObject {
                         do {
                             try fileManager.removeItem(atPath: filePath)
                             deletedCount += 1
-                            logInfo("   ✅ Deleted: \(filePath.split(separator: "/").last ?? "")", category: "storage")
+                            AppLog.info("   ✅ Deleted: \(filePath.split(separator: "/").last ?? "")", category: .storage)
                         } catch {
-                            logError("   ❌ Failed to delete \(filePath): \(error)", category: "storage")
+                            AppLog.error("   ❌ Failed to delete \(filePath): \(error)", category: .storage)
                         }
                     }
                 }
                 
                 if deletedCount > 0 {
-                    logInfo("   Deleted \(deletedCount) database file(s), attempting to recreate...", category: "storage")
+                    AppLog.info("   Deleted \(deletedCount) database file(s), attempting to recreate...", category: .storage)
                     
                     // Try creating container again with clean slate
                     do {
@@ -354,19 +354,19 @@ class ModelContainerManager: ObservableObject {
                             migrationPlan: Reczipes2MigrationPlan.self,
                             configurations: cloudKitConfiguration
                         )
-                        logInfo("✅ ModelContainer recreated successfully after database cleanup", category: "storage")
-                        logWarning("   Note: Previous local data was lost, but CloudKit data should sync back", category: "storage")
+                        AppLog.info("✅ ModelContainer recreated successfully after database cleanup", category: .storage)
+                        AppLog.warning("   Note: Previous local data was lost, but CloudKit data should sync back", category: .storage)
                         return container
                     } catch {
-                        logError("❌ Failed to recreate container after cleanup: \(error)", category: "storage")
+                        AppLog.error("❌ Failed to recreate container after cleanup: \(error)", category: .storage)
                         return nil
                     }
                 } else {
-                    logError("   No database files found to delete", category: "storage")
+                    AppLog.error("   No database files found to delete", category: .storage)
                     return nil
                 }
             } else {
-                logError("❌ CloudKit ModelContainer creation failed: \(error.localizedDescription)", category: "storage")
+                AppLog.error("❌ CloudKit ModelContainer creation failed: \(error.localizedDescription)", category: .storage)
                 return nil
             }
         }
@@ -398,15 +398,15 @@ class ModelContainerManager: ObservableObject {
                 migrationPlan: Reczipes2MigrationPlan.self,
                 configurations: localConfiguration
             )
-            logInfo("✅ ModelContainer created successfully (local-only, no CloudKit sync)", category: "storage")
-            logInfo("   Using existing database: CloudKitModel.sqlite", category: "storage")
-            logInfo("   Your data is preserved even though CloudKit is disabled", category: "storage")
+            AppLog.info("✅ ModelContainer created successfully (local-only, no CloudKit sync)", category: .storage)
+            AppLog.info("   Using existing database: CloudKitModel.sqlite", category: .storage)
+            AppLog.info("   Your data is preserved even though CloudKit is disabled", category: .storage)
             return container
         } catch let error as NSError {
             // Log the full error details for debugging
-            logError("❌ Local ModelContainer creation failed: \(error.localizedDescription)", category: "storage")
-            logError("   Error domain: \(error.domain), code: \(error.code)", category: "storage")
-            logError("   Underlying error: \(String(describing: error.userInfo[NSUnderlyingErrorKey]))", category: "storage")
+            AppLog.error("❌ Local ModelContainer creation failed: \(error.localizedDescription)", category: .storage)
+            AppLog.error("   Error domain: \(error.domain), code: \(error.code)", category: .storage)
+            AppLog.error("   Underlying error: \(String(describing: error.userInfo[NSUnderlyingErrorKey]))", category: .storage)
             
             // ✨ NEW: Analyze error chain
             let analysis = DatabaseRecoveryLogger.analyzeError(error)
@@ -419,9 +419,9 @@ class ModelContainerManager: ObservableObject {
                 // ✨ NEW: Capture database size before deletion
                 let databaseSizeMB = DatabaseRecoveryLogger.getDatabaseSize(at: cloudKitURL)
                 
-                logWarning("⚠️ Database incompatible with current schema (unknown model version)", category: "storage")
-                logWarning("   This usually happens when the database was created with a schema version that no longer exists", category: "storage")
-                logWarning("   Attempting to delete incompatible database and start fresh...", category: "storage")
+                AppLog.warning("⚠️ Database incompatible with current schema (unknown model version)", category: .storage)
+                AppLog.warning("   This usually happens when the database was created with a schema version that no longer exists", category: .storage)
+                AppLog.warning("   Attempting to delete incompatible database and start fresh...", category: .storage)
                 
                 // Try to delete the old database files
                 let fileManager = FileManager.default
@@ -439,15 +439,15 @@ class ModelContainerManager: ObservableObject {
                         do {
                             try fileManager.removeItem(atPath: filePath)
                             filesDeleted.append(filePath.split(separator: "/").last.map(String.init) ?? filePath)
-                            logInfo("   ✅ Deleted: \(filesDeleted.last!)", category: "storage")
+                            AppLog.info("   ✅ Deleted: \(filesDeleted.last!)", category: .storage)
                         } catch {
-                            logError("   ❌ Failed to delete \(filePath): \(error)", category: "storage")
+                            AppLog.error("   ❌ Failed to delete \(filePath): \(error)", category: .storage)
                         }
                     }
                 }
                 
                 if filesDeleted.count > 0 {
-                    logInfo("   Deleted \(filesDeleted.count) database file(s), attempting to recreate...", category: "storage")
+                    AppLog.info("   Deleted \(filesDeleted.count) database file(s), attempting to recreate...", category: .storage)
                     
                     // Try creating container again with clean slate
                     do {
@@ -478,8 +478,8 @@ class ModelContainerManager: ObservableObject {
                             databaseSizeMB: databaseSizeMB
                         )
                         
-                        logInfo("✅ ModelContainer recreated successfully after database cleanup", category: "storage")
-                        logWarning("   Note: Previous local data was lost, but may sync back from iCloud", category: "storage")
+                        AppLog.info("✅ ModelContainer recreated successfully after database cleanup", category: .storage)
+                        AppLog.warning("   Note: Previous local data was lost, but may sync back from iCloud", category: .storage)
                         return container
                     } catch let recreationError {
                         // ✨ NEW: Log failed recovery
@@ -490,7 +490,7 @@ class ModelContainerManager: ObservableObject {
                             secondaryError: recreationError
                         )
                         
-                        logCritical("❌ Failed to recreate container after cleanup: \(recreationError)", category: "storage")
+                        AppLog.critical("❌ Failed to recreate container after cleanup: \(recreationError)", category: .storage)
                         fatalError("Could not create ModelContainer even after cleanup: \(recreationError)")
                     }
                 } else {
@@ -502,13 +502,13 @@ class ModelContainerManager: ObservableObject {
                         secondaryError: nil
                     )
                     
-                    logCritical("❌ No database files found to delete, cannot recover", category: "storage")
+                    AppLog.critical("❌ No database files found to delete, cannot recover", category: .storage)
                     fatalError("Could not create ModelContainer: \(error)")
                 }
             } else {
                 // Non-schema issue - fatal error
-                logCritical("❌ All ModelContainer initialization attempts failed", category: "storage")
-                logCritical("   Final error: \(error)", category: "storage")
+                AppLog.critical("❌ All ModelContainer initialization attempts failed", category: .storage)
+                AppLog.critical("   Final error: \(error)", category: .storage)
                 fatalError("Could not create ModelContainer: \(error)")
             }
         }
@@ -545,22 +545,22 @@ class ModelContainerManager: ObservableObject {
             
             let cloudKitAvailable = await checkCurrentCloudKitStatus()
             
-            logInfo("🔍 CloudKit check attempt \(attempt + 1)/\(retryDelays.count):", category: "storage")
-            logInfo("   CloudKit available: \(cloudKitAvailable)", category: "storage")
+            AppLog.info("🔍 CloudKit check attempt \(attempt + 1)/\(retryDelays.count):", category: .storage)
+            AppLog.info("   CloudKit available: \(cloudKitAvailable)", category: .storage)
             
             // If CloudKit is available, upgrade the container
             if cloudKitAvailable {
-                logInfo("✅ CloudKit is available - upgrading container to enable sync...", category: "storage")
+                AppLog.info("✅ CloudKit is available - upgrading container to enable sync...", category: .storage)
                 await recreateContainer(withCloudKitEnabled: true)
                 return // Success, exit retry loop
             }
         }
         
-        logInfo("ℹ️ CloudKit not available after \(retryDelays.count) checks - continuing with local-only storage", category: "storage")
+        AppLog.info("ℹ️ CloudKit not available after \(retryDelays.count) checks - continuing with local-only storage", category: .storage)
     }
     
     private func handleAccountChange() {
-        logInfo("🔄 CloudKit account changed - checking if container recreation is needed...", category: "storage")
+        AppLog.info("🔄 CloudKit account changed - checking if container recreation is needed...", category: .storage)
         
         Task {
             // Check new account status
@@ -569,8 +569,8 @@ class ModelContainerManager: ObservableObject {
             
             // Only recreate if status actually changed
             if wasCloudKitEnabled != nowAvailable {
-                logWarning("⚠️ CloudKit availability changed: \(wasCloudKitEnabled) → \(nowAvailable)", category: "storage")
-                logInfo("   Recreating ModelContainer to match new iCloud state...", category: "storage")
+                AppLog.warning("⚠️ CloudKit availability changed: \(wasCloudKitEnabled) → \(nowAvailable)", category: .storage)
+                AppLog.info("   Recreating ModelContainer to match new iCloud state...", category: .storage)
                 
                 // Log user-facing diagnostic
                 logUserDiagnostic(
@@ -598,7 +598,7 @@ class ModelContainerManager: ObservableObject {
                 
                 await recreateContainer(withCloudKitEnabled: nowAvailable)
             } else {
-                logInfo("✓ CloudKit status unchanged, no container recreation needed", category: "storage")
+                AppLog.info("✓ CloudKit status unchanged, no container recreation needed", category: .storage)
             }
         }
     }
@@ -607,7 +607,7 @@ class ModelContainerManager: ObservableObject {
         do {
             let status = try await CKContainer.default().accountStatus()
             let isAvailable = (status == .available)
-            logInfo("   Current CloudKit status: \(status.rawValue) (\(isAvailable ? "available" : "not available"))", category: "storage")
+            AppLog.info("   Current CloudKit status: \(status.rawValue) (\(isAvailable ? "available" : "not available"))", category: .storage)
             
             // Log user-facing diagnostic if CloudKit is unavailable
             if !isAvailable {
@@ -657,7 +657,7 @@ class ModelContainerManager: ObservableObject {
             
             return isAvailable
         } catch {
-            logError("❌ Error checking CloudKit status: \(error.localizedDescription)", category: "storage")
+            AppLog.error("❌ Error checking CloudKit status: \(error.localizedDescription)", category: .storage)
             
             logUserDiagnostic(
                 .error,
@@ -687,7 +687,7 @@ class ModelContainerManager: ObservableObject {
     
     func recreateContainer(withCloudKitEnabled cloudKitEnabled: Bool? = nil) async {
         guard !isRecreating else {
-            logWarning("⚠️ Container recreation already in progress, skipping...", category: "storage")
+            AppLog.warning("⚠️ Container recreation already in progress, skipping...", category: .storage)
             return
         }
         
@@ -702,17 +702,17 @@ class ModelContainerManager: ObservableObject {
             }
         }
         
-        logInfo("🔄 Recreating ModelContainer...", category: "storage")
+        AppLog.info("🔄 Recreating ModelContainer...", category: .storage)
         if let enabled = cloudKitEnabled {
-            logInfo("   Target CloudKit state: \(enabled ? "enabled" : "disabled")", category: "storage")
+            AppLog.info("   Target CloudKit state: \(enabled ? "enabled" : "disabled")", category: .storage)
         }
         
         // Determine appropriate wait time based on current container state
         let wasCloudKitEnabled = await MainActor.run { isCloudKitEnabled }
         let waitTime: UInt64 = wasCloudKitEnabled ? 5_000_000_000 : 1_000_000_000 // 5s if CloudKit was on, 1s if local
         
-        logInfo("   Waiting for previous container to tear down...", category: "storage")
-        logInfo("   (Wait time: \(waitTime / 1_000_000_000) seconds - \(wasCloudKitEnabled ? "CloudKit cleanup needed" : "local-only, minimal wait"))", category: "storage")
+        AppLog.info("   Waiting for previous container to tear down...", category: .storage)
+        AppLog.info("   (Wait time: \(waitTime / 1_000_000_000) seconds - \(wasCloudKitEnabled ? "CloudKit cleanup needed" : "local-only, minimal wait"))", category: .storage)
         
         // Store reference to old container
         let oldContainer = await MainActor.run { container }
@@ -723,7 +723,7 @@ class ModelContainerManager: ObservableObject {
         // Keep reference to ensure it stays alive until now
         _ = oldContainer.schema
         
-        logInfo("   Creating new container...", category: "storage")
+        AppLog.info("   Creating new container...", category: .storage)
         
         // Create new container with known CloudKit state if provided
         let (newContainer, actualCloudKitEnabled) = Self.createModelContainer(forceCloudKit: cloudKitEnabled)
@@ -734,8 +734,8 @@ class ModelContainerManager: ObservableObject {
             isCloudKitEnabled = actualCloudKitEnabled
         }
         
-        logInfo("✅ ModelContainer recreated successfully", category: "storage")
-        logInfo("   CloudKit enabled: \(actualCloudKitEnabled)", category: "storage")
+        AppLog.info("✅ ModelContainer recreated successfully", category: .storage)
+        AppLog.info("   CloudKit enabled: \(actualCloudKitEnabled)", category: .storage)
         
         // Post notification so views can refresh if needed
         await MainActor.run {
@@ -745,7 +745,7 @@ class ModelContainerManager: ObservableObject {
     
     /// Manually trigger container recreation (for testing or troubleshooting)
     func manuallyRecreateContainer() async {
-        logInfo("🔧 Manually recreating ModelContainer...", category: "storage")
+        AppLog.info("🔧 Manually recreating ModelContainer...", category: .storage)
         await recreateContainer()
     }
     
@@ -765,10 +765,10 @@ class ModelContainerManager: ObservableObject {
             bookDescriptor.fetchLimit = 1
             _ = try context.fetch(bookDescriptor)
             
-            logInfo("✅ Container health check passed (RecipeX, Book models verified)", category: "storage")
+            AppLog.info("✅ Container health check passed (RecipeX, Book models verified)", category: .storage)
             return true
         } catch {
-            logError("❌ Container health check failed: \(error)", category: "storage")
+            AppLog.error("❌ Container health check failed: \(error)", category: .storage)
             
             logUserDiagnostic(
                 .error,
@@ -797,64 +797,64 @@ class ModelContainerManager: ObservableObject {
     /// Attempt to recover from container failures
     /// Returns true if recovery was successful, false if manual intervention needed
     func attemptContainerRecovery() async -> Bool {
-        logWarning("🔧 Attempting container recovery...", category: "storage")
+        AppLog.warning("🔧 Attempting container recovery...", category: .storage)
         
         // Log diagnostic info before attempting recovery
         await logDiagnosticInfo()
         
         // Step 1: Try recreating the container with current CloudKit state
-        logInfo("   Step 1: Recreating container...", category: "storage")
+        AppLog.info("   Step 1: Recreating container...", category: .storage)
         await recreateContainer(withCloudKitEnabled: isCloudKitEnabled)
         
         // Step 2: Verify the new container is working
-        logInfo("   Step 2: Verifying container health...", category: "storage")
+        AppLog.info("   Step 2: Verifying container health...", category: .storage)
         if await verifyContainerHealth() {
-            logInfo("✅ Container recovery successful!", category: "storage")
+            AppLog.info("✅ Container recovery successful!", category: .storage)
             return true
         }
         
         // Step 3: If still failing, try forcing CloudKit refresh
         if isCloudKitEnabled {
-            logInfo("   Step 3: Attempting CloudKit container refresh...", category: "storage")
+            AppLog.info("   Step 3: Attempting CloudKit container refresh...", category: .storage)
             await recreateContainer(withCloudKitEnabled: true)
             
             if await verifyContainerHealth() {
-                logInfo("✅ Container recovery successful after CloudKit refresh!", category: "storage")
+                AppLog.info("✅ Container recovery successful after CloudKit refresh!", category: .storage)
                 return true
             }
         }
         
         // Step 4: Last resort - try local-only mode
-        logWarning("   Step 4: Attempting local-only fallback...", category: "storage")
+        AppLog.warning("   Step 4: Attempting local-only fallback...", category: .storage)
         await recreateContainer(withCloudKitEnabled: false)
         
         if await verifyContainerHealth() {
-            logWarning("⚠️ Container recovered in local-only mode (CloudKit disabled)", category: "storage")
-            logWarning("   User may need to reinstall app to restore CloudKit sync", category: "storage")
+            AppLog.warning("⚠️ Container recovered in local-only mode (CloudKit disabled)", category: .storage)
+            AppLog.warning("   User may need to reinstall app to restore CloudKit sync", category: .storage)
             return true
         }
         
         // Complete failure - needs manual intervention
-        logError("❌ Container recovery failed - manual intervention required", category: "storage")
-        logError("   User should try: Delete app → Reinstall → Data will sync from CloudKit", category: "storage")
+        AppLog.error("❌ Container recovery failed - manual intervention required", category: .storage)
+        AppLog.error("   User should try: Delete app → Reinstall → Data will sync from CloudKit", category: .storage)
         return false
     }
     
     /// Log comprehensive diagnostic information about the container state
     func logDiagnosticInfo() async {
-        logInfo("📊 ============ CONTAINER DIAGNOSTIC INFO ============", category: "storage")
-        logInfo("📊 Runtime State:", category: "storage")
-        logInfo("   CloudKit Enabled: \(isCloudKitEnabled)", category: "storage")
-        logInfo("   Is Recreating: \(isRecreating)", category: "storage")
+        AppLog.info("📊 ============ CONTAINER DIAGNOSTIC INFO ============", category: .storage)
+        AppLog.info("📊 Runtime State:", category: .storage)
+        AppLog.info("   CloudKit Enabled: \(isCloudKitEnabled)", category: .storage)
+        AppLog.info("   Is Recreating: \(isRecreating)", category: .storage)
         
-        logInfo("📊 Schema Information:", category: "storage")
+        AppLog.info("📊 Schema Information:", category: .storage)
         let entityNames = container.schema.entities.map { $0.name }.sorted()
-        logInfo("   Entities: \(entityNames.joined(separator: ", "))", category: "storage")
-        logInfo("   Entity Count: \(entityNames.count)", category: "storage")
+        AppLog.info("   Entities: \(entityNames.joined(separator: ", "))", category: .storage)
+        AppLog.info("   Entity Count: \(entityNames.count)", category: .storage)
         
-        logInfo("📊 Database File:", category: "storage")
+        AppLog.info("📊 Database File:", category: .storage)
         if let dbURL = container.configurations.first?.url {
-            logInfo("   Path: \(dbURL.path)", category: "storage")
+            AppLog.info("   Path: \(dbURL.path)", category: .storage)
             
             let fileManager = FileManager.default
             if fileManager.fileExists(atPath: dbURL.path) {
@@ -862,28 +862,28 @@ class ModelContainerManager: ObservableObject {
                     let attrs = try fileManager.attributesOfItem(atPath: dbURL.path)
                     if let size = attrs[.size] as? Int64 {
                         let sizeString = ByteCountFormatter.string(fromByteCount: size, countStyle: .file)
-                        logInfo("   Size: \(sizeString)", category: "storage")
+                        AppLog.info("   Size: \(sizeString)", category: .storage)
                     }
                     if let modDate = attrs[.modificationDate] as? Date {
-                        logInfo("   Last Modified: \(modDate)", category: "storage")
+                        AppLog.info("   Last Modified: \(modDate)", category: .storage)
                     }
                 } catch {
-                    logError("   ⚠️ Could not read file attributes: \(error)", category: "storage")
+                    AppLog.error("   ⚠️ Could not read file attributes: \(error)", category: .storage)
                 }
                 
                 // Check for associated files (WAL, SHM)
                 let walPath = dbURL.path + "-wal"
                 let shmPath = dbURL.path + "-shm"
-                logInfo("   WAL file exists: \(fileManager.fileExists(atPath: walPath))", category: "storage")
-                logInfo("   SHM file exists: \(fileManager.fileExists(atPath: shmPath))", category: "storage")
+                AppLog.info("   WAL file exists: \(fileManager.fileExists(atPath: walPath))", category: .storage)
+                AppLog.info("   SHM file exists: \(fileManager.fileExists(atPath: shmPath))", category: .storage)
             } else {
-                logWarning("   ⚠️ Database file does not exist!", category: "storage")
+                AppLog.warning("   ⚠️ Database file does not exist!", category: .storage)
             }
         } else {
-            logError("   ❌ No database URL configured!", category: "storage")
+            AppLog.error("   ❌ No database URL configured!", category: .storage)
         }
         
-        logInfo("📊 CloudKit Status:", category: "storage")
+        AppLog.info("📊 CloudKit Status:", category: .storage)
         if isCloudKitEnabled {
             // Check CloudKit account status
             do {
@@ -903,17 +903,17 @@ class ModelContainerManager: ObservableObject {
                 @unknown default:
                     statusString = "Unknown ⚠️"
                 }
-                logInfo("   Account Status: \(statusString)", category: "storage")
+                AppLog.info("   Account Status: \(statusString)", category: .storage)
             } catch {
-                logError("   ❌ Error checking account: \(error)", category: "storage")
+                AppLog.error("   ❌ Error checking account: \(error)", category: .storage)
             }
             
-            logInfo("   Container: iCloud.com.headydiscy.reczipes", category: "storage")
+            AppLog.info("   Container: iCloud.com.headydiscy.reczipes", category: .storage)
         } else {
-            logInfo("   CloudKit: Disabled (local-only mode)", category: "storage")
+            AppLog.info("   CloudKit: Disabled (local-only mode)", category: .storage)
         }
         
-        logInfo("📊 Data Counts:", category: "storage")
+        AppLog.info("📊 Data Counts:", category: .storage)
         let context = container.mainContext
         do {
             // New unified models (RecipeX and Book)
@@ -926,21 +926,21 @@ class ModelContainerManager: ObservableObject {
             let sharedBookCount = try context.fetchCount(FetchDescriptor<SharedRecipeBook>())
             let savedLinkCount = try context.fetchCount(FetchDescriptor<SavedLink>())
             
-            logInfo("   === Unified Models ===", category: "storage")
-            logInfo("   Recipes: \(recipeXCount)", category: "storage")
-            logInfo("   Books: \(bookCount)", category: "storage")
+            AppLog.info("   === Unified Models ===", category: .storage)
+            AppLog.info("   Recipes: \(recipeXCount)", category: .storage)
+            AppLog.info("   Books: \(bookCount)", category: .storage)
             
-            logInfo("   === Other Data ===", category: "storage")
-            logInfo("   Cooking Sessions: \(sessionCount)", category: "storage")
-            logInfo("   Saved Links: \(savedLinkCount)", category: "storage")
-            logInfo("   Shared Recipes: \(sharedRecipeCount)", category: "storage")
-            logInfo("   Shared Recipe Books: \(sharedBookCount)", category: "storage")
+            AppLog.info("   === Other Data ===", category: .storage)
+            AppLog.info("   Cooking Sessions: \(sessionCount)", category: .storage)
+            AppLog.info("   Saved Links: \(savedLinkCount)", category: .storage)
+            AppLog.info("   Shared Recipes: \(sharedRecipeCount)", category: .storage)
+            AppLog.info("   Shared Recipe Books: \(sharedBookCount)", category: .storage)
             
         } catch {
-            logError("   ❌ Error fetching counts: \(error)", category: "storage")
+            AppLog.error("   ❌ Error fetching counts: \(error)", category: .storage)
         }
         
-        logInfo("📊 ================================================", category: "storage")
+        AppLog.info("📊 ================================================", category: .storage)
     }
 }
 

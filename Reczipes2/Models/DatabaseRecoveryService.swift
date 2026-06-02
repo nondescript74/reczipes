@@ -74,7 +74,7 @@ class DatabaseRecoveryService {
             let attributes = try fileManager.attributesOfItem(atPath: url.path)
             return attributes[.size] as? Int64 ?? 0
         } catch {
-            logWarning("⚠️  Failed to get size for \(url.lastPathComponent): \(error)", category: "storage")
+            AppLog.warning("⚠️  Failed to get size for \(url.lastPathComponent): \(error)", category: .storage)
             return 0
         }
     }
@@ -85,14 +85,14 @@ class DatabaseRecoveryService {
     static func copyOldDatabaseToCurrent(migrationInfo: DatabaseMigrationInfo) throws {
         let fileManager = FileManager.default
         
-        logInfo("📋 Copying database file...", category: "storage")
-        logInfo("   From: \(migrationInfo.oldDatabaseURL.path)", category: "storage")
-        logInfo("   To: \(migrationInfo.currentDatabaseURL.path)", category: "storage")
+        AppLog.info("📋 Copying database file...", category: .storage)
+        AppLog.info("   From: \(migrationInfo.oldDatabaseURL.path)", category: .storage)
+        AppLog.info("   To: \(migrationInfo.currentDatabaseURL.path)", category: .storage)
         
         // Remove current database if it exists (assuming it's empty)
         if fileManager.fileExists(atPath: migrationInfo.currentDatabaseURL.path) {
             try fileManager.removeItem(at: migrationInfo.currentDatabaseURL)
-            logInfo("   Removed existing empty database", category: "storage")
+            AppLog.info("   Removed existing empty database", category: .storage)
         }
         
         // Copy old database to current location
@@ -114,7 +114,7 @@ class DatabaseRecoveryService {
             try? fileManager.copyItem(at: shmSource, to: shmDest)
         }
         
-        logInfo("✅ Database copied successfully", category: "storage")
+        AppLog.info("✅ Database copied successfully", category: .storage)
     }
     
     /// Backup the old database before any operations
@@ -125,7 +125,7 @@ class DatabaseRecoveryService {
             .appendingPathComponent("\(url.deletingPathExtension().lastPathComponent)-backup-\(timestamp).sqlite")
         
         try fileManager.copyItem(at: url, to: backupURL)
-        logInfo("✅ Backup created: \(backupURL.lastPathComponent)", category: "storage")
+        AppLog.info("✅ Backup created: \(backupURL.lastPathComponent)", category: .storage)
         
         return backupURL
     }

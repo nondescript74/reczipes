@@ -92,10 +92,10 @@ struct SharedRecipeViewerView: View {
         do {
             let recipe = try await viewService.fetchRecipeForViewing(preview: preview)
             fullRecipe = recipe
-            logInfo("✅ Loaded full recipe: '\(recipe.title)'", category: "sharing")
+            AppLog.info("✅ Loaded full recipe: '\(recipe.title)'", category: .sharing)
         } catch {
             self.error = error
-            logError("❌ Failed to load recipe: \(error)", category: "sharing")
+            AppLog.error("❌ Failed to load recipe: \(error)", category: .sharing)
         }
         
         isLoading = false

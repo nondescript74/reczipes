@@ -213,7 +213,7 @@ struct EmptyRecipeCleanupView: View {
         scanResults = resultsMessage
         isScanning = false
         
-        logInfo("📊 Empty recipe scan complete: \(emptyCount) empty recipes found out of \(allRecipes.count) total", category: "cleanup")
+        AppLog.info("📊 Empty recipe scan complete: \(emptyCount) empty recipes found out of \(allRecipes.count) total", category: .storage)
     }
     
     // MARK: - Deletion
@@ -236,7 +236,7 @@ struct EmptyRecipeCleanupView: View {
             currentRecipeName = recipe.title ?? "Untitled"
             currentProgress = Double(index) / Double(totalRecipes)
             
-            logInfo("🗑️ Deleting empty recipe: \(currentRecipeName)", category: "cleanup")
+            AppLog.info("🗑️ Deleting empty recipe: \(currentRecipeName)", category: .storage)
             
             do {
                 // Step 1: Remove from all books
@@ -245,7 +245,7 @@ struct EmptyRecipeCleanupView: View {
                     if let recipeID = recipe.id {
                         book.removeRecipe(recipeID)
                         removedFromBooks += 1
-                        logInfo("📚 Removed recipe from book: \(book.displayName)", category: "cleanup")
+                        AppLog.info("📚 Removed recipe from book: \(book.displayName)", category: .storage)
                     }
                 }
                 
@@ -257,9 +257,9 @@ struct EmptyRecipeCleanupView: View {
                             modelContext: modelContext
                         )
                         unsharedCount += 1
-                        logInfo("☁️ Unshared recipe from CloudKit", category: "cleanup")
+                        AppLog.info("☁️ Unshared recipe from CloudKit", category: .storage)
                     } catch {
-                        logError("Failed to unshare recipe \(currentRecipeName): \(error)", category: "cleanup")
+                        AppLog.error("Failed to unshare recipe \(currentRecipeName): \(error)", category: .storage)
                         // Continue with deletion even if unsharing fails
                     }
                 }
@@ -271,10 +271,10 @@ struct EmptyRecipeCleanupView: View {
                 // Save after each deletion to ensure progress is persisted
                 try modelContext.save()
                 
-                logInfo("✅ Successfully deleted empty recipe: \(currentRecipeName)", category: "cleanup")
+                AppLog.info("✅ Successfully deleted empty recipe: \(currentRecipeName)", category: .storage)
                 
             } catch {
-                logError("❌ Failed to delete recipe \(currentRecipeName): \(error)", category: "cleanup")
+                AppLog.error("❌ Failed to delete recipe \(currentRecipeName): \(error)", category: .storage)
                 failedCount += 1
             }
             
@@ -306,7 +306,7 @@ struct EmptyRecipeCleanupView: View {
         emptyRecipes.removeAll()
         await scanForEmptyRecipes()
         
-        logInfo("📊 Cleanup complete: \(deletedCount) deleted, \(failedCount) failed, \(removedFromBooks) book removals, \(unsharedCount) unshared", category: "cleanup")
+        AppLog.info("📊 Cleanup complete: \(deletedCount) deleted, \(failedCount) failed, \(removedFromBooks) book removals, \(unsharedCount) unshared", category: .storage)
     }
     
     // MARK: - Helpers

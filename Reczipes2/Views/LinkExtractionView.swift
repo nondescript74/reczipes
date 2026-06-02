@@ -75,7 +75,7 @@ struct LinkExtractionView: View {
                     if let recipe = viewModel.extractedRecipe {
                         let imageURLs = extractImageURLsFromNotes(recipe)
                         if !imageURLs.isEmpty {
-                            logInfo("Auto-downloading \(imageURLs.count) images from extracted recipe", category: "image")
+                            AppLog.info("Auto-downloading \(imageURLs.count) images from extracted recipe", category: .image)
                             // Take first 3 images to avoid excessive downloads
                             let urlsToDownload = Array(imageURLs.prefix(3))
                             await downloadImages(imageURLs: urlsToDownload)
@@ -176,7 +176,7 @@ struct LinkExtractionView: View {
         .cornerRadius(12)
         .onAppear {
             // Report error but don't dismiss automatically
-            logError("Extraction failed: \(message)", category: "extraction")
+            AppLog.error("Extraction failed: \(message)", category: .extraction)
         }
     }
     
@@ -353,7 +353,7 @@ struct LinkExtractionView: View {
     
     private var saveButton: some View {
         Button {
-            logInfo("Save button tapped", category: "ui")
+            AppLog.info("Save button tapped", category: .ui)
             // If there are selected web image URLs and we haven't downloaded them yet
             if !selectedWebImageURLs.isEmpty && downloadedWebImages.isEmpty {
                 Task {
@@ -541,18 +541,18 @@ struct LinkExtractionView: View {
         
         for (index, imageURL) in imageURLs.enumerated() {
             do {
-                logInfo("Downloading image \(index + 1)/\(imageURLs.count) from: \(imageURL)", category: "network")
+                AppLog.info("Downloading image \(index + 1)/\(imageURLs.count) from: \(imageURL)", category: .network)
                 let image = try await imageDownloader.downloadImage(from: imageURL)
                 downloadedImages.append(image)
             } catch {
-                logError("Failed to download image \(index + 1): \(error)", category: "network")
+                AppLog.error("Failed to download image \(index + 1): \(error)", category: .network)
                 // Continue with other images
             }
         }
         
         await MainActor.run {
             self.downloadedWebImages = downloadedImages
-            logInfo("Auto-downloaded \(downloadedImages.count) images successfully", category: "network")
+            AppLog.info("Auto-downloaded \(downloadedImages.count) images successfully", category: .network)
             self.isDownloadingImage = false
         }
     }
@@ -566,18 +566,18 @@ struct LinkExtractionView: View {
     }
     
     private func saveRecipe() {
-        logInfo("Saving recipe from link", category: "recipe")
+        AppLog.info("Saving recipe from link", category: .recipe)
         
         guard let recipe = viewModel.extractedRecipe else {
-            logError("No recipe to save", category: "recipe")
+            AppLog.error("No recipe to save", category: .recipe)
             return
         }
         
-        logInfo("Saving recipe: \(recipe.safeTitle)", category: "recipe")
+        AppLog.info("Saving recipe: \(recipe.safeTitle)", category: .recipe)
         
         // Add tips from the SavedLink as recipe notes (type: .tip)
         if let tips = link.tips, !tips.isEmpty {
-            logInfo("Adding \(tips.count) tip(s) from saved link to recipe notes", category: "recipe")
+            AppLog.info("Adding \(tips.count) tip(s) from saved link to recipe notes", category: .recipe)
             
             // Convert tips to RecipeNote objects
             let tipNotes = tips.map { tipText in
@@ -593,7 +593,7 @@ struct LinkExtractionView: View {
                 recipe.notesData = encodedNotes
             }
             
-            logInfo("Total notes including tips: \(existingNotes.count)", category: "recipe")
+            AppLog.info("Total notes including tips: \(existingNotes.count)", category: .recipe)
         }
         
         // EXTRACT AND MOVE: Move image URLs from notes to the reference field
@@ -614,7 +614,7 @@ struct LinkExtractionView: View {
         // Update the recipe with cleaned notes
         if let encodedNotes = try? JSONEncoder().encode(notes) {
             recipe.notesData = encodedNotes.isEmpty ? nil : encodedNotes
-            logInfo("Moved image URLs from notes to reference field", category: "recipe")
+            AppLog.info("Moved image URLs from notes to reference field", category: .recipe)
         }
         
         // Append image URLs to the reference field as clickable links
@@ -633,7 +633,7 @@ struct LinkExtractionView: View {
             }
             
             recipe.reference = referenceText.trimmingCharacters(in: .whitespacesAndNewlines)
-            logInfo("Added \(imageURLs.count) image URL(s) to reference field", category: "recipe")
+            AppLog.info("Added \(imageURLs.count) image URL(s) to reference field", category: .recipe)
         }
         
         // Determine which images we'll save
@@ -669,15 +669,15 @@ struct LinkExtractionView: View {
             if index == 0 {
                 // First image is the main thumbnail
                 recipe.setImage(image, isMainImage: true)
-                logInfo("✅ Saved main image using setImage() (CloudKit-synced)", category: "recipe")
+                AppLog.info("✅ Saved main image using setImage() (CloudKit-synced)", category: .recipe)
             } else {
                 // Additional images
                 recipe.setImage(image, isMainImage: false)
-                logInfo("✅ Saved additional image \(index) using setImage() (CloudKit-synced)", category: "recipe")
+                AppLog.info("✅ Saved additional image \(index) using setImage() (CloudKit-synced)", category: .recipe)
             }
         }
         
-        logInfo("Saved \(imagesToSave.count) image(s) to RecipeX for CloudKit sync", category: "recipe")
+        AppLog.info("Saved \(imagesToSave.count) image(s) to RecipeX for CloudKit sync", category: .recipe)
         
         // Update the link to mark it as processed
         link.isProcessed = true
@@ -687,14 +687,14 @@ struct LinkExtractionView: View {
         // Save the context
         do {
             try modelContext.save()
-            logInfo("Recipe saved successfully to SwiftData as RecipeX with imageData", category: "storage")
+            AppLog.info("Recipe saved successfully to SwiftData as RecipeX with imageData", category: .storage)
             
             // Small delay to ensure SwiftData propagates the change
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                 showingSaveConfirmation = true
             }
         } catch {
-            logError("Failed to save recipe: \(error)", category: "storage")
+            AppLog.error("Failed to save recipe: \(error)", category: .storage)
             onExtractionComplete(false, error.localizedDescription)
         }
     }
@@ -705,7 +705,7 @@ struct LinkExtractionView: View {
     @available(*, deprecated, message: "Use recipe.setImage() instead - images are now stored in RecipeX.imageData")
     private func saveImageToDisk(_ image: UIImage, filename: String) {
         guard let imageData = image.jpegData(compressionQuality: 0.8) else {
-            logError("Failed to convert image to JPEG data", category: "storage")
+            AppLog.error("Failed to convert image to JPEG data", category: .storage)
             return
         }
         
@@ -714,9 +714,9 @@ struct LinkExtractionView: View {
         
         do {
             try imageData.write(to: fileURL)
-            logInfo("Saved recipe image to: \(fileURL.path)", category: "storage")
+            AppLog.info("Saved recipe image to: \(fileURL.path)", category: .storage)
         } catch {
-            logError("Error saving recipe image: \(error)", category: "storage")
+            AppLog.error("Error saving recipe image: \(error)", category: .storage)
         }
     }
 }

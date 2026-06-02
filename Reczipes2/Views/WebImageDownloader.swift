@@ -17,11 +17,11 @@ struct WebImageDownloader {
     /// - Parameter urlString: The URL string of the image
     /// - Returns: UIImage if successful
     func downloadImage(from urlString: String) async throws -> UIImage {
-        DiagnosticLogger.shared.info("IMAGE DOWNLOAD START", category: "network")
-        DiagnosticLogger.shared.debug("URL: \(urlString)", category: "network")
+        AppLog.info("IMAGE DOWNLOAD START", category: .network)
+        AppLog.debug("URL: \(urlString)", category: .network)
         
         guard let url = URL(string: urlString) else {
-            DiagnosticLogger.shared.error("Invalid URL: \(urlString)", category: "network")
+            AppLog.error("Invalid URL: \(urlString)", category: .network)
             throw ImageDownloadError.invalidURL
         }
         
@@ -32,29 +32,29 @@ struct WebImageDownloader {
         // Set a user agent to avoid being blocked
         request.setValue("Mozilla/5.0 (iPhone; CPU iPhone OS 17_0 like Mac OS X) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/17.0 Mobile/15E148 Safari/604.1", forHTTPHeaderField: "User-Agent")
         
-        DiagnosticLogger.shared.info("Downloading image", category: "network")
+        AppLog.info("Downloading image", category: .network)
         let (data, response) = try await URLSession.shared.data(for: request)
         
         guard let httpResponse = response as? HTTPURLResponse else {
-            DiagnosticLogger.shared.error("Invalid response type", category: "network")
+            AppLog.error("Invalid response type", category: .network)
             throw ImageDownloadError.networkError
         }
         
-        DiagnosticLogger.shared.debug("HTTP Status: \(httpResponse.statusCode)", category: "network")
+        AppLog.debug("HTTP Status: \(httpResponse.statusCode)", category: .network)
         
         guard httpResponse.statusCode == 200 else {
-            DiagnosticLogger.shared.error("HTTP error: \(httpResponse.statusCode)", category: "network")
+            AppLog.error("HTTP error: \(httpResponse.statusCode)", category: .network)
             throw ImageDownloadError.httpError(statusCode: httpResponse.statusCode)
         }
         
         guard let image = UIImage(data: data) else {
-            DiagnosticLogger.shared.error("Failed to create UIImage from data", category: "network")
+            AppLog.error("Failed to create UIImage from data", category: .network)
             throw ImageDownloadError.invalidImageData
         }
         
-        DiagnosticLogger.shared.info("Successfully downloaded image", category: "network")
-        DiagnosticLogger.shared.debug("Image size: \(image.size)", category: "network")
-        DiagnosticLogger.shared.info("IMAGE DOWNLOAD END", category: "network")
+        AppLog.info("Successfully downloaded image", category: .network)
+        AppLog.debug("Image size: \(image.size)", category: .network)
+        AppLog.info("IMAGE DOWNLOAD END", category: .network)
         
         return image
     }

@@ -38,7 +38,7 @@ struct BatchImageExtractorView: View {
             apiKey: apiKey,
             modelContext: modelContext
         ))
-        logInfo("BatchImageExtractorView initialized", category: "ui")
+        AppLog.info("BatchImageExtractorView initialized", category: .ui)
     }
     
     var body: some View {
@@ -70,7 +70,7 @@ struct BatchImageExtractorView: View {
                 // ADD THIS NEW ITEM:
                 ToolbarItem(placement: .primaryAction) {
                     Button {
-                        logDebug("User tapped help button for batch extraction", category: "ui")
+                        AppLog.debug("User tapped help button for batch extraction", category: .ui)
                         showingHelp = true
                     } label: {
                         Image(systemName: "questionmark.circle")
@@ -81,14 +81,14 @@ struct BatchImageExtractorView: View {
                     ToolbarItem(placement: .primaryAction) {
                         Menu {
                             Button {
-                                logInfo("User tapped 'Add More from Photos' to add additional images", category: "ui")
+                                AppLog.info("User tapped 'Add More from Photos' to add additional images", category: .ui)
                                 showingImagePicker = true
                             } label: {
                                 Label("From Photos", systemImage: "photo.on.rectangle")
                             }
                             
                             Button {
-                                logInfo("User tapped 'Add More from Files' to add additional images", category: "ui")
+                                AppLog.info("User tapped 'Add More from Files' to add additional images", category: .ui)
                                 showingDocumentPicker = true
                             } label: {
                                 Label("From Files (iCloud Drive)", systemImage: "folder")
@@ -103,14 +103,14 @@ struct BatchImageExtractorView: View {
                     ToolbarItem(placement: .primaryAction) {
                         Menu {
                             Button {
-                                logInfo("User tapped 'Add More from Photos' to add additional images", category: "ui")
+                                AppLog.info("User tapped 'Add More from Photos' to add additional images", category: .ui)
                                 showingImagePicker = true
                             } label: {
                                 Label("From Photos", systemImage: "photo.on.rectangle")
                             }
                             
                             Button {
-                                logInfo("User tapped 'Add More from Files' to add additional images", category: "ui")
+                                AppLog.info("User tapped 'Add More from Files' to add additional images", category: .ui)
                                 showingDocumentPicker = true
                             } label: {
                                 Label("From Files (iCloud Drive)", systemImage: "folder")
@@ -147,11 +147,11 @@ struct BatchImageExtractorView: View {
             }
             .alert("Batch Extraction Complete", isPresented: $showingCompletionAlert) {
                 Button("View Recipes") {
-                    logInfo("User chose to view recipes after batch extraction", category: "ui")
+                    AppLog.info("User chose to view recipes after batch extraction", category: .ui)
                     dismiss()
                 }
                 Button("OK", role: .cancel) {
-                    logInfo("User dismissed completion alert and reset batch extractor", category: "ui")
+                    AppLog.info("User dismissed completion alert and reset batch extractor", category: .ui)
                     viewModel.reset()
                     selectedAssets = []
                     selectedImages = []
@@ -160,21 +160,21 @@ struct BatchImageExtractorView: View {
                 Text("Extracted \(viewModel.successCount) recipe\(viewModel.successCount == 1 ? "" : "s") successfully\(viewModel.failureCount > 0 ? " with \(viewModel.failureCount) failure\(viewModel.failureCount == 1 ? "" : "s")" : "").")
             }
             .onAppear {
-                logDebug("BatchImageExtractorView appeared", category: "ui")
+                AppLog.debug("BatchImageExtractorView appeared", category: .ui)
                 Task {
                     await photoManager.requestPermission()
-                    logInfo("Photo library permission requested", category: "image")
+                    AppLog.info("Photo library permission requested", category: .image)
                 }
             }
             .onChange(of: viewModel.isExtracting) { _, isExtracting in
                 if !isExtracting && viewModel.currentProgress > 0 {
-                    logInfo("Batch extraction completed. Success: \(viewModel.successCount), Failures: \(viewModel.failureCount)", category: "extraction")
+                    AppLog.info("Batch extraction completed. Success: \(viewModel.successCount), Failures: \(viewModel.failureCount)", category: .extraction)
                     showingCompletionAlert = true
                 }
             }
             .onChange(of: selectedImages) { _, newImages in
                 if !newImages.isEmpty {
-                    logInfo("Loaded \(newImages.count) images from iCloud Drive/Files", category: "ui")
+                    AppLog.info("Loaded \(newImages.count) images from iCloud Drive/Files", category: .ui)
                 }
             }
             .onChange(of: isLoadingImages) { oldValue, newValue in
@@ -188,7 +188,7 @@ struct BatchImageExtractorView: View {
                         let generator = UINotificationFeedbackGenerator()
                         generator.notificationOccurred(.success)
                         
-                        logInfo("Finished loading images: \(successCount) loaded successfully", category: "ui")
+                        AppLog.info("Finished loading images: \(successCount) loaded successfully", category: .ui)
                     }
                     
                     // Reset progress
@@ -200,11 +200,11 @@ struct BatchImageExtractorView: View {
                     ImageCropView(
                         image: image,
                         onCrop: { croppedImage in
-                            logDebug("User completed cropping image in batch workflow", category: "image")
+                            AppLog.debug("User completed cropping image in batch workflow", category: .image)
                             viewModel.handleCroppedImage(croppedImage)
                         },
                         onCancel: {
-                            logDebug("User cancelled crop view in batch workflow", category: "image")
+                            AppLog.debug("User cancelled crop view in batch workflow", category: .image)
                             viewModel.handleCroppedImage(nil)
                         }
                     )
@@ -212,17 +212,17 @@ struct BatchImageExtractorView: View {
             }
             .alert("Extraction in Progress", isPresented: $showingBackgroundExtractionAlert) {
                 Button("Continue in Background", role: .none) {
-                    logInfo("User chose to continue extraction in background", category: "batch")
+                    AppLog.info("User chose to continue extraction in background", category: .batch)
                     viewModel.prepareForBackgroundDismissal()
                     dismiss()
                 }
                 Button("Stop and Close", role: .destructive) {
-                    logInfo("User stopped extraction and closed view", category: "batch")
+                    AppLog.info("User stopped extraction and closed view", category: .batch)
                     viewModel.stop()
                     dismiss()
                 }
                 Button("Cancel", role: .cancel) {
-                    logInfo("User cancelled close action", category: "batch")
+                    AppLog.info("User cancelled close action", category: .batch)
                 }
             } message: {
                 Text("Batch extraction is still running. You can let it continue in the background, or stop it now.")
@@ -230,10 +230,10 @@ struct BatchImageExtractorView: View {
             .onChange(of: viewModel.isExtracting) { oldValue, newValue in
                 // Automatically enable keep awake during batch extraction
                 if newValue {
-                    logInfo("Batch extraction started - enabling keep awake", category: "batch")
+                    AppLog.info("Batch extraction started - enabling keep awake", category: .batch)
                     keepAwakeManager.enable()
                 } else if oldValue {
-                    logInfo("Batch extraction ended - disabling keep awake", category: "batch")
+                    AppLog.info("Batch extraction ended - disabling keep awake", category: .batch)
                     keepAwakeManager.disable()
                 }
             }
@@ -251,16 +251,16 @@ struct BatchImageExtractorView: View {
     private func handleCloseButton() {
         if viewModel.isExtracting && !shouldCropImages {
             // If extraction is running without cropping, offer background option
-            logInfo("User tapped close during background-capable extraction", category: "ui")
+            AppLog.info("User tapped close during background-capable extraction", category: .ui)
             showingBackgroundExtractionAlert = true
         } else if viewModel.isExtracting {
             // If cropping is enabled, must stop
-            logInfo("User stopped extraction with cropping and closed view", category: "extraction")
+            AppLog.info("User stopped extraction with cropping and closed view", category: .extraction)
             viewModel.stop()
             dismiss()
         } else {
             // Not extracting, just close
-            logInfo("User closed BatchImageExtractorView", category: "ui")
+            AppLog.info("User closed BatchImageExtractorView", category: .ui)
             dismiss()
         }
     }
@@ -324,7 +324,7 @@ struct BatchImageExtractorView: View {
             
             VStack(spacing: 12) {
                 Button {
-                    logInfo("User tapped 'Select from Photos' in empty state", category: "ui")
+                    AppLog.info("User tapped 'Select from Photos' in empty state", category: .ui)
                     showingImagePicker = true
                 } label: {
                     Label("Select from Photos", systemImage: "photo.on.rectangle.angled")
@@ -338,7 +338,7 @@ struct BatchImageExtractorView: View {
                 .buttonStyle(.plain)
                 
                 Button {
-                    logInfo("User tapped 'Select from Files' in empty state", category: "ui")
+                    AppLog.info("User tapped 'Select from Files' in empty state", category: .ui)
                     showingDocumentPicker = true
                 } label: {
                     Label("Select from Files (iCloud Drive)", systemImage: "folder.fill")
@@ -433,14 +433,14 @@ struct BatchImageExtractorView: View {
                 
                 Menu {
                     Button {
-                        logInfo("User tapped add more from Photos", category: "ui")
+                        AppLog.info("User tapped add more from Photos", category: .ui)
                         showingImagePicker = true
                     } label: {
                         Label("From Photos", systemImage: "photo.on.rectangle")
                     }
                     
                     Button {
-                        logInfo("User tapped add more from Files", category: "ui")
+                        AppLog.info("User tapped add more from Files", category: .ui)
                         showingDocumentPicker = true
                     } label: {
                         Label("From Files", systemImage: "folder")
@@ -479,7 +479,7 @@ struct BatchImageExtractorView: View {
             }
             .tint(.blue)
             .onChange(of: shouldCropImages) { oldValue, newValue in
-                logDebug("User toggled crop option: \(newValue)", category: "ui")
+                AppLog.debug("User toggled crop option: \(newValue)", category: .ui)
             }
             
             if !shouldCropImages {
@@ -502,7 +502,7 @@ struct BatchImageExtractorView: View {
     private var startExtractionButton: some View {
         Button {
             let totalCount = selectedAssets.count + selectedImages.count
-            logInfo("Starting batch extraction with \(totalCount) images (\(selectedAssets.count) from Photos, \(selectedImages.count) from Files), cropping: \(shouldCropImages)", category: "extraction")
+            AppLog.info("Starting batch extraction with \(totalCount) images (\(selectedAssets.count) from Photos, \(selectedImages.count) from Files), cropping: \(shouldCropImages)", category: .extraction)
             
             if shouldCropImages {
                 // Start with cropping workflow
@@ -742,7 +742,7 @@ struct BatchImageExtractorView: View {
             
             HStack(spacing: 12) {
                 Button {
-                    logDebug("User chose to skip cropping for current image", category: "image")
+                    AppLog.debug("User chose to skip cropping for current image", category: .image)
                     viewModel.skipCropping()
                 } label: {
                     HStack {
@@ -759,7 +759,7 @@ struct BatchImageExtractorView: View {
                 .buttonStyle(.plain)
                 
                 Button {
-                    logDebug("User chose to crop current image", category: "image")
+                    AppLog.debug("User chose to crop current image", category: .image)
                     viewModel.showCropping()
                 } label: {
                     HStack {
@@ -820,10 +820,10 @@ struct BatchImageExtractorView: View {
             HStack(spacing: 12) {
                 Button {
                     if viewModel.isPaused {
-                        logInfo("User resumed batch extraction", category: "extraction")
+                        AppLog.info("User resumed batch extraction", category: .extraction)
                         viewModel.resume()
                     } else {
-                        logInfo("User paused batch extraction", category: "extraction")
+                        AppLog.info("User paused batch extraction", category: .extraction)
                         viewModel.pause()
                     }
                 } label: {
@@ -841,7 +841,7 @@ struct BatchImageExtractorView: View {
                 .buttonStyle(.plain)
                 
                 Button {
-                    logWarning("User stopped batch extraction at \(viewModel.currentProgress)/\(viewModel.totalToExtract)", category: "extraction")
+                    AppLog.warning("User stopped batch extraction at \(viewModel.currentProgress)/\(viewModel.totalToExtract)", category: .extraction)
                     viewModel.stop()
                 } label: {
                     HStack {
@@ -1046,7 +1046,7 @@ struct BatchImageExtractorView: View {
                     Button {
                         shouldCropImages = true
                         showingCropOptions = false
-                        logInfo("User chose to crop each image in batch", category: "extraction")
+                        AppLog.info("User chose to crop each image in batch", category: .extraction)
                         viewModel.startBatchExtraction(
                             assets: selectedAssets,
                             photoManager: photoManager,
@@ -1069,7 +1069,7 @@ struct BatchImageExtractorView: View {
                     Button {
                         shouldCropImages = false
                         showingCropOptions = false
-                        logInfo("User chose to skip cropping for batch extraction", category: "extraction")
+                        AppLog.info("User chose to skip cropping for batch extraction", category: .extraction)
                         viewModel.startBatchExtraction(
                             assets: selectedAssets,
                             photoManager: photoManager,
@@ -1136,13 +1136,13 @@ struct DocumentPickerView: UIViewControllerRepresentable {
         }
         
         func documentPicker(_ controller: UIDocumentPickerViewController, didPickDocumentsAt urls: [URL]) {
-            logInfo("User selected \(urls.count) images from Files/iCloud Drive", category: "ui")
+            AppLog.info("User selected \(urls.count) images from Files/iCloud Drive", category: .ui)
             
             // Log the URLs we received
             for (index, url) in urls.enumerated() {
-                logDebug("Document picker URL \(index + 1): \(url.path)", category: "storage")
-                logDebug("  - isFileURL: \(url.isFileURL)", category: "storage")
-                logDebug("  - lastPathComponent: \(url.lastPathComponent)", category: "storage")
+                AppLog.debug("Document picker URL \(index + 1): \(url.path)", category: .storage)
+                AppLog.debug("  - isFileURL: \(url.isFileURL)", category: .storage)
+                AppLog.debug("  - lastPathComponent: \(url.lastPathComponent)", category: .storage)
             }
             
             // Show loading state immediately
@@ -1170,16 +1170,16 @@ struct DocumentPickerView: UIViewControllerRepresentable {
                         )
                     }
                     
-                    logDebug("Processing file \(index + 1)/\(urls.count): \(url.lastPathComponent)", category: "storage")
+                    AppLog.debug("Processing file \(index + 1)/\(urls.count): \(url.lastPathComponent)", category: .storage)
                     
                     // Load image data directly (files are already in our sandbox from asCopy: true)
                     do {
                         // Check if file exists
                         let fileExists = FileManager.default.fileExists(atPath: url.path)
-                        logDebug("  File exists check: \(fileExists) at \(url.path)", category: "storage")
+                        AppLog.debug("  File exists check: \(fileExists) at \(url.path)", category: .storage)
                         
                         guard fileExists else {
-                            logWarning("File does not exist at path: \(url.path)", category: "storage")
+                            AppLog.warning("File does not exist at path: \(url.path)", category: .storage)
                             failureCount += 1
                             continue
                         }
@@ -1187,27 +1187,27 @@ struct DocumentPickerView: UIViewControllerRepresentable {
                         // Try to get file attributes for diagnostics
                         if let attributes = try? FileManager.default.attributesOfItem(atPath: url.path) {
                             let fileSize = attributes[.size] as? Int ?? 0
-                            logDebug("  File size: \(fileSize) bytes", category: "storage")
+                            AppLog.debug("  File size: \(fileSize) bytes", category: .storage)
                         }
                         
                         // Load the image data
                         let imageData = try Data(contentsOf: url)
-                        logDebug("  Successfully loaded \(imageData.count) bytes from \(url.lastPathComponent)", category: "storage")
+                        AppLog.debug("  Successfully loaded \(imageData.count) bytes from \(url.lastPathComponent)", category: .storage)
                         
                         // Create UIImage
                         if let image = UIImage(data: imageData) {
-                            logDebug("  ✅ Created UIImage (size: \(image.size.width)x\(image.size.height))", category: "image")
+                            AppLog.debug("  ✅ Created UIImage (size: \(image.size.width)x\(image.size.height))", category: .image)
                             await MainActor.run {
                                 loadedImages.append(image)
                             }
                             successCount += 1
                         } else {
-                            logWarning("  ❌ Failed to create UIImage from data - invalid image format", category: "image")
+                            AppLog.warning("  ❌ Failed to create UIImage from data - invalid image format", category: .image)
                             failureCount += 1
                         }
                     } catch {
-                        logError("  ❌ Failed to load image: \(error.localizedDescription)", category: "storage")
-                        logError("     Error details: \(String(describing: error))", category: "storage")
+                        AppLog.error("  ❌ Failed to load image: \(error.localizedDescription)", category: .storage)
+                        AppLog.error("     Error details: \(String(describing: error))", category: .storage)
                         failureCount += 1
                     }
                     
@@ -1222,21 +1222,21 @@ struct DocumentPickerView: UIViewControllerRepresentable {
                     self.parent.selectedImages.append(contentsOf: loadedImages)
                     self.parent.isLoadingImages = false
                     
-                    logInfo("✅ File loading complete: \(successCount) succeeded, \(failureCount) failed", category: "image")
+                    AppLog.info("✅ File loading complete: \(successCount) succeeded, \(failureCount) failed", category: .image)
                     
                     if failureCount > 0 {
-                        logWarning("⚠️ Failed to load \(failureCount) out of \(urls.count) selected files", category: "storage")
+                        AppLog.warning("⚠️ Failed to load \(failureCount) out of \(urls.count) selected files", category: .storage)
                     }
                     
                     if successCount == 0 && failureCount > 0 {
-                        logError("❌ All files failed to load! Check file formats and permissions.", category: "storage")
+                        AppLog.error("❌ All files failed to load! Check file formats and permissions.", category: .storage)
                     }
                 }
             }
         }
         
         func documentPickerWasCancelled(_ controller: UIDocumentPickerViewController) {
-            logDebug("User cancelled document picker", category: "ui")
+            AppLog.debug("User cancelled document picker", category: .ui)
             DispatchQueue.main.async {
                 self.parent.isLoadingImages = false
             }
@@ -1290,7 +1290,7 @@ struct SelectedImageThumbnail: View {
             
             // Remove button
             Button {
-                logDebug("User removed iCloud Drive image \(index + 1) from selection", category: "ui")
+                AppLog.debug("User removed iCloud Drive image \(index + 1) from selection", category: .ui)
                 onRemove()
             } label: {
                 Image(systemName: "xmark.circle.fill")
@@ -1368,7 +1368,7 @@ struct SelectedAssetThumbnail: View {
             
             // Remove button
             Button {
-                logDebug("User removed image \(index + 1) from selection", category: "ui")
+                AppLog.debug("User removed image \(index + 1) from selection", category: .ui)
                 onRemove()
             } label: {
                 Image(systemName: "xmark.circle.fill")
@@ -1521,7 +1521,7 @@ struct PhotosPickerSheet: View {
                 
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Add (\(tempSelectedAssets.count))") {
-                        logInfo("User added \(tempSelectedAssets.count) images to batch selection (total: \(selectedAssets.count + tempSelectedAssets.count))", category: "ui")
+                        AppLog.info("User added \(tempSelectedAssets.count) images to batch selection (total: \(selectedAssets.count + tempSelectedAssets.count))", category: .ui)
                         selectedAssets.append(contentsOf: tempSelectedAssets)
                         dismiss()
                     }
@@ -1537,10 +1537,10 @@ struct PhotosPickerSheet: View {
     private func toggleSelection(_ asset: PHAsset) {
         if let index = tempSelectedAssets.firstIndex(where: { $0.localIdentifier == asset.localIdentifier }) {
             tempSelectedAssets.remove(at: index)
-            logDebug("Deselected asset in photo picker", category: "ui")
+            AppLog.debug("Deselected asset in photo picker", category: .ui)
         } else {
             tempSelectedAssets.append(asset)
-            logDebug("Selected asset in photo picker (temp count: \(tempSelectedAssets.count))", category: "ui")
+            AppLog.debug("Selected asset in photo picker (temp count: \(tempSelectedAssets.count))", category: .ui)
         }
     }
 }

@@ -436,13 +436,13 @@ struct RecipeBookImportView: View {
             isImporting = false
             showSuccessAlert = true
             
-            logInfo("Successfully imported book: \(result.book.name ?? "Untitled")", category: "book-import")
+            AppLog.info("Successfully imported book: \(result.book.name ?? "Untitled")", category: .batch)
             
         } catch {
             isImporting = false
             errorMessage = (error as? RecipeBookImportService.ImportError)?.errorDescription ?? error.localizedDescription
             showError = true
-            logError("Import failed: \(error)", category: "book-import")
+            AppLog.error("Import failed: \(error)", category: .batch)
         }
     }
     
@@ -469,18 +469,18 @@ struct RecipeBookImportView: View {
             // Only show success alert if at least one book was imported
             if books.count > 0 {
                 showSuccessAlert = true
-                logInfo("Successfully imported \(books.count) books", category: "book-import")
+                AppLog.info("Successfully imported \(books.count) books", category: .batch)
             } else {
                 errorMessage = summary
                 showError = true
-                logError("No books were imported", category: "book-import")
+                AppLog.error("No books were imported", category: .batch)
             }
             
         } catch {
             isImporting = false
             errorMessage = error.localizedDescription
             showError = true
-            logError("Multi-book import failed: \(error)", category: "book-import")
+            AppLog.error("Multi-book import failed: \(error)", category: .batch)
         }
     }
 }

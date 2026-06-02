@@ -113,7 +113,7 @@ enum MealPresets {
             try modelContext.save()
             UserDefaults.standard.set(true, forKey: didSeedDefaultsKey)
         } catch {
-            logError("Failed to seed meal presets: \(error)", category: "storage")
+            AppLog.error("Failed to seed meal presets: \(error)", category: .storage)
         }
     }
 }

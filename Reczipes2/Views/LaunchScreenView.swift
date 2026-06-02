@@ -30,7 +30,7 @@ struct LaunchScreenView: View {
     }
     
     private var appName: String {
-        Bundle.main.infoDictionary?["CFBundleName"] as? String ?? "Reczipes"
+        "RecipeExtract"
     }
     
     private var logFileSize: String {
@@ -106,22 +106,12 @@ struct LaunchScreenView: View {
                     VStack(spacing: 20) {
                         // Large app icon style circle
                         ZStack {
-                            Circle()
-                                .fill(
-                                    LinearGradient(
-                                        colors: [
-                                            Color.orange,
-                                            Color.pink.opacity(0.8)
-                                        ],
-                                        startPoint: .topLeading,
-                                        endPoint: .bottomTrailing
-                                    )
-                                )
-                                .frame(width: 120, height: 120)
-                                .shadow(color: .black.opacity(0.2), radius: 15, x: 0, y: 5)
                             
-                            Text("🍳")
-                                .font(.system(size: 60))
+                            Image("Butter-Basted-Eggs")
+                                .resizable()
+                                .aspectRatio(contentMode: .fit)
+                                .frame(width: 90, height: 90)
+                                .clipShape(.capsule, style: FillStyle(eoFill: true))
                         }
                         .scaleEffect(accentScale)
                         
@@ -158,7 +148,7 @@ struct LaunchScreenView: View {
                                 .font(.system(size: 16, weight: .bold))
                                 .foregroundColor(.orange)
                             
-                            Text("What's New")
+                            Text("Enjoy!")
                                 .font(.system(size: 20, weight: .bold, design: .rounded))
                                 .foregroundColor(.primary)
                         }

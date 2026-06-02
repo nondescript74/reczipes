@@ -84,7 +84,7 @@ class RecipeExtractorViewModel: ObservableObject {
             }
             
             recipe.reference = referenceText.trimmingCharacters(in: .whitespacesAndNewlines)
-            logInfo("Added \(imageURLs.count) image URL(s) to reference field", category: "extraction")
+            AppLog.info("Added \(imageURLs.count) image URL(s) to reference field", category: .extraction)
         }
         
         // Set extraction source
@@ -125,9 +125,9 @@ class RecipeExtractorViewModel: ObservableObject {
         
         do {
             try modelContext.save()
-            logInfo("Recipe saved successfully: \(recipe.safeTitle) (RecipeX with CloudKit sync)", category: "extraction")
+            AppLog.info("Recipe saved successfully: \(recipe.safeTitle) (RecipeX with CloudKit sync)", category: .extraction)
         } catch {
-            logError("Failed to save recipe: \(error)", category: "extraction")
+            AppLog.error("Failed to save recipe: \(error)", category: .extraction)
             errorMessage = "Failed to save recipe: \(error.localizedDescription)"
         }
     }
@@ -174,9 +174,9 @@ class RecipeExtractorViewModel: ObservableObject {
         
         do {
             try modelContext.save()
-            logInfo("Recipe replaced successfully: \(existingRecipe.safeTitle)", category: "extraction")
+            AppLog.info("Recipe replaced successfully: \(existingRecipe.safeTitle)", category: .extraction)
         } catch {
-            logError("Failed to replace recipe: \(error)", category: "extraction")
+            AppLog.error("Failed to replace recipe: \(error)", category: .extraction)
             errorMessage = "Failed to replace recipe: \(error.localizedDescription)"
         }
     }
@@ -203,7 +203,7 @@ class RecipeExtractorViewModel: ObservableObject {
             extractedImageURLs = [] // Clear previous image URLs
         }
         
-        logInfo("Starting URL extraction from: \(url)", category: "extraction")
+        AppLog.info("Starting URL extraction from: \(url)", category: .extraction)
 
         do {
             // Fetch web content
@@ -211,7 +211,7 @@ class RecipeExtractorViewModel: ObservableObject {
             
             // Extract image URLs BEFORE cleaning (to preserve all HTML)
             let imageURLs = webExtractor.extractImageURLs(from: htmlContent)
-            logInfo("Found \(imageURLs.count) image URL(s) in webpage", category: "extraction")
+            AppLog.info("Found \(imageURLs.count) image URL(s) in webpage", category: .extraction)
             
             // Clean the HTML
             let cleanedContent = webExtractor.cleanHTML(htmlContent)
@@ -219,7 +219,7 @@ class RecipeExtractorViewModel: ObservableObject {
             // Limit content size to avoid token limits (approximately 100k characters)
             let contentToSend: String
             if cleanedContent.count > 50_000 {
-                logWarning("Content too large (\(cleanedContent.count) chars), truncating to head+tail 50k characters", category: "extraction")
+                AppLog.warning("Content too large (\(cleanedContent.count) chars), truncating to head+tail 50k characters", category: .extraction)
                 let headCount = 40_000
                 let tailCount = 10_000
                 let head = String(cleanedContent.prefix(headCount))
@@ -229,7 +229,7 @@ class RecipeExtractorViewModel: ObservableObject {
                 contentToSend = cleanedContent
             }
             
-            logInfo("Calling Claude API for URL extraction...", category: "extraction")
+            AppLog.info("Calling Claude API for URL extraction...", category: .extraction)
             
             // Extract recipe using Claude
             let recipe = try await apiClient.extractRecipe(from: contentToSend)
@@ -246,29 +246,29 @@ class RecipeExtractorViewModel: ObservableObject {
             await MainActor.run {
                 self.extractedRecipe = recipe
                 self.extractedImageURLs = imageURLs // Store image URLs separately for view access
-                logInfo("URL extraction successful: \(String(describing: recipe.title))", category: "extraction")
-                logInfo("Extracted \(imageURLs.count) image URL(s) - will be added to reference on save", category: "extraction")
+                AppLog.info("URL extraction successful: \(String(describing: recipe.title))", category: .extraction)
+                AppLog.info("Extracted \(imageURLs.count) image URL(s) - will be added to reference on save", category: .extraction)
             }
         } catch let error as WebExtractionError {
             await MainActor.run {
                 self.errorMessage = error.errorDescription
-                logError("Web extraction error: \(error.errorDescription ?? "unknown")", category: "extraction")
+                AppLog.error("Web extraction error: \(error.errorDescription ?? "unknown")", category: .extraction)
             }
         } catch let error as ClaudeAPIError {
             await MainActor.run {
                 self.errorMessage = error.errorDescription
-                logError("Claude API error during URL extraction: \(error.errorDescription ?? "unknown")", category: "extraction")
+                AppLog.error("Claude API error during URL extraction: \(error.errorDescription ?? "unknown")", category: .extraction)
             }
         } catch {
             await MainActor.run {
                 self.errorMessage = "Unexpected error: \(error.localizedDescription)"
-                logError("Unexpected error during URL extraction: \(error.localizedDescription)", category: "extraction")
+                AppLog.error("Unexpected error during URL extraction: \(error.localizedDescription)", category: .extraction)
             }
         }
         
         await MainActor.run {
             isLoading = false
-            logInfo("URL extraction complete, isLoading set to false", category: "extraction")
+            AppLog.info("URL extraction complete, isLoading set to false", category: .extraction)
         }
     }
     
@@ -282,7 +282,7 @@ class RecipeExtractorViewModel: ObservableObject {
             selectedImage = image
         }
         
-        logInfo("Starting image extraction, isLoading set to true", category: "extraction")
+        AppLog.info("Starting image extraction, isLoading set to true", category: .extraction)
         
         // Generate processed preview if preprocessing is enabled
         if usePreprocessing {
@@ -301,13 +301,13 @@ class RecipeExtractorViewModel: ObservableObject {
         do {
             // Reduce image size to 10-20KB max before sending to Claude
             // Since we're only extracting text, we don't need high resolution
-            logInfo("Reducing image size before sending to Claude...", category: "extraction")
+            AppLog.info("Reducing image size before sending to Claude...", category: .extraction)
             guard let imageData = imagePreprocessor.reduceImageSize(image, maxSizeBytes: 20_000) else {
                 throw ClaudeAPIError.invalidResponse
             }
-            logInfo("Image size after reduction: \(imageData.count) bytes (~\(imageData.count / 1024)KB)", category: "extraction")
+            AppLog.info("Image size after reduction: \(imageData.count) bytes (~\(imageData.count / 1024)KB)", category: .extraction)
 
-            logInfo("Calling Claude API for image extraction...", category: "extraction")
+            AppLog.info("Calling Claude API for image extraction...", category: .extraction)
             let recipe = try await apiClient.extractRecipe(
                 from: imageData,
                 usePreprocessing: usePreprocessing
@@ -315,23 +315,23 @@ class RecipeExtractorViewModel: ObservableObject {
 
             await MainActor.run {
                 self.extractedRecipe = recipe
-                logInfo("Recipe extraction successful", category: "extraction")
+                AppLog.info("Recipe extraction successful", category: .extraction)
             }
         } catch let error as ClaudeAPIError {
             await MainActor.run {
                 self.errorMessage = error.errorDescription
-                logError("Claude API error during extraction: \(error.errorDescription ?? "unknown")", category: "extraction")
+                AppLog.error("Claude API error during extraction: \(error.errorDescription ?? "unknown")", category: .extraction)
             }
         } catch {
             await MainActor.run {
                 self.errorMessage = "Unexpected error: \(error.localizedDescription)"
-                logError("Unexpected error during extraction: \(error.localizedDescription)", category: "extraction")
+                AppLog.error("Unexpected error during extraction: \(error.localizedDescription)", category: .extraction)
             }
         }
         
         await MainActor.run {
             isLoading = false
-            logInfo("Image extraction complete, isLoading set to false", category: "extraction")
+            AppLog.info("Image extraction complete, isLoading set to false", category: .extraction)
         }
     }
     
@@ -366,7 +366,7 @@ class RecipeExtractorViewModel: ObservableObject {
     private func autoSaveBeforeEnhancement(modelContext: ModelContext) async {
         guard let recipe = extractedRecipe, !isRecipeSaved else { return }
         
-        logInfo("Auto-saving recipe before enhancement: \(recipe.safeTitle)", category: "enhancement")
+        AppLog.info("Auto-saving recipe before enhancement: \(recipe.safeTitle)", category: .recipe)
         
         // Save recipe directly without duplicate check (user already saw extraction)
         await MainActor.run {
@@ -391,7 +391,7 @@ class RecipeExtractorViewModel: ObservableObject {
             errorMessage = nil
         }
         
-        logInfo("Starting recipe validation for: \(recipe.safeTitle)", category: "enhancement")
+        AppLog.info("Starting recipe validation for: \(recipe.safeTitle)", category: .recipe)
         
         do {
             let result = try await service.validateRecipeContent(recipe)
@@ -399,12 +399,12 @@ class RecipeExtractorViewModel: ObservableObject {
             await MainActor.run {
                 self.validationResult = result
                 self.showingValidation = true
-                logInfo("Validation complete. Valid: \(result.isValid)", category: "enhancement")
+                AppLog.info("Validation complete. Valid: \(result.isValid)", category: .recipe)
             }
         } catch {
             await MainActor.run {
                 self.errorMessage = "Validation failed: \(error.localizedDescription)"
-                logError("Validation error: \(error.localizedDescription)", category: "enhancement")
+                AppLog.error("Validation error: \(error.localizedDescription)", category: .recipe)
             }
         }
         
@@ -418,7 +418,7 @@ class RecipeExtractorViewModel: ObservableObject {
         guard let recipe = extractedRecipe,
               let corrections = result.corrections else { return }
         
-        logInfo("Applying validation corrections to recipe", category: "enhancement")
+        AppLog.info("Applying validation corrections to recipe", category: .recipe)
         
         // Apply title correction
         if let newTitle = corrections.title {
@@ -490,7 +490,7 @@ class RecipeExtractorViewModel: ObservableObject {
         // Update content fingerprint after corrections
         recipe.updateContentFingerprint()
         
-        logInfo("Validation corrections applied successfully", category: "enhancement")
+        AppLog.info("Validation corrections applied successfully", category: .recipe)
     }
     
     

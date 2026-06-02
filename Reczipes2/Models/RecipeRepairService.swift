@@ -47,7 +47,7 @@ class RecipeRepairService: ObservableObject {
 
             // Strategy 1: Re-extract from source URL
             if let ref = recipe.reference, !ref.isEmpty, URL(string: ref) != nil {
-                logInfo("🔧 Repairing '\(recipe.safeTitle)' from URL: \(ref)", category: "repair")
+                AppLog.info("🔧 Repairing '\(recipe.safeTitle)' from URL: \(ref)", category: .storage)
                 repairPhase = .fetchingSource
                 let html = try await webExtractor.fetchWebContent(from: ref)
 
@@ -56,7 +56,7 @@ class RecipeRepairService: ObservableObject {
 
             // Strategy 2: Re-extract from stored image data
             } else if let imgData = recipe.imageData {
-                logInfo("🔧 Repairing '\(recipe.safeTitle)' from stored image", category: "repair")
+                AppLog.info("🔧 Repairing '\(recipe.safeTitle)' from stored image", category: .storage)
                 repairPhase = .extracting
                 freshRecipe = try await apiClient.extractRecipe(from: imgData)
 
@@ -69,14 +69,14 @@ class RecipeRepairService: ObservableObject {
             patchRecipe(recipe, from: freshRecipe)
 
             try context.save()
-            logInfo("✅ Successfully repaired '\(recipe.safeTitle)'", category: "repair")
+            AppLog.info("✅ Successfully repaired '\(recipe.safeTitle)'", category: .storage)
 
             repairPhase = .completed
             isRepairing = false
             return true
 
         } catch {
-            logError("❌ Repair failed for '\(recipe.safeTitle)': \(error)", category: "repair")
+            AppLog.error("❌ Repair failed for '\(recipe.safeTitle)': \(error)", category: .storage)
             errorMessage = error.localizedDescription
             repairPhase = .failed
             isRepairing = false
@@ -92,7 +92,7 @@ class RecipeRepairService: ObservableObject {
         if existing.ingredientSectionsData == nil || existing.ingredientSections.isEmpty {
             if fresh.ingredientSectionsData != nil && !fresh.ingredientSections.isEmpty {
                 existing.ingredientSectionsData = fresh.ingredientSectionsData
-                logInfo("  → Patched ingredients (\(fresh.ingredientSections.flatMap { $0.ingredients }.count) items)", category: "repair")
+                AppLog.info("  → Patched ingredients (\(fresh.ingredientSections.flatMap { $0.ingredients }.count) items)", category: .storage)
             }
         }
 
@@ -100,7 +100,7 @@ class RecipeRepairService: ObservableObject {
         if existing.instructionSectionsData == nil || existing.instructionSections.isEmpty {
             if fresh.instructionSectionsData != nil && !fresh.instructionSections.isEmpty {
                 existing.instructionSectionsData = fresh.instructionSectionsData
-                logInfo("  → Patched instructions (\(fresh.instructionSections.flatMap { $0.steps }.count) steps)", category: "repair")
+                AppLog.info("  → Patched instructions (\(fresh.instructionSections.flatMap { $0.steps }.count) steps)", category: .storage)
             }
         }
 
@@ -108,7 +108,7 @@ class RecipeRepairService: ObservableObject {
         if (existing.notesData == nil || existing.notes.isEmpty),
            let freshNotes = fresh.notesData, !fresh.notes.isEmpty {
             existing.notesData = freshNotes
-            logInfo("  → Patched notes (\(fresh.notes.count) notes)", category: "repair")
+            AppLog.info("  → Patched notes (\(fresh.notes.count) notes)", category: .storage)
         }
 
         // Update metadata

@@ -141,7 +141,7 @@ struct RecipeExtractorView: View {
                     } else {
                         Text("No recipe")
                             .onAppear {
-                                logWarning("No recipe available to save", category: "ui")
+                                AppLog.warning("No recipe available to save", category: .ui)
                             }
                     }
                 }
@@ -158,10 +158,10 @@ struct RecipeExtractorView: View {
                             predicate: #Predicate { $0.id == recipeID }
                         )
                         if let savedRecipe = try? modelContext.fetch(descriptor).first {
-                            logInfo("Verified recipe in DB: '\(savedRecipe.safeTitle)'", category: "storage")
-                            logInfo("Recipe imageName in DB: '\(savedRecipe.imageName ?? "nil")'", category: "storage")
+                            AppLog.info("Verified recipe in DB: '\(savedRecipe.safeTitle)'", category: .storage)
+                            AppLog.info("Recipe imageName in DB: '\(savedRecipe.imageName ?? "nil")'", category: .storage)
                         } else {
-                            logWarning("Could not find recipe in DB after save", category: "storage")
+                            AppLog.warning("Could not find recipe in DB after save", category: .storage)
                         }
                     }
                     // Dismiss and let the ContentView refresh
@@ -195,7 +195,7 @@ struct RecipeExtractorView: View {
                     if let recipe = viewModel.extractedRecipe {
                         modelContext.delete(recipe)
                         try? modelContext.save()
-                        logInfo("Undid duplicate recipe save: \(recipe.safeTitle)", category: "storage")
+                        AppLog.info("Undid duplicate recipe save: \(recipe.safeTitle)", category: .storage)
                     }
                     viewModel.reset()
                     extractionSource = .none
@@ -207,17 +207,17 @@ struct RecipeExtractorView: View {
                 ImagePicker(
                     sourceType: .photoLibrary,
                     onImageSelected: { image in
-                        logInfo("Image selected from library, size: \(image.size)", category: "ui")
+                        AppLog.info("Image selected from library, size: \(image.size)", category: .ui)
                         // Store the image and wait for sheet to dismiss before showing crop
                         imageToCrop = image
                         // Delay to ensure sheet dismisses before fullScreenCover presents
                         DispatchQueue.main.asyncAfter(deadline: .now() + 0.6) {
-                            logInfo("Presenting crop view", category: "ui")
+                            AppLog.info("Presenting crop view", category: .ui)
                             showImageCrop = true
                         }
                     },
                     onCancel: {
-                        logInfo("Image picker cancelled", category: "ui")
+                        AppLog.info("Image picker cancelled", category: .ui)
                         // User cancelled, do nothing
                     }
                 )
@@ -953,7 +953,7 @@ struct RecipeExtractorView: View {
     
     private var saveButton: some View {
         Button {
-            logInfo("INLINE Save button tapped", category: "ui")
+            AppLog.info("INLINE Save button tapped", category: .ui)
             // If there are selected web image URLs and we haven't downloaded them yet
             if !selectedWebImageURLs.isEmpty && downloadedWebImages.isEmpty {
                 Task {
@@ -1121,18 +1121,18 @@ struct RecipeExtractorView: View {
         
         for (index, imageURL) in imageURLs.enumerated() {
             do {
-                logInfo("Downloading image \(index + 1)/\(imageURLs.count) from: \(imageURL)", category: "network")
+                AppLog.info("Downloading image \(index + 1)/\(imageURLs.count) from: \(imageURL)", category: .network)
                 let image = try await imageDownloader.downloadImage(from: imageURL)
                 downloadedImages.append(image)
             } catch {
-                logError("Failed to download image \(index + 1): \(error)", category: "network")
+                AppLog.error("Failed to download image \(index + 1): \(error)", category: .network)
                 // Continue with other images
             }
         }
         
         await MainActor.run {
             self.downloadedWebImages = downloadedImages
-            logInfo("Downloaded \(downloadedImages.count) images successfully", category: "network")
+            AppLog.info("Downloaded \(downloadedImages.count) images successfully", category: .network)
             self.saveRecipe()
             self.isDownloadingImage = false
         }
@@ -1140,14 +1140,14 @@ struct RecipeExtractorView: View {
     
     @MainActor
     private func saveRecipe() {
-        logInfo("Save button tapped", category: "recipe")
+        AppLog.info("Save button tapped", category: .recipe)
         
         guard let recipe = viewModel.extractedRecipe else {
-            logError("No recipe to save", category: "recipe")
+            AppLog.error("No recipe to save", category: .recipe)
             return
         }
         
-        logInfo("Saving recipe: \(recipe.title ?? "Unknown")", category: "recipe")
+        AppLog.info("Saving recipe: \(recipe.title ?? "Unknown")", category: .recipe)
         
         // Determine which images we'll save
         let imagesToSave: [UIImage]
@@ -1164,30 +1164,30 @@ struct RecipeExtractorView: View {
             if index == 0 {
                 // First image is the main thumbnail
                 recipe.setImage(image, isMainImage: true)
-                logInfo("Set main image for recipe: \(recipe.safeTitle)", category: "recipe")
+                AppLog.info("Set main image for recipe: \(recipe.safeTitle)", category: .recipe)
             } else {
                 // Additional images
                 recipe.setImage(image, isMainImage: false)
-                logInfo("Added additional image \(index) for recipe: \(recipe.safeTitle)", category: "recipe")
+                AppLog.info("Added additional image \(index) for recipe: \(recipe.safeTitle)", category: .recipe)
             }
         }
         
         // Insert into SwiftData context
         modelContext.insert(recipe)
-        logDebug("RecipeX inserted into context", category: "storage")
-        logDebug("Recipe ID: \(recipe.safeID)", category: "storage")
-        logDebug("Recipe imageName: \(recipe.imageName ?? "nil")", category: "storage")
-        logDebug("Recipe imageData size: \(recipe.imageData?.count ?? 0) bytes", category: "storage")
+        AppLog.debug("RecipeX inserted into context", category: .storage)
+        AppLog.debug("Recipe ID: \(recipe.safeID)", category: .storage)
+        AppLog.debug("Recipe imageName: \(recipe.imageName ?? "nil")", category: .storage)
+        AppLog.debug("Recipe imageData size: \(recipe.imageData?.count ?? 0) bytes", category: .storage)
         
         // Save the context
         do {
             try modelContext.save()
-            logInfo("RecipeX saved successfully to SwiftData", category: "storage")
-            logDebug("Recipe ID: \(recipe.safeID)", category: "storage")
-            logDebug("Recipe Title: \(recipe.safeTitle)", category: "storage")
-            logDebug("Recipe imageName (after context save): \(recipe.imageName ?? "nil")", category: "storage")
-            logDebug("Recipe imageData size (after save): \(recipe.imageData?.count ?? 0) bytes", category: "storage")
-            logDebug("Recipe has \(recipe.imageCount) image(s)", category: "storage")
+            AppLog.info("RecipeX saved successfully to SwiftData", category: .storage)
+            AppLog.debug("Recipe ID: \(recipe.safeID)", category: .storage)
+            AppLog.debug("Recipe Title: \(recipe.safeTitle)", category: .storage)
+            AppLog.debug("Recipe imageName (after context save): \(recipe.imageName ?? "nil")", category: .storage)
+            AppLog.debug("Recipe imageData size (after save): \(recipe.imageData?.count ?? 0) bytes", category: .storage)
+            AppLog.debug("Recipe has \(recipe.imageCount) image(s)", category: .storage)
             
             // Check for potential duplicates before showing confirmation
             let savedTitle = recipe.safeTitle
@@ -1239,8 +1239,8 @@ struct RecipeExtractorView: View {
                 }
             }
         } catch {
-            logError("Failed to save recipe: \(error)", category: "storage")
-            logError("Error details: \(error.localizedDescription)", category: "storage")
+            AppLog.error("Failed to save recipe: \(error)", category: .storage)
+            AppLog.error("Error details: \(error.localizedDescription)", category: .storage)
             // Optionally show an error alert here
         }
     }
@@ -1251,7 +1251,7 @@ struct RecipeExtractorView: View {
         // Check if there's a pending extraction task
         if let task = appState.activeTask,
            task.taskType == .extraction {
-            logInfo("Found pending extraction task with progress: \(task.progress)", category: "state")
+            AppLog.info("Found pending extraction task with progress: \(task.progress)", category: .state)
             showPendingExtractionAlert = true
         }
     }
@@ -1275,7 +1275,7 @@ struct RecipeExtractorView: View {
         // Resume from saved progress
         guard let task = appState.activeTask else { return }
         
-        logInfo("Resuming extraction from progress: \(task.progress)", category: "state")
+        AppLog.info("Resuming extraction from progress: \(task.progress)", category: .state)
         extractionProgress = task.progress
         
         // If we have saved input data, try to restore it
@@ -1306,7 +1306,7 @@ struct RecipeExtractorView: View {
             }
         } else {
             // No input data saved - just show the UI state
-            logWarning("No input data available to resume extraction", category: "state")
+            AppLog.warning("No input data available to resume extraction", category: .state)
             appState.completeTask()
         }
     }

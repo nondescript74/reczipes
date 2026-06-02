@@ -35,11 +35,11 @@ struct AppClipDataHandler {
             // Clear the pending recipe
             sharedDefaults?.removeObject(forKey: pendingRecipeKey)
             
-            logInfo("✅ Successfully imported recipe from App Clip: \(String(describing: recipe.title))", category: "app-clip")
+            AppLog.info("✅ Successfully imported recipe from App Clip: \(String(describing: recipe.title))", category: .lifecycle)
             return true
             
         } catch {
-            logError("Failed to import App Clip recipe: \(error)", category: "app-clip")
+            AppLog.error("Failed to import App Clip recipe: \(error)", category: .lifecycle)
             return false
         }
     }
@@ -113,7 +113,7 @@ struct AppClipDataHandler {
     /// can retrieve it securely — no plaintext in UserDefaults.
     static func shareAPIKeyWithAppClip(_ apiKey: String) {
         guard let data = apiKey.data(using: .utf8) else {
-            logWarning("Could not encode API key for Keychain", category: "app-clip")
+            AppLog.warning("Could not encode API key for Keychain", category: .lifecycle)
             return
         }
 
@@ -135,9 +135,9 @@ struct AppClipDataHandler {
 
         let status = SecItemAdd(attributes as CFDictionary, nil)
         if status == errSecSuccess {
-            logInfo("Shared API key with App Clip via App-Group Keychain", category: "app-clip")
+            AppLog.info("Shared API key with App Clip via App-Group Keychain", category: .lifecycle)
         } else {
-            logWarning("Failed to share API key with App Clip (Keychain status: \(status))", category: "app-clip")
+            AppLog.warning("Failed to share API key with App Clip (Keychain status: \(status))", category: .lifecycle)
         }
     }
 

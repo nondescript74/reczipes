@@ -686,7 +686,7 @@ struct SharingSettingsView: View {
                 
                 successful += 1
             } catch {
-                logError("Failed to share book '\(book.displayName)': \(error)", category: "sharing")
+                AppLog.error("Failed to share book '\(book.displayName)': \(error)", category: .sharing)
                 failed += 1
             }
         }
@@ -748,7 +748,7 @@ struct SharingSettingsView: View {
                 
                 successful += 1
             } catch {
-                logError("Failed to share book '\(book.displayName)': \(error)", category: "sharing")
+                AppLog.error("Failed to share book '\(book.displayName)': \(error)", category: .sharing)
                 failed += 1
             }
         }
@@ -792,7 +792,7 @@ struct SharingSettingsView: View {
             return
         }
         
-        logInfo("Starting bulk unshare: \(total) recipes", category: "sharing")
+        AppLog.info("Starting bulk unshare: \(total) recipes", category: .sharing)
         
         var successful = 0
         var failed = 0
@@ -824,7 +824,7 @@ struct SharingSettingsView: View {
                     )
                     successful += 1
                 } catch {
-                    logError("Failed to unshare: \(error.localizedDescription)", category: "sharing")
+                    AppLog.error("Failed to unshare: \(error.localizedDescription)", category: .sharing)
                     failed += 1
                 }
             }
@@ -852,7 +852,7 @@ struct SharingSettingsView: View {
             alertMessage = "Unshare completed: " + parts.joined(separator: ", ")
         }
         
-        logInfo("Bulk unshare complete: \(alertMessage)", category: "sharing")
+        AppLog.info("Bulk unshare complete: \(alertMessage)", category: .sharing)
         showingAlert = true
     }
     
@@ -880,7 +880,7 @@ struct SharingSettingsView: View {
             return
         }
         
-        logInfo("Starting bulk unshare: \(total) books", category: "sharing")
+        AppLog.info("Starting bulk unshare: \(total) books", category: .sharing)
         
         var successful = 0
         var failed = 0
@@ -909,7 +909,7 @@ struct SharingSettingsView: View {
                     }
                     successful += 1
                 } catch {
-                    logError("Failed to unshare: \(error.localizedDescription)", category: "sharing")
+                    AppLog.error("Failed to unshare: \(error.localizedDescription)", category: .sharing)
                     failed += 1
                 }
             }
@@ -927,7 +927,7 @@ struct SharingSettingsView: View {
             alertMessage = "Unshared \(successful) of \(sharedBooks.count) books. \(failed) failed."
         }
         
-        logInfo("📊 Unshare result: \(alertMessage)", category: "sharing")
+        AppLog.info("📊 Unshare result: \(alertMessage)", category: .sharing)
         showingAlert = true
     }
     
@@ -1373,15 +1373,15 @@ struct ManageSharedContentView: View {
     // Filter to show only items shared by the current user
     private var activeSharedRecipes: [SharedRecipe] {
         guard let currentUserID = sharingService.currentUserID else {
-            logInfo("🔍 activeSharedRecipes: No currentUserID yet", category: "sharing")
+            AppLog.info("🔍 activeSharedRecipes: No currentUserID yet", category: .sharing)
             return []
         }
         let filtered = allActiveSharedRecipes.filter { $0.sharedByUserID == currentUserID }
-        logInfo("🔍 activeSharedRecipes: currentUserID=\(currentUserID), total=\(allActiveSharedRecipes.count), filtered=\(filtered.count)", category: "sharing")
+        AppLog.info("🔍 activeSharedRecipes: currentUserID=\(currentUserID), total=\(allActiveSharedRecipes.count), filtered=\(filtered.count)", category: .sharing)
         
         // Debug: log all recipes with their sharedByUserID
         for recipe in allActiveSharedRecipes {
-            logInfo("🔍   Recipe '\(recipe.recipeTitle)': sharedByUserID=\(recipe.sharedByUserID ?? "nil")", category: "sharing")
+            AppLog.info("🔍   Recipe '\(recipe.recipeTitle)': sharedByUserID=\(recipe.sharedByUserID ?? "nil")", category: .sharing)
         }
         
         return filtered
@@ -1389,15 +1389,15 @@ struct ManageSharedContentView: View {
     
     private var activeSharedBooks: [Book] {
         guard let currentUserID = sharingService.currentUserID else {
-            logInfo("🔍 activeSharedBooks: No currentUserID yet", category: "sharing")
+            AppLog.info("🔍 activeSharedBooks: No currentUserID yet", category: .sharing)
             return []
         }
         let filtered = allActiveSharedBooks.filter { $0.ownerUserID == currentUserID }
-        logInfo("🔍 activeSharedBooks: currentUserID=\(currentUserID), total=\(allActiveSharedBooks.count), filtered=\(filtered.count)", category: "sharing")
+        AppLog.info("🔍 activeSharedBooks: currentUserID=\(currentUserID), total=\(allActiveSharedBooks.count), filtered=\(filtered.count)", category: .sharing)
         
         // Debug: log all books with their ownerUserID
         for book in allActiveSharedBooks {
-            logInfo("🔍   Book '\(book.displayName)': ownerUserID=\(book.ownerUserID ?? "nil")", category: "sharing")
+            AppLog.info("🔍   Book '\(book.displayName)': ownerUserID=\(book.ownerUserID ?? "nil")", category: .sharing)
         }
         
         return filtered
@@ -1463,7 +1463,7 @@ struct ManageSharedContentView: View {
                                     
                                     if let cloudRecordID = sharedRecipe.cloudRecordID {
                                         Button(role: .destructive) {
-                                            logInfo("🗑️ User tapped unshare for recipe: \(sharedRecipe.recipeTitle)", category: "sharing")
+                                            AppLog.info("🗑️ User tapped unshare for recipe: \(sharedRecipe.recipeTitle)", category: .sharing)
                                             itemToUnshare = (cloudRecordID, .recipe)
                                         } label: {
                                             Label("Unshare", systemImage: "xmark.circle.fill")
@@ -1487,7 +1487,7 @@ struct ManageSharedContentView: View {
                                 .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                                     if let cloudRecordID = sharedRecipe.cloudRecordID {
                                         Button(role: .destructive) {
-                                            logInfo("🗑️ User swiped to unshare recipe: \(sharedRecipe.recipeTitle)", category: "sharing")
+                                            AppLog.info("🗑️ User swiped to unshare recipe: \(sharedRecipe.recipeTitle)", category: .sharing)
                                             itemToUnshare = (cloudRecordID, .recipe)
                                         } label: {
                                             Label("Unshare", systemImage: "xmark.circle")
@@ -1534,7 +1534,7 @@ struct ManageSharedContentView: View {
                                     
                                     if let cloudRecordID = book.cloudRecordID {
                                         Button(role: .destructive) {
-                                            logInfo("🗑️ User tapped unshare for book: \(book.displayName)", category: "sharing")
+                                            AppLog.info("🗑️ User tapped unshare for book: \(book.displayName)", category: .sharing)
                                             itemToUnshare = (cloudRecordID, .book)
                                         } label: {
                                             Label("Unshare", systemImage: "xmark.circle.fill")
@@ -1558,7 +1558,7 @@ struct ManageSharedContentView: View {
                                 .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                                     if let cloudRecordID = book.cloudRecordID {
                                         Button(role: .destructive) {
-                                            logInfo("🗑️ User swiped to unshare book: \(book.displayName)", category: "sharing")
+                                            AppLog.info("🗑️ User swiped to unshare book: \(book.displayName)", category: .sharing)
                                             itemToUnshare = (cloudRecordID, .book)
                                         } label: {
                                             Label("Unshare", systemImage: "xmark.circle")
@@ -1582,17 +1582,17 @@ struct ManageSharedContentView: View {
             set: { if !$0 { itemToUnshare = nil } }
         )) {
             Button("Cancel", role: .cancel) {
-                logInfo("🚫 User cancelled unshare", category: "sharing")
+                AppLog.info("🚫 User cancelled unshare", category: .sharing)
                 itemToUnshare = nil
             }
             Button("Unshare", role: .destructive) {
                 if let item = itemToUnshare {
-                    logInfo("✅ User confirmed unshare for \(item.type)", category: "sharing")
+                    AppLog.info("✅ User confirmed unshare for \(item.type)", category: .sharing)
                     Task {
                         await unshareItem(cloudRecordID: item.id, type: item.type)
                     }
                 } else {
-                    logError("❌ itemToUnshare was nil in alert confirmation", category: "sharing")
+                    AppLog.error("❌ itemToUnshare was nil in alert confirmation", category: .sharing)
                 }
             }
         } message: {
@@ -1610,17 +1610,17 @@ struct ManageSharedContentView: View {
     }
     
     private func unshareItem(cloudRecordID: String, type: UnshareType) async {
-        logInfo("🔄 Starting unshare process for \(type): \(cloudRecordID)", category: "sharing")
+        AppLog.info("🔄 Starting unshare process for \(type): \(cloudRecordID)", category: .sharing)
         
         do {
             switch type {
             case .recipe:
-                logInfo("🍽️ Calling unshareRecipe...", category: "sharing")
+                AppLog.info("🍽️ Calling unshareRecipe...", category: .sharing)
                 try await sharingService.unshareRecipe(cloudRecordID: cloudRecordID, modelContext: modelContext)
                 alertMessage = "Recipe unshared successfully"
-                logInfo("✅ Recipe unshared successfully", category: "sharing")
+                AppLog.info("✅ Recipe unshared successfully", category: .sharing)
             case .book:
-                logInfo("📚 Calling unshare book...", category: "sharing")
+                AppLog.info("📚 Calling unshare book...", category: .sharing)
                 // Find the book with this cloudRecordID
                 let descriptor = FetchDescriptor<Book>(
                     predicate: #Predicate { $0.cloudRecordID == cloudRecordID }
@@ -1631,7 +1631,7 @@ struct ManageSharedContentView: View {
                     try await syncService.deleteBookFromCloud(book)
                     
                     alertMessage = "Recipe book unshared successfully"
-                    logInfo("✅ Recipe book unshared successfully", category: "sharing")
+                    AppLog.info("✅ Recipe book unshared successfully", category: .sharing)
                 } else {
                     throw BookSyncError.bookNotFound
                 }
@@ -1639,7 +1639,7 @@ struct ManageSharedContentView: View {
             itemToUnshare = nil
             showingAlert = true
         } catch {
-            logError("❌ Failed to unshare \(type): \(error)", category: "sharing")
+            AppLog.error("❌ Failed to unshare \(type): \(error)", category: .sharing)
             alertMessage = "Failed to unshare: \(error.localizedDescription)"
             itemToUnshare = nil
             showingAlert = true
@@ -1788,28 +1788,28 @@ struct SharedBooksBrowserView: View {
         errorMessage = nil
         
         do {
-            logInfo("📚 Starting to fetch shared recipe books...", category: "sharing")
+            AppLog.info("📚 Starting to fetch shared recipe books...", category: .sharing)
             let books = try await sharingService.fetchSharedRecipeBooks(excludeCurrentUser: true)
             
             await MainActor.run {
                 sharedBooks = books
-                logInfo("📚 Loaded \(books.count) shared books from CloudKit", category: "sharing")
+                AppLog.info("📚 Loaded \(books.count) shared books from CloudKit", category: .sharing)
             }
             
             // Automatically sync to local SwiftData so books appear in RecipeBooksView
             do {
-                logInfo("📚 Starting sync to local SwiftData...", category: "sharing")
+                AppLog.info("📚 Starting sync to local SwiftData...", category: .sharing)
                 try await sharingService.syncCommunityBooksToLocal(modelContext: modelContext)
-                logInfo("✅ Successfully synced community books to local SwiftData", category: "sharing")
+                AppLog.info("✅ Successfully synced community books to local SwiftData", category: .sharing)
             } catch {
-                logError("❌ Failed to sync community books to local: \(error)", category: "sharing")
+                AppLog.error("❌ Failed to sync community books to local: \(error)", category: .sharing)
                 // Don't show error to user - the browse view still works
             }
         } catch {
             await MainActor.run {
                 let errorDetails = "\(error.localizedDescription) [\(type(of: error))]"
                 errorMessage = "Failed to load recipe books: \(errorDetails)"
-                logError("❌ Failed to load shared books: \(error)", category: "sharing")
+                AppLog.error("❌ Failed to load shared books: \(error)", category: .sharing)
             }
         }
         
