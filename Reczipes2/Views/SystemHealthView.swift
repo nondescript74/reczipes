@@ -35,11 +35,7 @@ struct SystemHealthView: View {
                 if hasIssues {
                     Text("\(diagnosticManager.unresolvedFailures.count)")
                         .font(.caption.bold())
-                        .foregroundStyle(.white)
-                        .padding(.horizontal, 8)
-                        .padding(.vertical, 4)
-                        .background(Color.red)
-                        .clipShape(Capsule())
+                        .statusBadgeStyle(tone: .critical)
                 }
             }
             .padding()

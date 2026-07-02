@@ -88,11 +88,7 @@ struct DiagnosticButton: View {
                 Text("\(failureCount)")
                     .font(.caption2)
                     .fontWeight(.bold)
-                    .foregroundStyle(.white)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 2)
-                    .background(Color.red)
-                    .clipShape(Capsule())
+                    .statusBadgeStyle(tone: .critical)
                     .offset(x: 8, y: -8)
             }
         }

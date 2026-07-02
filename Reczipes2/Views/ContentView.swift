@@ -810,11 +810,7 @@ struct ContentView: View {
                             Text("Fix")
                                 .font(.caption2)
                                 .fontWeight(.bold)
-                                .foregroundStyle(.white)
-                                .padding(.horizontal, 6)
-                                .padding(.vertical, 2)
-                                .background(Color.red)
-                                .clipShape(Capsule())
+                                .statusBadgeStyle(tone: .critical)
                         }
                         .buttonStyle(.plain)
                     }
@@ -1220,5 +1216,4 @@ struct BookBadge: View {
         return .purple
     }
 }
-
 

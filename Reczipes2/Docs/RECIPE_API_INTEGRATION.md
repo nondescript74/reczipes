@@ -20,9 +20,15 @@ This app now includes `recipe-api.com` integration focused on low-quota validati
   - Onboarding UI for recipe-api key
   - Save + validate workflow
   - Quota-safe endpoint test buttons
-- `SettingsView.swift`
+  - `SettingsView.swift`
   - Added recipe-api key status
   - Added `Recipe API Setup & Test` entry point
+- URL extraction provider strategy
+  - Default: `Recipe API -> Claude fallback`
+  - User-selectable in `RecipeExtractorView`:
+    - `Auto (Recipe API -> Claude)`
+    - `Recipe API Only`
+    - `Claude Only`
 
 ## Why these endpoints
 

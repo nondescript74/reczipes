@@ -30,6 +30,68 @@ struct RecipeAPIDinnerRecipe: Decodable {
     let difficulty: String?
 }
 
+struct RecipeAPISearchResponse: Decodable {
+    let data: [RecipeAPISearchItem]
+}
+
+struct RecipeAPISearchItem: Decodable, Hashable {
+    let id: String
+    let name: String
+    let description: String?
+    let category: String?
+    let cuisine: String?
+    let difficulty: String?
+}
+
+struct RecipeAPIDetailEnvelope: Decodable {
+    let data: RecipeAPIDetailRecipe
+}
+
+struct RecipeAPIDetailRecipe: Decodable, Hashable {
+    let id: String
+    let name: String
+    let description: String?
+    let category: String?
+    let cuisine: String?
+    let difficulty: String?
+    let ingredients: [RecipeAPIIngredientGroup]?
+    let instructions: [RecipeAPIInstructionStep]?
+    let meta: RecipeAPIDetailMeta?
+}
+
+struct RecipeAPIDetailMeta: Decodable, Hashable {
+    let yields: String?
+}
+
+struct RecipeAPIIngredientGroup: Decodable, Hashable {
+    let groupName: String?
+    let items: [RecipeAPIIngredientItem]
+
+    enum CodingKeys: String, CodingKey {
+        case groupName = "group_name"
+        case items
+    }
+}
+
+struct RecipeAPIIngredientItem: Decodable, Hashable {
+    let name: String
+    let quantity: Double?
+    let unit: String?
+    let preparation: String?
+}
+
+struct RecipeAPIInstructionStep: Decodable, Hashable {
+    let stepNumber: Int?
+    let phase: String?
+    let text: String
+
+    enum CodingKeys: String, CodingKey {
+        case stepNumber = "step_number"
+        case phase
+        case text
+    }
+}
+
 private struct RecipeAPIErrorEnvelope: Decodable {
     let error: RecipeAPIErrorPayload
 }
@@ -96,8 +158,39 @@ class RecipeAPIClient {
         return response.data
     }
 
-    private func request<T: Decodable>(path: String, requiresKey: Bool) async throws -> T {
-        guard let url = URL(string: path, relativeTo: baseURL) else {
+    func searchRecipes(query: String, perPage: Int = 5) async throws -> [RecipeAPISearchItem] {
+        let response: RecipeAPISearchResponse = try await request(
+            path: "/api/v1/recipes",
+            queryItems: [
+                URLQueryItem(name: "q", value: query),
+                URLQueryItem(name: "per_page", value: String(perPage))
+            ],
+            requiresKey: true
+        )
+        return response.data
+    }
+
+    func fetchRecipeDetails(id: String) async throws -> RecipeAPIDetailRecipe {
+        let response: RecipeAPIDetailEnvelope = try await request(
+            path: "/api/v1/recipes/\(id)",
+            requiresKey: true
+        )
+        return response.data
+    }
+
+    private func request<T: Decodable>(
+        path: String,
+        queryItems: [URLQueryItem] = [],
+        requiresKey: Bool
+    ) async throws -> T {
+        guard let base = URL(string: path, relativeTo: baseURL) else {
+            throw RecipeAPIError.invalidResponse
+        }
+        var components = URLComponents(url: base, resolvingAgainstBaseURL: true)
+        if !queryItems.isEmpty {
+            components?.queryItems = queryItems
+        }
+        guard let url = components?.url else {
             throw RecipeAPIError.invalidResponse
         }
 

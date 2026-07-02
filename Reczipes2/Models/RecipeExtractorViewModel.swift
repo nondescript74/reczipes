@@ -12,6 +12,25 @@ import UIKit
 #endif
 import Combine
 
+enum URLExtractionProviderPreference: String, CaseIterable, Identifiable {
+    case recipeAPIFirstThenClaude
+    case recipeAPIOnly
+    case claudeOnly
+
+    var id: String { rawValue }
+
+    var displayName: String {
+        switch self {
+        case .recipeAPIFirstThenClaude:
+            return "Auto (Recipe API -> Claude)"
+        case .recipeAPIOnly:
+            return "Recipe API Only"
+        case .claudeOnly:
+            return "Claude Only"
+        }
+    }
+}
+
 @MainActor
 class RecipeExtractorViewModel: ObservableObject {
     @Published var extractedRecipe: RecipeX?
@@ -22,6 +41,7 @@ class RecipeExtractorViewModel: ObservableObject {
     @Published var usePreprocessing = true
     @Published var recipeURL: String = ""
     @Published var extractedImageURLs: [String] = [] // Image URLs from web extraction
+    @Published var urlProviderPreference: URLExtractionProviderPreference = .recipeAPIFirstThenClaude
     
     private let apiClient: ClaudeAPIClient
     private let imagePreprocessor = ImagePreprocessor()
@@ -191,8 +211,11 @@ class RecipeExtractorViewModel: ObservableObject {
         self.enhancementService = RecipeEnhancementService(apiKey: apiKey)
     }
     
-    /// Extract recipe from a web URL
-    func extractRecipe(from url: String) async {
+    /// Extract recipe from a web URL using selected provider strategy
+    func extractRecipe(
+        from url: String,
+        providerPreference: URLExtractionProviderPreference = .recipeAPIFirstThenClaude
+    ) async {
         // Explicitly set loading state on main actor
         await MainActor.run {
             isLoading = true
@@ -206,42 +229,10 @@ class RecipeExtractorViewModel: ObservableObject {
         AppLog.info("Starting URL extraction from: \(url)", category: .extraction)
 
         do {
-            // Fetch web content
-            let htmlContent = try await webExtractor.fetchWebContent(from: url)
-            
-            // Extract image URLs BEFORE cleaning (to preserve all HTML)
-            let imageURLs = webExtractor.extractImageURLs(from: htmlContent)
-            AppLog.info("Found \(imageURLs.count) image URL(s) in webpage", category: .extraction)
-            
-            // Clean the HTML
-            let cleanedContent = webExtractor.cleanHTML(htmlContent)
-            
-            // Limit content size to avoid token limits (approximately 100k characters)
-            let contentToSend: String
-            if cleanedContent.count > 50_000 {
-                AppLog.warning("Content too large (\(cleanedContent.count) chars), truncating to head+tail 50k characters", category: .extraction)
-                let headCount = 40_000
-                let tailCount = 10_000
-                let head = String(cleanedContent.prefix(headCount))
-                let tail = String(cleanedContent.suffix(tailCount))
-                contentToSend = head + "\n\n=== TRUNCATED TAIL CONTENT ===\n\n" + tail
-            } else {
-                contentToSend = cleanedContent
-            }
-            
-            AppLog.info("Calling Claude API for URL extraction...", category: .extraction)
-            
-            // Extract recipe using Claude
-            let recipe = try await apiClient.extractRecipe(from: contentToSend)
-            
-            // Add the source URL to the reference field if not already present
-            if let existingReference = recipe.reference, !existingReference.isEmpty {
-                if !existingReference.contains(url) {
-                    recipe.reference = existingReference + "\n\nOriginal Source: " + url
-                }
-            } else {
-                recipe.reference = "Original Source: " + url
-            }
+            let (recipe, imageURLs) = try await extractRecipeFromURLUsingSelectedProvider(
+                url: url,
+                providerPreference: providerPreference
+            )
             
             await MainActor.run {
                 self.extractedRecipe = recipe
@@ -259,6 +250,11 @@ class RecipeExtractorViewModel: ObservableObject {
                 self.errorMessage = error.errorDescription
                 AppLog.error("Claude API error during URL extraction: \(error.errorDescription ?? "unknown")", category: .extraction)
             }
+        } catch let error as RecipeAPIError {
+            await MainActor.run {
+                self.errorMessage = error.errorDescription
+                AppLog.error("Recipe API error during URL extraction: \(error.errorDescription ?? "unknown")", category: .extraction)
+            }
         } catch {
             await MainActor.run {
                 self.errorMessage = "Unexpected error: \(error.localizedDescription)"
@@ -270,6 +266,209 @@ class RecipeExtractorViewModel: ObservableObject {
             isLoading = false
             AppLog.info("URL extraction complete, isLoading set to false", category: .extraction)
         }
+    }
+
+    private func extractRecipeFromURLUsingSelectedProvider(
+        url: String,
+        providerPreference: URLExtractionProviderPreference
+    ) async throws -> (RecipeX, [String]) {
+        switch providerPreference {
+        case .claudeOnly:
+            return try await extractRecipeWithClaude(from: url)
+
+        case .recipeAPIOnly:
+            return try await extractRecipeWithRecipeAPI(from: url)
+
+        case .recipeAPIFirstThenClaude:
+            do {
+                return try await extractRecipeWithRecipeAPI(from: url)
+            } catch {
+                AppLog.warning("Recipe API URL extraction failed, falling back to Claude: \(error.localizedDescription)", category: .extraction)
+                return try await extractRecipeWithClaude(from: url)
+            }
+        }
+    }
+
+    private func extractRecipeWithClaude(from url: String) async throws -> (RecipeX, [String]) {
+        let htmlContent = try await webExtractor.fetchWebContent(from: url)
+        let imageURLs = webExtractor.extractImageURLs(from: htmlContent)
+
+        let cleanedContent = webExtractor.cleanHTML(htmlContent)
+        let contentToSend: String
+        if cleanedContent.count > 50_000 {
+            AppLog.warning("Content too large (\(cleanedContent.count) chars), truncating to head+tail 50k characters", category: .extraction)
+            let headCount = 40_000
+            let tailCount = 10_000
+            let head = String(cleanedContent.prefix(headCount))
+            let tail = String(cleanedContent.suffix(tailCount))
+            contentToSend = head + "\n\n=== TRUNCATED TAIL CONTENT ===\n\n" + tail
+        } else {
+            contentToSend = cleanedContent
+        }
+
+        AppLog.info("Calling Claude API for URL extraction...", category: .extraction)
+        let recipe = try await apiClient.extractRecipe(from: contentToSend)
+        applySourceURL(url, to: recipe)
+        return (recipe, imageURLs)
+    }
+
+    private func extractRecipeWithRecipeAPI(from url: String) async throws -> (RecipeX, [String]) {
+        guard let recipeAPIKey = APIKeyHelper.getRecipeAPIKey(), !recipeAPIKey.isEmpty else {
+            throw RecipeAPIError.missingAPIKey
+        }
+
+        let client = RecipeAPIClient(apiKey: recipeAPIKey)
+        let query = buildSearchQuery(from: url)
+        AppLog.info("Calling Recipe API search for URL extraction query: \(query)", category: .extraction)
+
+        let searchResults = try await client.searchRecipes(query: query, perPage: 8)
+        guard let bestMatch = bestMatchFromRecipeAPI(searchResults, query: query) else {
+            throw RecipeAPIError.requestFailed(code: 404, message: "No matching recipe found from Recipe API search.")
+        }
+
+        let detail = try await client.fetchRecipeDetails(id: bestMatch.id)
+        let recipe = try buildRecipeXFromRecipeAPIDetail(detail, originalURL: url)
+        let imageURLs = await fetchImageURLsIfAvailable(for: url)
+        return (recipe, imageURLs)
+    }
+
+    private func buildSearchQuery(from urlString: String) -> String {
+        guard let url = URL(string: urlString) else { return urlString }
+        let rawSlug = url.deletingPathExtension().lastPathComponent
+        let cleanedSlug = rawSlug.replacingOccurrences(of: #"-\d+$"#, with: "", options: .regularExpression)
+        let candidate = cleanedSlug.removingPercentEncoding ?? cleanedSlug
+        let terms = candidate
+            .split(separator: "-")
+            .map { String($0).trimmingCharacters(in: .whitespacesAndNewlines) }
+            .filter { !$0.isEmpty && $0.count > 2 }
+
+        if terms.isEmpty {
+            return urlString
+        }
+        return terms.joined(separator: " ")
+    }
+
+    private func bestMatchFromRecipeAPI(
+        _ items: [RecipeAPISearchItem],
+        query: String
+    ) -> RecipeAPISearchItem? {
+        guard !items.isEmpty else { return nil }
+        let queryTokens = tokenize(query)
+        return items.max { lhs, rhs in
+            scoreMatch(lhs.name, queryTokens: queryTokens) < scoreMatch(rhs.name, queryTokens: queryTokens)
+        }
+    }
+
+    private func tokenize(_ input: String) -> Set<String> {
+        let separators = CharacterSet.alphanumerics.inverted
+        let tokens = input.lowercased()
+            .components(separatedBy: separators)
+            .filter { $0.count > 2 }
+        return Set(tokens)
+    }
+
+    private func scoreMatch(_ name: String, queryTokens: Set<String>) -> Int {
+        let nameTokens = tokenize(name)
+        let overlap = nameTokens.intersection(queryTokens).count
+        return overlap * 10 + nameTokens.count
+    }
+
+    private func buildRecipeXFromRecipeAPIDetail(
+        _ detail: RecipeAPIDetailRecipe,
+        originalURL: String
+    ) throws -> RecipeX {
+        let ingredientSections = (detail.ingredients ?? []).map { group in
+            IngredientSection(
+                title: group.groupName,
+                ingredients: group.items.map { item in
+                    Ingredient(
+                        quantity: formatQuantity(item.quantity),
+                        unit: item.unit,
+                        name: item.name,
+                        preparation: item.preparation
+                    )
+                }
+            )
+        }
+
+        let instructionSections = buildInstructionSections(from: detail.instructions ?? [])
+
+        let ingredientsData = try JSONEncoder().encode(ingredientSections)
+        let instructionsData = try JSONEncoder().encode(instructionSections)
+
+        let recipe = RecipeX(
+            title: detail.name,
+            headerNotes: detail.description,
+            recipeYield: detail.meta?.yields,
+            reference: "Original Source: \(originalURL)\n\nProvider: recipe-api.com",
+            ingredientSectionsData: ingredientsData,
+            instructionSectionsData: instructionsData,
+            extractionSource: "url-recipe-api",
+            cuisine: detail.cuisine
+        )
+
+        recipe.difficultyLevel = mapDifficulty(detail.difficulty)
+        return recipe
+    }
+
+    private func buildInstructionSections(from steps: [RecipeAPIInstructionStep]) -> [InstructionSection] {
+        var grouped: [String: [RecipeAPIInstructionStep]] = [:]
+        var orderedPhases: [String] = []
+
+        for step in steps {
+            let phase = (step.phase?.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty == false)
+                ? step.phase!.trimmingCharacters(in: .whitespacesAndNewlines)
+                : "Instructions"
+            if grouped[phase] == nil {
+                grouped[phase] = []
+                orderedPhases.append(phase)
+            }
+            grouped[phase]?.append(step)
+        }
+
+        return orderedPhases.map { phase in
+            let sortedSteps = (grouped[phase] ?? []).sorted {
+                ($0.stepNumber ?? Int.max) < ($1.stepNumber ?? Int.max)
+            }
+            let mappedSteps = sortedSteps.enumerated().map { index, step in
+                InstructionStep(
+                    stepNumber: step.stepNumber ?? (index + 1),
+                    text: step.text
+                )
+            }
+            return InstructionSection(title: phase == "Instructions" ? nil : phase, steps: mappedSteps)
+        }
+    }
+
+    private func formatQuantity(_ quantity: Double?) -> String? {
+        guard let quantity else { return nil }
+        if quantity.rounded() == quantity {
+            return String(Int(quantity))
+        }
+        return String(format: "%.2f", quantity).replacingOccurrences(of: #"(\.\d*?[1-9])0+$|\.0+$"#, with: "$1", options: .regularExpression)
+    }
+
+    private func mapDifficulty(_ difficulty: String?) -> Int? {
+        guard let value = difficulty?.lowercased() else { return nil }
+        if value.contains("easy") { return 1 }
+        if value.contains("medium") { return 2 }
+        if value.contains("hard") { return 3 }
+        return nil
+    }
+
+    private func applySourceURL(_ url: String, to recipe: RecipeX) {
+        if let existingReference = recipe.reference, !existingReference.isEmpty {
+            if !existingReference.contains(url) {
+                recipe.reference = existingReference + "\n\nOriginal Source: " + url
+            }
+        } else {
+            recipe.reference = "Original Source: " + url
+        }
+    }
+
+    private func fetchImageURLsIfAvailable(for url: String) async -> [String] {
+        guard let html = try? await webExtractor.fetchWebContent(from: url) else { return [] }
+        return webExtractor.extractImageURLs(from: html)
     }
     
     /// Extract recipe from the selected image

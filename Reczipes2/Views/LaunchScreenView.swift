@@ -10,6 +10,7 @@ import SwiftData
 
 struct LaunchScreenView: View {
     @Environment(\.modelContext) private var modelContext
+    @Environment(\.colorScheme) private var colorScheme
     
     @State private var wipeProgress: CGFloat = 0
     @State private var imageOpacity: Double = 0
@@ -36,18 +37,45 @@ struct LaunchScreenView: View {
     private var logFileSize: String {
         DiagnosticLogger.shared.getFormattedLogFileSize()
     }
+
+    private var backgroundGradientColors: [Color] {
+        if colorScheme == .dark {
+            return [
+                Color(red: 0.09, green: 0.10, blue: 0.14),
+                Color(red: 0.13, green: 0.11, blue: 0.16),
+                Color(red: 0.16, green: 0.12, blue: 0.14),
+                Color(red: 0.10, green: 0.09, blue: 0.12)
+            ]
+        } else {
+            return [
+                Color(red: 1.0, green: 0.95, blue: 0.85),
+                Color(red: 0.98, green: 0.92, blue: 0.80),
+                Color(red: 1.0, green: 0.88, blue: 0.70),
+                Color(red: 0.95, green: 0.85, blue: 0.75)
+            ]
+        }
+    }
+    
+    private var titleGradientColors: [Color] {
+        if colorScheme == .dark {
+            return [
+                Color(red: 1.0, green: 0.72, blue: 0.42),
+                Color(red: 1.0, green: 0.86, blue: 0.55)
+            ]
+        } else {
+            return [
+                Color(red: 0.8, green: 0.3, blue: 0.1),
+                Color(red: 0.9, green: 0.5, blue: 0.3)
+            ]
+        }
+    }
     
     var body: some View {
         GeometryReader { geometry in
             ZStack {
                 // Beautiful gradient background with recipe-inspired colors
                 LinearGradient(
-                    colors: [
-                        Color(red: 1.0, green: 0.95, blue: 0.85),  // Warm cream
-                        Color(red: 0.98, green: 0.92, blue: 0.80),  // Light peach
-                        Color(red: 1.0, green: 0.88, blue: 0.70),   // Soft apricot
-                        Color(red: 0.95, green: 0.85, blue: 0.75)   // Warm beige
-                    ],
+                    colors: backgroundGradientColors,
                     startPoint: .topLeading,
                     endPoint: .bottomTrailing
                 )
@@ -58,7 +86,7 @@ struct LaunchScreenView: View {
                     .fill(
                         RadialGradient(
                             colors: [
-                                Color.orange.opacity(0.15),
+                                Color.orange.opacity(colorScheme == .dark ? 0.25 : 0.15),
                                 Color.clear
                             ],
                             center: .center,
@@ -75,7 +103,7 @@ struct LaunchScreenView: View {
                     .fill(
                         RadialGradient(
                             colors: [
-                                Color.pink.opacity(0.12),
+                                Color.pink.opacity(colorScheme == .dark ? 0.20 : 0.12),
                                 Color.clear
                             ],
                             center: .center,
@@ -120,10 +148,7 @@ struct LaunchScreenView: View {
                             .font(.system(size: 52, weight: .bold, design: .rounded))
                             .foregroundStyle(
                                 LinearGradient(
-                                    colors: [
-                                        Color(red: 0.8, green: 0.3, blue: 0.1),  // Rich orange-red
-                                        Color(red: 0.9, green: 0.5, blue: 0.3)   // Warm coral
-                                    ],
+                                    colors: titleGradientColors,
                                     startPoint: .leading,
                                     endPoint: .trailing
                                 )
@@ -166,7 +191,7 @@ struct LaunchScreenView: View {
                     .padding(24)
                     .background(
                         RoundedRectangle(cornerRadius: 20)
-                            .fill(.white.opacity(0.7))
+                            .fill(.ultraThinMaterial)
                             .shadow(color: .black.opacity(0.08), radius: 10, x: 0, y: 5)
                     )
                     .padding(.horizontal, 40)
@@ -211,7 +236,13 @@ struct LaunchScreenView: View {
                     Rectangle()
                         .fill(Color.clear)
                         .frame(width: geometry.size.width * (1 - wipeProgress))
-                        .glassEffect(.regular.tint(.white.opacity(0.3)))
+                        .glassEffect(
+                            .regular.tint(
+                                colorScheme == .dark
+                                    ? .black.opacity(0.25)
+                                    : .white.opacity(0.3)
+                            )
+                        )
                         .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .trailing)
                 }
             }

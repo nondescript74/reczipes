@@ -10,6 +10,7 @@ import PhotosUI
 import SwiftData
 
 struct RecipeExtractorView: View {
+    @Environment(\.colorScheme) private var colorScheme
     @StateObject private var viewModel: RecipeExtractorViewModel
     @State private var keepAwakeManager = KeepAwakeManager.shared
     @EnvironmentObject private var appState: AppStateManager
@@ -33,6 +34,7 @@ struct RecipeExtractorView: View {
     @State private var showBatchImageExtraction = false
     @State private var showImportLinks = false
     @State private var showManageLinks = false
+    @AppStorage("urlExtractionProviderPreference") private var savedURLProviderPreference = URLExtractionProviderPreference.recipeAPIFirstThenClaude.rawValue
     // mashup moved to RecipeDetailView
     @State private var importResultMessage: String?
     @State private var showingImportResult = false
@@ -280,6 +282,9 @@ struct RecipeExtractorView: View {
                 }
             }
             .onAppear {
+                if let provider = URLExtractionProviderPreference(rawValue: savedURLProviderPreference) {
+                    viewModel.urlProviderPreference = provider
+                }
                 checkForPendingExtraction()
                 consumePendingExtractURL()
             }
@@ -547,6 +552,27 @@ struct RecipeExtractorView: View {
                 .autocapitalization(.none)
                 .keyboardType(.URL)
                 .textContentType(.URL)
+
+            Picker("Extraction Provider", selection: $viewModel.urlProviderPreference) {
+                ForEach(URLExtractionProviderPreference.allCases) { provider in
+                    Text(provider.displayName).tag(provider)
+                }
+            }
+            .pickerStyle(.menu)
+            .onChange(of: viewModel.urlProviderPreference) { _, newValue in
+                savedURLProviderPreference = newValue.rawValue
+            }
+
+            HStack(spacing: 8) {
+                keyStatusBadge(
+                    title: "Recipe API",
+                    isConfigured: APIKeyHelper.isRecipeAPIConfigured
+                )
+                keyStatusBadge(
+                    title: "Claude",
+                    isConfigured: APIKeyHelper.isConfigured
+                )
+            }
             
             Button {
                 // Save input data for task restoration
@@ -560,7 +586,10 @@ struct RecipeExtractorView: View {
                 }
                 
                 Task {
-                    await viewModel.extractRecipe(from: viewModel.recipeURL)
+                    await viewModel.extractRecipe(
+                        from: viewModel.recipeURL,
+                        providerPreference: viewModel.urlProviderPreference
+                    )
                 }
             } label: {
                 HStack {
@@ -576,7 +605,7 @@ struct RecipeExtractorView: View {
             .disabled(viewModel.recipeURL.isEmpty || viewModel.isLoading)
             .buttonStyle(.plain)
             
-            Text("Enter the full URL of a recipe webpage. The app will fetch and analyze the page to extract the recipe.")
+            Text("By default, URL extraction uses Recipe API first, then falls back to Claude if needed. You can override provider above.")
                 .font(.caption)
                 .foregroundColor(.secondary)
         }
@@ -584,6 +613,26 @@ struct RecipeExtractorView: View {
         .background(Color(.systemBackground))
         .cornerRadius(12)
         .shadow(radius: 1)
+    }
+
+    private func keyStatusBadge(title: String, isConfigured: Bool) -> some View {
+        HStack(spacing: 4) {
+            Image(systemName: isConfigured ? "checkmark.circle.fill" : "xmark.circle.fill")
+                .font(.caption)
+                .foregroundStyle(isConfigured ? .green : .orange)
+            Text(title)
+                .font(.caption)
+                .fontWeight(.medium)
+                .foregroundStyle(.primary)
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 6)
+        .background(
+            isConfigured
+                ? (colorScheme == .dark ? Color.green.opacity(0.28) : Color.green.opacity(0.14))
+                : (colorScheme == .dark ? Color.orange.opacity(0.28) : Color.orange.opacity(0.14))
+        )
+        .clipShape(Capsule())
     }
     
     private var preprocessingToggle: some View {
@@ -654,7 +703,10 @@ struct RecipeExtractorView: View {
                     }
                     
                     Task {
-                        await viewModel.extractRecipe(from: viewModel.recipeURL)
+                        await viewModel.extractRecipe(
+                            from: viewModel.recipeURL,
+                            providerPreference: viewModel.urlProviderPreference
+                        )
                     }
                 } else if let image = viewModel.selectedImage {
                     // Save input data for task restoration
@@ -1301,7 +1353,10 @@ struct RecipeExtractorView: View {
                 
                 // Resume extraction
                 Task {
-                    await viewModel.extractRecipe(from: textInput)
+                    await viewModel.extractRecipe(
+                        from: textInput,
+                        providerPreference: viewModel.urlProviderPreference
+                    )
                 }
             }
         } else {
