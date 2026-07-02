@@ -10,6 +10,8 @@ import SwiftUI
 struct SettingsView: View {
     @State private var showAPIKeyManager = false
     @State private var isAPIKeyConfigured = APIKeyHelper.isConfigured
+    @State private var showRecipeAPIIntegration = false
+    @State private var isRecipeAPIConfigured = APIKeyHelper.isRecipeAPIConfigured
     @State private var showLicenseAgreement = false
     @State private var showHelpBrowser = false
     @State private var showDiagnosticLog = false
@@ -55,9 +57,25 @@ struct SettingsView: View {
                                     .foregroundColor(.red)
                             }
                         }
+
+                        HStack {
+                            Text("Recipe API Key Status")
+                            Spacer()
+                            if isRecipeAPIConfigured {
+                                Label("Configured", systemImage: "checkmark.circle.fill")
+                                    .foregroundColor(.green)
+                            } else {
+                                Label("Not Set", systemImage: "xmark.circle.fill")
+                                    .foregroundColor(.red)
+                            }
+                        }
                         
                         Button("Manage API Key") {
                             showAPIKeyManager = true
+                        }
+
+                        Button("Recipe API Setup & Test") {
+                            showRecipeAPIIntegration = true
                         }
                         // Onboarding button
                         Button(action: {
@@ -509,6 +527,11 @@ struct SettingsView: View {
                 }) {
                     APIKeyManagerView()
                 }
+                .sheet(isPresented: $showRecipeAPIIntegration, onDismiss: {
+                    isRecipeAPIConfigured = APIKeyHelper.isRecipeAPIConfigured
+                }) {
+                    RecipeAPIIntegrationView()
+                }
                 .sheet(isPresented: $showLicenseAgreement) {
                     LicenseDisplayView()
                 }
@@ -524,6 +547,7 @@ struct SettingsView: View {
                 .onAppear {
                     // Refresh API key status when view appears
                     isAPIKeyConfigured = APIKeyHelper.isConfigured
+                    isRecipeAPIConfigured = APIKeyHelper.isRecipeAPIConfigured
                 }
             }
         }

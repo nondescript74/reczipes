@@ -27,25 +27,25 @@ struct APIKeySetupView: View {
                             .font(.title2)
                             .bold()
                         
-                        Text("To extract recipes from images using AI, you need a Claude API key from Anthropic.")
+                        Text("Enter a valid API key to enable network recipe features.")
                             .font(.body)
                     }
                     .padding(.vertical, 8)
                     
-                    Link(destination: URL(string: "https://console.anthropic.com/settings/keys")!) {
+                    Link(destination: URL(string: "https://recipe-api.com/docs")!) {
                         HStack {
-                            Text("Get API Key from Anthropic")
-                                .font(.headline)
+                            Text("Get Recipe API Key")
+                            .font(.headline)
                             Spacer()
                             Image(systemName: "arrow.up.right.square")
                         }
                     }
                 } header: {
-                    Text("Claude API Key Setup")
+                    Text("API Key Setup")
                 }
                 
                 Section {
-                    SecureField("Enter API Key", text: $apiKey)
+                    SecureField("Enter API Key (sk-ant-... or rapi_...)", text: $apiKey)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
                         .disabled(isValidating)
@@ -59,8 +59,8 @@ struct APIKeySetupView: View {
                             Spacer()
                             Text("\(apiKey.count) characters")
                                 .font(.caption)
-                                .foregroundColor(apiKey.count == 108 ? .green : .orange)
-                            if apiKey.count != 108 {
+                                .foregroundColor(.secondary)
+                            if apiKey.count < 8 {
                                 Image(systemName: "exclamationmark.triangle.fill")
                                     .foregroundColor(.orange)
                                     .font(.caption)
@@ -100,10 +100,10 @@ struct APIKeySetupView: View {
                             Text("Your API key will be tested before saving.")
                         }
                         Text("It's stored securely in the Keychain.")
-                        Text("API keys are exactly 108 characters and start with 'sk-ant-api03-'")
+                        Text("Supported key formats: 'sk-ant-...' (Anthropic) or 'rapi_...' (recipe-api.com)")
                             .bold()
-                        if apiKey.count == 107 || apiKey.count == 109 {
-                            Text("⚠️ Your key has \(apiKey.count) characters. Double-check you copied the entire key!")
+                        if apiKey.count < 8 {
+                            Text("⚠️ Your key looks very short. Double-check you copied the entire key.")
                                 .foregroundColor(.orange)
                         }
                     }
@@ -145,17 +145,17 @@ struct APIKeySetupView: View {
         print("🔑 Original key length: \(apiKey.count), Cleaned key length: \(cleanedKey.count)")
         
         // Basic validation
-        guard cleanedKey.hasPrefix("sk-ant-") else {
+        guard cleanedKey.hasPrefix("sk-ant-") || cleanedKey.hasPrefix("rapi_") else {
             showError = true
-            errorMessage = "Invalid API key format. Keys should start with 'sk-ant-api03-'"
+            errorMessage = "Invalid API key format. Keys should start with 'sk-ant-' or 'rapi_'."
             isValidating = false
             return
         }
-        
-        // Check length
-        if cleanedKey.count != 108 {
+
+        let isClaudeKey = cleanedKey.hasPrefix("sk-ant-")
+        if isClaudeKey && cleanedKey.count < 50 {
             showError = true
-            errorMessage = "API key should be exactly 108 characters. Your key has \(cleanedKey.count) characters. Please copy the complete key from Anthropic."
+            errorMessage = "Claude API key seems too short. Please copy the complete key."
             isValidating = false
             return
         }
@@ -163,7 +163,10 @@ struct APIKeySetupView: View {
         // If skipping validation, just save it
         if skipValidation {
             print("🔑 Skipping validation, saving directly...")
-            if APIKeyHelper.setAPIKey(cleanedKey) {
+            let saved = isClaudeKey
+                ? APIKeyHelper.setAPIKey(cleanedKey)
+                : APIKeyHelper.setRecipeAPIKey(cleanedKey)
+            if saved {
                 print("🔑 API key saved successfully (without validation)!")
                 isPresented = false
             } else {
@@ -174,15 +177,24 @@ struct APIKeySetupView: View {
             return
         }
         
-        // Validate with Anthropic
-        let client = ClaudeAPIClient(apiKey: cleanedKey)
-        let isValid = await client.validateAPIKey()
+        // Validate with matching provider
+        let isValid: Bool
+        if isClaudeKey {
+            let client = ClaudeAPIClient(apiKey: cleanedKey)
+            isValid = await client.validateAPIKey()
+        } else {
+            let client = RecipeAPIClient(apiKey: cleanedKey)
+            isValid = await client.validateAPIKey()
+        }
         
         isValidating = false
         
         if isValid {
             print("🔑 API key is valid, saving...")
-            if APIKeyHelper.setAPIKey(cleanedKey) {
+            let saved = isClaudeKey
+                ? APIKeyHelper.setAPIKey(cleanedKey)
+                : APIKeyHelper.setRecipeAPIKey(cleanedKey)
+            if saved {
                 print("🔑 API key saved successfully!")
                 // Dismiss the setup view
                 isPresented = false
@@ -193,7 +205,9 @@ struct APIKeySetupView: View {
         } else {
             print("🔑 API key validation failed")
             showError = true
-            errorMessage = "Could not validate with Anthropic. Your key appears to be 108 characters and correctly formatted, but Anthropic rejected it. Please verify it's active in the Anthropic console, or use 'Skip validation' to save it anyway."
+            errorMessage = isClaudeKey
+                ? "Could not validate with Anthropic. Please verify the key is active, or use 'Skip validation'."
+                : "Could not validate with recipe-api.com. Please verify the key is active, or use 'Skip validation'."
         }
     }
 }

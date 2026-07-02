@@ -17,6 +17,7 @@ struct APIKeyManagerView: View {
     @State private var errorMessage = ""
     @State private var isValidating = false
     @State private var isAPIKeyConfigured = APIKeyHelper.isConfigured
+    @State private var isRecipeAPIKeyConfigured = APIKeyHelper.isRecipeAPIConfigured
     
     var body: some View {
         NavigationView {
@@ -24,23 +25,38 @@ struct APIKeyManagerView: View {
                 Section {
                     if isAPIKeyConfigured {
                         HStack {
-                            Text("Status")
+                            Text("Claude Status")
                             Spacer()
                             Label("Configured", systemImage: "checkmark.circle.fill")
                                 .foregroundColor(.green)
                         }
-                        
-                        Button("Remove API Key", role: .destructive) {
+
+                        Button("Remove Claude API Key", role: .destructive) {
                             removeAPIKey()
                         }
-                    } else {
+                    }
+
+                    if isRecipeAPIKeyConfigured {
+                        HStack {
+                            Text("Recipe API Status")
+                            Spacer()
+                            Label("Configured", systemImage: "checkmark.circle.fill")
+                                .foregroundColor(.green)
+                        }
+
+                        Button("Remove Recipe API Key", role: .destructive) {
+                            removeRecipeAPIKey()
+                        }
+                    }
+
+                    if !isAPIKeyConfigured && !isRecipeAPIKeyConfigured {
                         Text("No API key configured")
                             .foregroundColor(.secondary)
                     }
                 }
                 
                 Section {
-                    SecureField("Enter new API key", text: $newAPIKey)
+                    SecureField("Enter new API key (sk-ant-... or rapi_...)", text: $newAPIKey)
                         .textInputAutocapitalization(.never)
                         .autocorrectionDisabled()
                         .disabled(isValidating)
@@ -54,7 +70,7 @@ struct APIKeyManagerView: View {
                 } header: {
                     Text("Update API Key")
                 } footer: {
-                    Text("Your API key will be tested with Anthropic before being saved. It's stored securely in the Keychain.")
+                    Text("Keys are validated with the matching provider before saving to Keychain.")
                 }
                 
                 // Separate section for feedback to make it more visible
@@ -64,19 +80,19 @@ struct APIKeyManagerView: View {
                             HStack {
                                 ProgressView()
                                     .padding(.trailing, 8)
-                                Text("Testing API key with Anthropic...")
+                            Text("Testing API key...")
                                     .foregroundColor(.secondary)
                             }
                         }
                         
                         if showSuccess {
-                            Label("API Key validated and saved successfully!", systemImage: "checkmark.circle.fill")
+                            Label("API key validated and saved successfully!", systemImage: "checkmark.circle.fill")
                                 .foregroundColor(.green)
                         }
                         
                         if showError {
                             VStack(alignment: .leading, spacing: 4) {
-                                Label("Failed to validate API Key", systemImage: "xmark.circle.fill")
+                                Label("Failed to validate API key", systemImage: "xmark.circle.fill")
                                     .foregroundColor(.red)
                                 Text(errorMessage)
                                     .font(.caption)
@@ -98,6 +114,7 @@ struct APIKeyManagerView: View {
             .onAppear {
                 // Refresh the API key status when the view appears
                 isAPIKeyConfigured = APIKeyHelper.isConfigured
+                isRecipeAPIKeyConfigured = APIKeyHelper.isRecipeAPIConfigured
             }
         }
     }
@@ -122,24 +139,30 @@ struct APIKeyManagerView: View {
         print("🔑 Original key length: \(newAPIKey.count), Cleaned key length: \(cleanedKey.count)")
         
         // Basic validation
-        if !cleanedKey.hasPrefix("sk-ant-") {
+        if !cleanedKey.hasPrefix("sk-ant-") && !cleanedKey.hasPrefix("rapi_") {
             showError = true
-            errorMessage = "Invalid API key format. Keys should start with 'sk-ant-api03-'"
+            errorMessage = "Invalid API key format. Keys should start with 'sk-ant-' or 'rapi_'."
             isValidating = false
             return
         }
-        
-        if cleanedKey.count < 50 {
-            showError = true
-            errorMessage = "API key seems too short. Please verify you copied the entire key."
-            isValidating = false
-            return
+
+        let isClaudeKey = cleanedKey.hasPrefix("sk-ant-")
+        let isValid: Bool
+        if isClaudeKey {
+            if cleanedKey.count < 50 {
+                showError = true
+                errorMessage = "Claude API key seems too short. Please verify you copied the entire key."
+                isValidating = false
+                return
+            }
+            let client = ClaudeAPIClient(apiKey: cleanedKey)
+            print("🔑 Calling Claude validateAPIKey...")
+            isValid = await client.validateAPIKey()
+        } else {
+            let client = RecipeAPIClient(apiKey: cleanedKey)
+            print("🔑 Calling Recipe API validateAPIKey...")
+            isValid = await client.validateAPIKey()
         }
-        
-        // First, validate the API key with Anthropic
-        let client = ClaudeAPIClient(apiKey: cleanedKey)
-        print("🔑 Calling validateAPIKey...")
-        let isValid = await client.validateAPIKey()
         print("🔑 Validation result: \(isValid)")
         
         // All UI updates on main thread
@@ -148,11 +171,20 @@ struct APIKeyManagerView: View {
         
         if isValid {
             print("🔑 API key is valid, attempting to save...")
-            // API key is valid, save it
-            if APIKeyHelper.setAPIKey(cleanedKey) {
+            let saved: Bool
+            if isClaudeKey {
+                saved = APIKeyHelper.setAPIKey(cleanedKey)
+            } else {
+                saved = APIKeyHelper.setRecipeAPIKey(cleanedKey)
+            }
+
+            if saved {
                 print("🔑 API key saved successfully!")
                 showSuccess = true
                 isAPIKeyConfigured = true
+                if !isClaudeKey {
+                    isRecipeAPIKeyConfigured = true
+                }
                 newAPIKey = ""
                 
                 // Dismiss after showing success
@@ -168,7 +200,9 @@ struct APIKeyManagerView: View {
             print("🔑 API key validation failed")
             // API key is invalid
             showError = true
-            errorMessage = "Could not validate with Anthropic. Please verify your API key is correct and active in the Anthropic console."
+            errorMessage = isClaudeKey
+                ? "Could not validate with Anthropic. Please verify your key is active."
+                : "Could not validate with recipe-api.com. Please verify your key is active."
         }
         
         print("🔑 Final state - showSuccess: \(showSuccess), showError: \(showError)")
@@ -178,6 +212,11 @@ struct APIKeyManagerView: View {
         _ = KeychainManager.shared.delete(key: "claudeAPIKey")
         isAPIKeyConfigured = false
         // Don't dismiss immediately - let user see the updated state
+    }
+
+    private func removeRecipeAPIKey() {
+        _ = APIKeyHelper.removeRecipeAPIKey()
+        isRecipeAPIKeyConfigured = false
     }
 }
 
