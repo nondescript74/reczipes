@@ -23,14 +23,22 @@ final class SharingPreferences {
     var allowOthersToSeeMyName: Bool = true
     var displayName: String?
     var dateModified: Date = Date()
-    
+
+    /// Consumer opt-in: participate in the communal recipe library.
+    /// When true, the app hydrates every shared recipe (from all users, including the
+    /// current user's own shared recipes) into the local cache on launch and refresh.
+    /// Defaults to `true` (communal library on; publishing still requires `shareAllRecipes`).
+    var browseCommunity: Bool = true
+
     init(shareAllRecipes: Bool = false,
          shareAllBooks: Bool = false,
          allowOthersToSeeMyName: Bool = true,
-         displayName: String? = nil) {
+         displayName: String? = nil,
+         browseCommunity: Bool = true) {
         self.shareAllRecipes = shareAllRecipes
         self.shareAllBooks = shareAllBooks
         self.allowOthersToSeeMyName = allowOthersToSeeMyName
         self.displayName = displayName
+        self.browseCommunity = browseCommunity
     }
 }

@@ -13,8 +13,16 @@ import CloudKit
 import Combine
 
 /// Service that automatically syncs RecipeX models to CloudKit Public Database
-/// 
-/// DESIGN:
+///
+/// ⚠️ DEPRECATED (2026-07-01): This service writes a non-consensual, write-only `RecipeX`
+/// public corpus that nothing reads back (`startAutomaticSync` has no callers). Communal
+/// sharing is now unified on the consent-gated `sharedRecipe` path (CloudKitSharingService,
+/// SharingPreferences.shareAllRecipes / browseCommunity). Do NOT re-wire `startAutomaticSync`
+/// into app startup — doing so would publish every recipe to the public database regardless
+/// of user consent, violating the opt-in sharing model. Retained only for reference/removal.
+/// See Docs/COMMUNAL_LIBRARY_SPEC.md.
+///
+/// DESIGN (historical):
 /// - Monitors SwiftData for RecipeX models with `needsCloudSync = true`
 /// - Uploads/updates recipes in CloudKit Public Database
 /// - Handles conflicts, retries, and error logging

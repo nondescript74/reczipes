@@ -310,9 +310,42 @@ struct Reczipes2App: App {
             }
         }
         
+        // Step 4: Hydrate the communal recipe library (opt-in, non-blocking).
+        // Pulls every shared recipe from all users (including the user's own shared recipes)
+        // into the local CachedSharedRecipe store so they're available in the app on
+        // install/update. Runs detached so it never delays launch.
+        hydrateCommunityLibraryIfOptedIn()
+
         isInitializing = false
         initializationComplete = true
         logInfo("✅ App initialization complete", category: "state")
+    }
+
+    /// Kicks off a background hydration of the communal recipe library when the user
+    /// has opted in (`SharingPreferences.browseCommunity`, default true). Best-effort:
+    /// failures are logged, never surfaced as launch errors.
+    private func hydrateCommunityLibraryIfOptedIn() {
+        let modelContext = sharedModelContainer.mainContext
+        let prefs = try? modelContext.fetch(FetchDescriptor<SharingPreferences>()).first
+        // Default to opted-in when no preferences record exists yet.
+        let optedIn = prefs?.browseCommunity ?? true
+        guard optedIn else {
+            logInfo("👥 Community library hydration skipped (browseCommunity off)", category: "sharing")
+            return
+        }
+
+        Task { @MainActor in
+            do {
+                try await CloudKitSharingService.shared.syncCommunityRecipesForViewing(
+                    modelContext: modelContext,
+                    limit: Int.max,
+                    includeSelf: true
+                )
+                logInfo("✅ Community library hydrated", category: "sharing")
+            } catch {
+                logWarning("⚠️ Community library hydration failed: \(error.localizedDescription)", category: "sharing")
+            }
+        }
     }
     
     // MARK: - Scene Phase Handling

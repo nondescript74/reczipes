@@ -232,7 +232,8 @@ struct SharedRecipesBrowserView: View {
         currentSharingError = nil
         
         do {
-            let recipes = try await sharingService.fetchSharedRecipes(limit: 100)
+            // Communal library: fetch every shared recipe from all users (incl. self), no cap.
+            let recipes = try await sharingService.fetchSharedRecipes(limit: Int.max, excludeCurrentUser: false)
             await MainActor.run {
                 self.sharedRecipes = recipes
                 self.isLoading = false

@@ -1729,17 +1729,18 @@ class CloudKitSharingService: ObservableObject {
     /// Sync community recipes for viewing (not permanent import)
     /// Creates temporary cache for viewing, cooking, etc. with automatic cleanup
     /// Uses pagination to fetch all available recipes efficiently
-    func syncCommunityRecipesForViewing(modelContext: ModelContext, limit: Int = Int.max) async throws {
+    func syncCommunityRecipesForViewing(modelContext: ModelContext, limit: Int = Int.max, includeSelf: Bool = true) async throws {
         guard isCloudKitAvailable else {
             throw SharingError.cloudKitUnavailable()
         }
-        
+
         let isFetchingAll = limit == Int.max
-        AppLog.info("📖 SYNC: Syncing community recipes for viewing\(isFetchingAll ? " (ALL recipes)" : " (limit: \(limit))")...", category: .sharing)
-        
+        AppLog.info("📖 SYNC: Syncing community recipes for viewing\(isFetchingAll ? " (ALL recipes)" : " (limit: \(limit))")\(includeSelf ? " incl. self" : "")...", category: .sharing)
+
         // Fetch shared recipes from CloudKit with pagination
-        // The fetchSharedRecipes method automatically handles pagination in batches of 100
-        let cloudRecipes = try await fetchSharedRecipes(limit: limit, excludeCurrentUser: true)
+        // The fetchSharedRecipes method automatically handles pagination in batches of 100.
+        // Communal library: includeSelf == true pulls the current user's own shared recipes too.
+        let cloudRecipes = try await fetchSharedRecipes(limit: limit, excludeCurrentUser: !includeSelf)
         let recipesToCache = isFetchingAll ? cloudRecipes : Array(cloudRecipes.prefix(limit))
         
         AppLog.info("📖 SYNC: Found \(cloudRecipes.count) community recipes, caching \(recipesToCache.count)", category: .sharing)

@@ -435,6 +435,27 @@ struct SharingSettingsView: View {
             ))
             .disabled(!sharingService.isCloudKitAvailable)
             
+            Toggle("Browse Community Library", isOn: Binding(
+                get: { preferences.browseCommunity },
+                set: { newValue in
+                    preferences.browseCommunity = newValue
+                    preferences.dateModified = Date()
+                    try? modelContext.save()
+
+                    if newValue {
+                        // Immediately hydrate the communal library (all users, incl. self).
+                        Task {
+                            try? await sharingService.syncCommunityRecipesForViewing(
+                                modelContext: modelContext,
+                                limit: Int.max,
+                                includeSelf: true
+                            )
+                        }
+                    }
+                }
+            ))
+            .disabled(!sharingService.isCloudKitAvailable)
+
             Toggle("Show My Name Publicly", isOn: Binding(
                 get: { preferences.allowOthersToSeeMyName },
                 set: { newValue in
