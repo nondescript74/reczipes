@@ -465,10 +465,12 @@ extension View {
     func platformPresentationDetents(_ detents: Set<PlatformPresentationDetent>) -> some View {
         #if os(iOS)
         if #available(iOS 16.0, *) {
-            var mapped: Set<PresentationDetent> = []
-            if detents.contains(.medium) { mapped.insert(.medium) }
-            if detents.contains(.large) { mapped.insert(.large) }
-            self.presentationDetents(mapped)
+            self.presentationDetents(Set(detents.map { d -> PresentationDetent in
+                switch d {
+                case .medium: return .medium
+                case .large: return .large
+                }
+            }))
         } else {
             self
         }
