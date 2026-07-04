@@ -38,7 +38,7 @@ struct BatchExtractionStatusBar: View {
                                 if keepAwakeManager.isKeepAwakeEnabled {
                                     Image(systemName: "moon.zzz.fill")
                                         .font(.caption2)
-                                        .foregroundColor(.blue)
+                                        .foregroundStyle(Color.appInfo)
                                 }
                             }
                             
@@ -54,7 +54,7 @@ struct BatchExtractionStatusBar: View {
                                     
                                     Text("\(manager.successCount) succeeded")
                                         .font(.caption)
-                                        .foregroundColor(.green)
+                                        .foregroundStyle(Color.appSuccess)
                                     
                                     if manager.failureCount > 0 {
                                         Text("•")
@@ -63,7 +63,7 @@ struct BatchExtractionStatusBar: View {
                                         
                                         Text("\(manager.failureCount) failed")
                                             .font(.caption)
-                                            .foregroundColor(.red)
+                                            .foregroundStyle(Color.appCritical)
                                     }
                                 }
                             }
@@ -77,7 +77,7 @@ struct BatchExtractionStatusBar: View {
                             Text("\(percentage)%")
                                 .font(.caption)
                                 .fontWeight(.semibold)
-                                .foregroundColor(.blue)
+                                .foregroundStyle(Color.appInfo)
                                 .frame(width: 40, alignment: .trailing)
                         }
                         
@@ -94,7 +94,7 @@ struct BatchExtractionStatusBar: View {
                     }
                     .padding(.horizontal, 16)
                     .padding(.vertical, 10)
-                    .background(Color(.systemBackground))
+                    .background(Color.appSystemBackground)
                 }
                 .buttonStyle(.plain)
                 
@@ -110,7 +110,7 @@ struct BatchExtractionStatusBar: View {
                 }
             }
             .background(
-                Color(.systemBackground)
+                Color.appSystemBackground
                     .shadow(color: Color.black.opacity(0.1), radius: 8, x: 0, y: 4)
             )
             .sheet(isPresented: $showingDetails) {
@@ -164,7 +164,7 @@ struct BatchExtractionDetailsSheet: View {
                 .padding()
             }
             .navigationTitle("Batch Extraction Progress")
-            .navigationBarTitleDisplayMode(.inline)
+            .platformNavigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Close") {
@@ -255,7 +255,7 @@ struct BatchExtractionDetailsSheet: View {
             }
         }
         .padding()
-        .background(Color(.systemGray6))
+        .background(Color.appGray6)
         .cornerRadius(12)
     }
     
@@ -266,7 +266,7 @@ struct BatchExtractionDetailsSheet: View {
             
             HStack {
                 Image(systemName: "book.fill")
-                    .foregroundColor(.blue)
+                    .foregroundStyle(Color.appInfo)
                 Text(recipe.title ?? "untitled")
                     .font(.subheadline)
                     .lineLimit(2)
@@ -286,7 +286,7 @@ struct BatchExtractionDetailsSheet: View {
             ForEach(manager.recentlyExtracted.prefix(5), id: \.id) { recipe in
                 HStack {
                     Image(systemName: "checkmark.circle.fill")
-                        .foregroundColor(.green)
+                        .foregroundStyle(Color.appSuccess)
                     Text(recipe.title ?? "untitled")
                         .font(.subheadline)
                         .lineLimit(1)
@@ -295,7 +295,7 @@ struct BatchExtractionDetailsSheet: View {
             }
         }
         .padding()
-        .background(Color(.systemGray6))
+        .background(Color.appGray6)
         .cornerRadius(12)
     }
     
@@ -318,7 +318,7 @@ struct BatchExtractionDetailsSheet: View {
             }
         }
         .padding()
-        .background(Color(.systemGray6))
+        .background(Color.appGray6)
         .cornerRadius(12)
     }
     
@@ -326,7 +326,7 @@ struct BatchExtractionDetailsSheet: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Image(systemName: "exclamationmark.triangle.fill")
-                    .foregroundColor(.red)
+                    .foregroundStyle(Color.appCritical)
                 Text("Errors (\(manager.errorLog.count))")
                     .font(.headline)
             }
@@ -351,7 +351,7 @@ struct BatchExtractionDetailsSheet: View {
             }
         }
         .padding()
-        .background(Color.red.opacity(0.1))
+        .adaptiveToneBackground(.critical, baseOpacity: 0.1)
         .cornerRadius(12)
     }
     

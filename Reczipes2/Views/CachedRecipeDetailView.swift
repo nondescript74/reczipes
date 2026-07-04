@@ -31,7 +31,7 @@ struct CachedRecipeDetailView: View {
                                 HStack(spacing: 4) {
                                     Image(systemName: "person.crop.circle.fill")
                                         .font(.caption)
-                                        .foregroundStyle(.blue)
+                                        .foregroundStyle(Color.appInfo)
                                     Text("Shared by \(sharedBy)")
                                         .font(.caption)
                                         .foregroundStyle(.secondary)
@@ -49,8 +49,8 @@ struct CachedRecipeDetailView: View {
                                 .font(.caption)
                                 .padding(.horizontal, 12)
                                 .padding(.vertical, 6)
-                                .background(Color.blue)
-                                .foregroundStyle(.white)
+                                .background(AdaptiveToneSolidFill(tone: .info))
+                                .foregroundStyle(Color.onTint)
                                 .clipShape(Capsule())
                         }
                     }
@@ -175,7 +175,7 @@ struct CachedRecipeDetailView: View {
                                 Image(systemName: "arrow.up.right.square")
                             }
                             .font(.body)
-                            .foregroundStyle(.blue)
+                            .foregroundStyle(Color.appInfo)
                         }
                     }
                     .padding(.horizontal)
@@ -194,7 +194,7 @@ struct CachedRecipeDetailView: View {
                 .padding(.bottom, 20)
             }
         }
-        .navigationBarTitleDisplayMode(.inline)
+        .platformNavigationBarTitleDisplayMode(.inline)
         .confirmationDialog("Add to My Recipes?", isPresented: $showingImportConfirmation) {
             Button("Add to My Recipes") {
                 importRecipe()

@@ -17,7 +17,7 @@ struct RecipeExtractorView: View {
     @State private var showImagePicker = false
     @State private var showCamera = false
     @State private var showImageCrop = false
-    @State private var imageToCrop: UIImage?
+    @State private var imageToCrop: PlatformImage?
     @State private var showImageComparison = false
     @State private var showingSaveConfirmation = false
     @State private var showingDuplicateWarning = false
@@ -25,7 +25,7 @@ struct RecipeExtractorView: View {
     @State private var showURLInput = false
     @State private var showWebImagePicker = false
     @State private var selectedWebImageURLs: [String] = []
-    @State private var downloadedWebImages: [UIImage] = []
+    @State private var downloadedWebImages: [PlatformImage] = []
     @State private var isDownloadingImage = false
     @State private var extractionSource: ExtractionSource = .none
     @State private var extractionProgress: Double = 0.0
@@ -112,9 +112,9 @@ struct RecipeExtractorView: View {
                 .padding()
             }
             .navigationTitle("Recipe Extractor")
-            .navigationBarTitleDisplayMode(.large)
+            .platformNavigationBarTitleDisplayMode(.large)
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
+                ToolbarItem(placement: .platformNavBarLeading) {
                     Button {
                         keepAwakeManager.toggle()
                     } label: {
@@ -125,18 +125,18 @@ struct RecipeExtractorView: View {
                             if keepAwakeManager.isKeepAwakeEnabled {
                                 Text("Stay Awake")
                                     .font(.caption)
-                                    .foregroundColor(.blue)
+                                    .foregroundStyle(Color.appInfo)
                             }
                         }
                     }
                     .help(keepAwakeManager.isKeepAwakeEnabled ? "Device will stay awake" : "Tap to prevent sleep")
                 }
                 
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .platformNavBarTrailing) {
                     CloudKitSyncBadge()
                 }
                 
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .platformNavBarTrailing) {
                     if viewModel.extractedRecipe != nil {
                         // nothing for now
 
@@ -240,7 +240,7 @@ struct RecipeExtractorView: View {
                     }
                 )
             }
-            .fullScreenCover(isPresented: $showImageCrop) {
+            .platformFullScreenCover(isPresented: $showImageCrop) {
                 if let image = imageToCrop {
                     ImageCropView(
                         image: image,
@@ -519,7 +519,7 @@ struct RecipeExtractorView: View {
             }
         }
         .padding()
-        .background(Color(.systemBackground))
+        .background(Color.appSystemBackground)
         .cornerRadius(16)
         .shadow(radius: 2)
         .sheet(isPresented: $showManageLinks) {
@@ -549,8 +549,8 @@ struct RecipeExtractorView: View {
             
             TextField("https://example.com/recipe", text: $viewModel.recipeURL)
                 .textFieldStyle(.roundedBorder)
-                .autocapitalization(.none)
-                .keyboardType(.URL)
+                .platformTextInputAutocapitalization(.never)
+                .platformKeyboardType(.URL)
                 .textContentType(.URL)
 
             Picker("Extraction Provider", selection: $viewModel.urlProviderPreference) {
@@ -599,7 +599,7 @@ struct RecipeExtractorView: View {
                 .frame(maxWidth: .infinity)
                 .padding()
                 .background(viewModel.recipeURL.isEmpty ? Color.gray.opacity(0.3) : Color.blue)
-                .foregroundColor(.white)
+                .foregroundStyle(Color.onTint)
                 .cornerRadius(12)
             }
             .disabled(viewModel.recipeURL.isEmpty || viewModel.isLoading)
@@ -610,7 +610,7 @@ struct RecipeExtractorView: View {
                 .foregroundColor(.secondary)
         }
         .padding()
-        .background(Color(.systemBackground))
+        .background(Color.appSystemBackground)
         .cornerRadius(12)
         .shadow(radius: 1)
     }
@@ -653,7 +653,7 @@ struct RecipeExtractorView: View {
             }
         }
         .padding()
-        .background(Color(.systemBackground))
+        .background(Color.appSystemBackground)
         .cornerRadius(12)
         .shadow(radius: 1)
         .onChange(of: viewModel.usePreprocessing) { _, _ in
@@ -663,7 +663,7 @@ struct RecipeExtractorView: View {
         }
     }
     
-    private func imagePreviewSection(image: UIImage) -> some View {
+    private func imagePreviewSection(image: PlatformImage) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             Text("Selected Image")
                 .font(.headline)
@@ -682,7 +682,7 @@ struct RecipeExtractorView: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Image(systemName: "exclamationmark.triangle.fill")
-                    .foregroundColor(.red)
+                    .foregroundStyle(Color.appCritical)
                 Text("Error")
                     .font(.headline)
             }
@@ -730,7 +730,7 @@ struct RecipeExtractorView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding()
-        .background(Color.red.opacity(0.1))
+        .adaptiveToneBackground(.critical, baseOpacity: 0.1)
         .cornerRadius(12)
     }
     
@@ -784,7 +784,7 @@ struct RecipeExtractorView: View {
     private var recipeSuccessHeader: some View {
         HStack {
             Image(systemName: "checkmark.circle.fill")
-                .foregroundColor(.green)
+                .foregroundStyle(Color.appSuccess)
                 .font(.title2)
             Text("Recipe Extracted Successfully!")
                 .font(.headline)
@@ -796,7 +796,7 @@ struct RecipeExtractorView: View {
             if recipe.ingredientSections.isEmpty {
                 HStack {
                     Image(systemName: "exclamationmark.triangle.fill")
-                        .foregroundColor(.orange)
+                        .foregroundStyle(Color.appWarning)
                     Text("No ingredients found")
                         .font(.caption)
                         .foregroundColor(.secondary)
@@ -806,7 +806,7 @@ struct RecipeExtractorView: View {
             if recipe.instructionSections.isEmpty {
                 HStack {
                     Image(systemName: "exclamationmark.triangle.fill")
-                        .foregroundColor(.orange)
+                        .foregroundStyle(Color.appWarning)
                     Text("No instructions found")
                         .font(.caption)
                         .foregroundColor(.secondary)
@@ -902,7 +902,7 @@ struct RecipeExtractorView: View {
                         .frame(width: 120, height: 120)
                         .overlay(
                             Image(systemName: "exclamationmark.triangle")
-                                .foregroundColor(.red)
+                                .foregroundStyle(Color.appCritical)
                         )
                 case .empty:
                     RoundedRectangle(cornerRadius: 8)
@@ -917,7 +917,7 @@ struct RecipeExtractorView: View {
             if index == 0 {
                 Text("Main Image")
                     .font(.caption2)
-                    .foregroundColor(.blue)
+                    .foregroundStyle(Color.appInfo)
                     .fontWeight(.semibold)
             } else {
                 Text("Image \(index + 1)")
@@ -938,7 +938,7 @@ struct RecipeExtractorView: View {
             .frame(maxWidth: .infinity)
             .padding()
             .background(Color.blue.opacity(0.1))
-            .foregroundColor(.blue)
+            .foregroundStyle(Color.appInfo)
             .cornerRadius(8)
         }
         .buttonStyle(.plain)
@@ -954,7 +954,7 @@ struct RecipeExtractorView: View {
             if viewModel.isRecipeSaved {
                 HStack(spacing: 6) {
                     Image(systemName: "checkmark.circle.fill")
-                        .foregroundColor(.green)
+                        .foregroundStyle(Color.appSuccess)
                         .font(.caption)
                     Text("Recipe auto-saved before enhancement")
                         .font(.caption2)
@@ -992,7 +992,7 @@ struct RecipeExtractorView: View {
                 .frame(maxWidth: .infinity)
                 .padding()
                 .background(Color.purple)
-                .foregroundColor(.white)
+                .foregroundStyle(Color.onTint)
                 .cornerRadius(10)
             }
             .disabled(viewModel.isValidating)
@@ -1032,15 +1032,15 @@ struct RecipeExtractorView: View {
                 .frame(maxWidth: .infinity)
                 .padding()
                 .background(Color.blue.opacity(0.7))
-                .foregroundColor(.white)
+                .foregroundStyle(Color.onTint)
                 .cornerRadius(12)
             } else {
                 Label("Save to Collection", systemImage: "square.and.arrow.down.fill")
                     .font(.headline)
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(Color.blue)
-                    .foregroundColor(.white)
+                    .background(AdaptiveToneSolidFill(tone: .info))
+                    .foregroundStyle(Color.onTint)
                     .cornerRadius(12)
             }
         }
@@ -1063,7 +1063,7 @@ struct RecipeExtractorView: View {
             
             Text("Tap recipe title below to view full details →")
                 .font(.caption)
-                .foregroundColor(.blue)
+                .foregroundStyle(Color.appInfo)
                 .italic()
         }
         .padding()
@@ -1157,7 +1157,7 @@ struct RecipeExtractorView: View {
                     .foregroundColor(.secondary)
             }
             .padding()
-            .background(Color(.systemBackground))
+            .background(Color.appSystemBackground)
             .cornerRadius(12)
             .shadow(radius: 2)
         }
@@ -1169,7 +1169,7 @@ struct RecipeExtractorView: View {
     
     private func downloadAndSaveRecipe(imageURLs: [String]) async {
         isDownloadingImage = true
-        var downloadedImages: [UIImage] = []
+        var downloadedImages: [PlatformImage] = []
         
         for (index, imageURL) in imageURLs.enumerated() {
             do {
@@ -1202,7 +1202,7 @@ struct RecipeExtractorView: View {
         AppLog.info("Saving recipe: \(recipe.title ?? "Unknown")", category: .recipe)
         
         // Determine which images we'll save
-        let imagesToSave: [UIImage]
+        let imagesToSave: [PlatformImage]
         if !downloadedWebImages.isEmpty {
             imagesToSave = downloadedWebImages
         } else if let selectedImage = viewModel.selectedImage {
@@ -1336,7 +1336,7 @@ struct RecipeExtractorView: View {
             
             // Restore image if available
             if let imageData = extractionInput.imageData,
-               let image = UIImage(data: imageData) {
+               let image = PlatformImage(data: imageData) {
                 viewModel.selectedImage = image
                 extractionSource = .library
                 
@@ -1370,7 +1370,7 @@ struct RecipeExtractorView: View {
 // MARK: - Image Preview with Expand
 
 struct ImagePreviewWithExpand: View {
-    let image: UIImage
+    let image: PlatformImage
     @State private var showingImageViewer = false
     
     var body: some View {
@@ -1378,7 +1378,7 @@ struct ImagePreviewWithExpand: View {
             showingImageViewer = true
         } label: {
             VStack(spacing: 8) {
-                Image(uiImage: image)
+                Image(platformImage: image)
                     .resizable()
                     .scaledToFit()
                     .frame(maxHeight: 400)
@@ -1391,11 +1391,11 @@ struct ImagePreviewWithExpand: View {
                     Text("Tap to expand and zoom")
                         .font(.caption)
                 }
-                .foregroundColor(.blue)
+                .foregroundStyle(Color.appInfo)
             }
         }
         .buttonStyle(.plain)
-        .fullScreenCover(isPresented: $showingImageViewer) {
+        .platformFullScreenCover(isPresented: $showingImageViewer) {
             ExpandableImageViewer(image: image)
         }
     }

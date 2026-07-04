@@ -8,6 +8,11 @@
 import SwiftUI
 import SwiftData
 import Combine
+#if canImport(UIKit)
+import UIKit
+#elseif canImport(AppKit)
+import AppKit
+#endif
 
 /// Detailed extraction step for better progress tracking
 enum ExtractionStep: String {
@@ -269,7 +274,7 @@ class BatchExtractionManager: ObservableObject {
             self.currentRecipe = recipe
             
             // Step 2: Download images
-            var downloadedImages: [UIImage] = []
+            var downloadedImages: [PlatformImage] = []
             
             AppLog.info("Found \(imageURLs.count) image URL(s) from extractor for '\(link.title)'", category: .batch)
             if imageURLs.isEmpty {
@@ -359,7 +364,7 @@ class BatchExtractionManager: ObservableObject {
         }
     }
     
-    private func saveRecipe(_ recipe: RecipeX, images: [UIImage], link: SavedLink, modelContext: ModelContext) async throws {
+    private func saveRecipe(_ recipe: RecipeX, images: [PlatformImage], link: SavedLink, modelContext: ModelContext) async throws {
          
          
         recipe.reference = link.url
@@ -387,7 +392,7 @@ class BatchExtractionManager: ObservableObject {
         // For now, just mark that this recipe was created locally
         recipe.ownerUserID = nil // Will be set by CloudKit sync service
         recipe.ownerDisplayName = nil // Will be set by CloudKit sync service
-        recipe.lastModifiedDeviceID = UIDevice.current.identifierForVendor?.uuidString
+        recipe.lastModifiedDeviceID = PlatformDevice.identifier
         
         // Save images using setImage() method (CloudKit-synced)
         for (index, image) in images.enumerated() {
@@ -423,7 +428,7 @@ class BatchExtractionManager: ObservableObject {
     // MARK: - Deprecated Image Methods (kept for reference)
     
     @available(*, deprecated, message: "Use recipe.setImage() instead")
-    private func saveImageToDisk(_ image: UIImage, filename: String) {
+    private func saveImageToDisk(_ image: PlatformImage, filename: String) {
         guard let imageData = image.jpegData(compressionQuality: 0.8) else {
             AppLog.error("Failed to convert image to JPEG data", category: .batch)
             return

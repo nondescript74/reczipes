@@ -29,7 +29,7 @@ struct PersistentContainerInfoView: View {
                         VStack(alignment: .leading, spacing: 8) {
                             HStack {
                                 Image(systemName: "exclamationmark.triangle.fill")
-                                    .foregroundColor(.orange)
+                                    .foregroundStyle(Color.appWarning)
                                 Text("CloudKit Not Active")
                                     .font(.headline)
                             }
@@ -73,7 +73,7 @@ struct PersistentContainerInfoView: View {
                     ForEach(info.modelTypes, id: \.self) { modelType in
                         HStack {
                             Image(systemName: "doc.text")
-                                .foregroundColor(.blue)
+                                .foregroundStyle(Color.appInfo)
                             Text(modelType)
                         }
                     }
@@ -115,12 +115,12 @@ struct PersistentContainerInfoView: View {
             } else {
                 Section {
                     Text("Could not load container information")
-                        .foregroundColor(.red)
+                        .foregroundStyle(Color.appCritical)
                 }
             }
         }
         .navigationTitle("Container Details")
-        .navigationBarTitleDisplayMode(.inline)
+        .platformNavigationBarTitleDisplayMode(.inline)
         .task {
             await loadContainerInfo()
         }
@@ -264,7 +264,7 @@ struct PersistentContainerInfoView: View {
         text += "  Recipe Books: \(info.recipeBookCount)\n"
         text += "  Saved Links: \(info.savedLinkCount)\n"
         
-        UIPasteboard.general.string = text
+        PlatformPasteboard.copy(text)
         print("📋 Configuration copied to clipboard")
     }
 }

@@ -91,7 +91,7 @@ struct RecipeBookRecipeManagerView: View {
                 }
             }
             .navigationTitle("Manage Recipes")
-            .navigationBarTitleDisplayMode(.inline)
+            .platformNavigationBarTitleDisplayMode(.inline)
             .searchable(text: $searchText, prompt: "Search recipes")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -285,7 +285,7 @@ struct RecipeManagementRow: View {
                     Image(systemName: mode == .remove ? "minus" : "checkmark")
                         .font(.caption)
                         .fontWeight(.bold)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Color.onTint)
                 }
             }
             

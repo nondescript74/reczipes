@@ -6,8 +6,10 @@
 //
 
 import Foundation
-#if os(iOS)
+#if canImport(UIKit)
 import UIKit
+#elseif canImport(AppKit)
+import AppKit
 #endif
 import Combine
 
@@ -15,8 +17,8 @@ struct WebImageDownloader {
     
     /// Download an image from a URL
     /// - Parameter urlString: The URL string of the image
-    /// - Returns: UIImage if successful
-    func downloadImage(from urlString: String) async throws -> UIImage {
+    /// - Returns: PlatformImage if successful
+    func downloadImage(from urlString: String) async throws -> PlatformImage {
         AppLog.info("IMAGE DOWNLOAD START", category: .network)
         AppLog.debug("URL: \(urlString)", category: .network)
         
@@ -47,8 +49,8 @@ struct WebImageDownloader {
             throw ImageDownloadError.httpError(statusCode: httpResponse.statusCode)
         }
         
-        guard let image = UIImage(data: data) else {
-            AppLog.error("Failed to create UIImage from data", category: .network)
+        guard let image = PlatformImage(data: data) else {
+            AppLog.error("Failed to create PlatformImage from data", category: .network)
             throw ImageDownloadError.invalidImageData
         }
         

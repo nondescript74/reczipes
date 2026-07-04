@@ -39,7 +39,7 @@ struct RecipeBookImportView: View {
                 }
             }
             .navigationTitle("Import Recipe Book")
-            .navigationBarTitleDisplayMode(.inline)
+            .platformNavigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
@@ -169,7 +169,7 @@ struct RecipeBookImportView: View {
                     InfoRow(label: "Packaged", value: package.summary)
                 }
                 .padding()
-                .background(Color(.systemGray6))
+                .background(Color.appGray6)
                 .cornerRadius(12)
                 
                 // Conflict resolution
@@ -177,7 +177,7 @@ struct RecipeBookImportView: View {
                     VStack(alignment: .leading, spacing: 12) {
                         Label("A book with this name already exists", systemImage: "exclamationmark.triangle")
                             .font(.subheadline)
-                            .foregroundStyle(.orange)
+                            .foregroundStyle(Color.appWarning)
                         
                         Text("Choose how to handle this:")
                             .font(.caption)
@@ -232,7 +232,7 @@ struct RecipeBookImportView: View {
                     }
                 }
                 .padding()
-                .background(Color(.systemGray6))
+                .background(Color.appGray6)
                 .cornerRadius(12)
             }
             .padding()
@@ -249,11 +249,11 @@ struct RecipeBookImportView: View {
                         
                         Text("Importing Recipe Book...")
                             .font(.headline)
-                            .foregroundStyle(.white)
+                            .foregroundStyle(Color.onTint)
                         
                         Text("This may take a moment...")
                             .font(.caption)
-                            .foregroundStyle(.white.opacity(0.8))
+                            .foregroundStyle(Color.onTint.opacity(0.8))
                     }
                     .padding(32)
                     .background(.regularMaterial)
@@ -496,7 +496,7 @@ private struct InfoRow_RBIV: View {
         HStack(alignment: .top, spacing: 12) {
             Image(systemName: icon)
                 .font(.title3)
-                .foregroundStyle(.blue)
+                .foregroundStyle(Color.appInfo)
                 .frame(width: 24)
             
             VStack(alignment: .leading, spacing: 2) {

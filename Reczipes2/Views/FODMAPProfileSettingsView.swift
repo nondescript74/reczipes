@@ -71,7 +71,7 @@ struct FODMAPProfileSettingsView: View {
             }
         }
         .navigationTitle("FODMAP Settings")
-        .navigationBarTitleDisplayMode(.inline)
+        .platformNavigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showInfo) {
             FODMAPInfoView()
         }
@@ -213,7 +213,7 @@ struct FODMAPInfoView: View {
                 }
                 .padding()
             }
-            .navigationBarTitleDisplayMode(.inline)
+            .platformNavigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") {
@@ -259,13 +259,13 @@ struct CategoryDetailCard: View {
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
                         .background(Color.blue.opacity(0.1))
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(Color.appInfo)
                         .clipShape(Capsule())
                 }
             }
         }
         .padding()
-        .background(Color(.systemGray6))
+        .background(Color.appGray6)
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 }
@@ -282,7 +282,7 @@ struct PhaseCard: View {
         HStack(alignment: .top, spacing: 12) {
             Image(systemName: icon)
                 .font(.title2)
-                .foregroundStyle(.blue)
+                .foregroundStyle(Color.appInfo)
             
             VStack(alignment: .leading, spacing: 4) {
                 Text(title)
@@ -296,11 +296,11 @@ struct PhaseCard: View {
         }
         .padding()
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(.systemBackground))
+        .background(Color.appSystemBackground)
         .clipShape(RoundedRectangle(cornerRadius: 8))
         .overlay(
             RoundedRectangle(cornerRadius: 8)
-                .stroke(Color(.systemGray4), lineWidth: 1)
+                .stroke(Color.appGray4, lineWidth: 1)
         )
     }
 }

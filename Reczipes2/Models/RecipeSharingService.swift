@@ -31,16 +31,18 @@ class RecipeSharingService: ObservableObject {
         #if os(iOS)
         return MFMailComposeViewController.canSendMail()
         #else
-        return false
+        // macOS routes email through the system share sheet (NSSharingServicePicker).
+        return true
         #endif
     }
-    
+
     /// Check if text messages are available on this device
     var canSendText: Bool {
         #if os(iOS)
         return MFMessageComposeViewController.canSendText()
         #else
-        return false
+        // macOS routes messages through the system share sheet (NSSharingServicePicker).
+        return true
         #endif
     }
     
@@ -449,7 +451,7 @@ class RecipeSharingService: ObservableObject {
     
     /// Generate a shareable image of the recipe card
     @MainActor
-    func generateRecipeCardImage(from recipe: RecipeX, sourceType: RecipeShareCardView.RecipeSourceType) -> UIImage? {
+    func generateRecipeCardImage(from recipe: RecipeX, sourceType: RecipeShareCardView.RecipeSourceType) -> PlatformImage? {
         #if os(iOS)
         let cardView = RecipeShareCardView(recipe: recipe, sourceType: sourceType)
         let hostingController = UIHostingController(rootView: cardView)
@@ -472,22 +474,32 @@ class RecipeSharingService: ObservableObject {
     
     /// Prepare to share recipe via email
     func shareViaEmail(recipe: RecipeX) {
+        #if os(iOS)
         guard canSendEmail else {
             errorMessage = "Email is not configured on this device. Please set up Mail in Settings."
             showingError = true
             return
         }
         showingMailComposer = true
+        #else
+        // macOS: route through the system share sheet, which offers Mail among others.
+        shareViaShareSheet(recipe: recipe)
+        #endif
     }
-    
+
     /// Prepare to share recipe via text message
     func shareViaText(recipe: RecipeX) {
+        #if os(iOS)
         guard canSendText else {
             errorMessage = "Text messaging is not available on this device."
             showingError = true
             return
         }
         showingMessageComposer = true
+        #else
+        // macOS: route through the system share sheet, which offers Messages among others.
+        shareViaShareSheet(recipe: recipe)
+        #endif
     }
     
     /// Prepare to share recipe using the system share sheet

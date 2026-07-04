@@ -42,7 +42,7 @@ struct MealEditorView: View {
             Form {
                 Section("Meal") {
                     TextField("Meal Name", text: $name)
-                        .textInputAutocapitalization(.words)
+                        .platformTextInputAutocapitalization(.words)
 
                     TextField("Description (Optional)",
                               text: $description,
@@ -88,7 +88,7 @@ struct MealEditorView: View {
                 }
             }
             .navigationTitle(meal == nil ? "New Meal" : "Edit Meal")
-            .navigationBarTitleDisplayMode(.inline)
+            .platformNavigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
@@ -97,9 +97,9 @@ struct MealEditorView: View {
                     Button("Save", action: save)
                         .disabled(!isValid)
                 }
-                ToolbarItem(placement: .topBarLeading) {
+                ToolbarItem(placement: .platformNavBarLeading) {
                     if !courses.isEmpty {
-                        EditButton()
+                        PlatformEditButton()
                     }
                 }
             }
@@ -222,13 +222,13 @@ private struct CourseRow: View {
     var body: some View {
         VStack(alignment: .leading, spacing: 8) {
             TextField("Course (e.g., Main, Side, Salad)", text: $course.name)
-                .textInputAutocapitalization(.words)
+                .platformTextInputAutocapitalization(.words)
                 .font(.body)
 
             if let recipe = linkedRecipe {
                 HStack(spacing: 8) {
                     Image(systemName: "link")
-                        .foregroundStyle(.green)
+                        .foregroundStyle(Color.appSuccess)
                     Text(recipe.title ?? "Untitled Recipe")
                         .font(.subheadline)
                         .lineLimit(1)

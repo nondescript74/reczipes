@@ -25,7 +25,7 @@ struct CloudKitContainerValidationView: View {
                         .foregroundColor(.secondary)
                     Text(targetContainer)
                         .font(.caption)
-                        .foregroundColor(.blue)
+                        .foregroundStyle(Color.appInfo)
                         .monospaced()
                 }
                 .padding(.vertical, 4)
@@ -52,7 +52,7 @@ struct CloudKitContainerValidationView: View {
             }
         }
         .navigationTitle("Container Validation")
-        .navigationBarTitleDisplayMode(.inline)
+        .platformNavigationBarTitleDisplayMode(.inline)
         .toolbar {
             if validationResult != nil {
                 Button("Run Again") {
@@ -85,7 +85,7 @@ struct CloudKitContainerValidationView: View {
                             Text("\(index + 1).")
                                 .foregroundColor(.secondary)
                             Text(issue)
-                                .foregroundColor(.red)
+                                .foregroundStyle(Color.appCritical)
                         }
                         .font(.caption)
                     }
@@ -103,7 +103,7 @@ struct CloudKitContainerValidationView: View {
                             Text("\(index + 1).")
                                 .foregroundColor(.secondary)
                             Text(rec)
-                                .foregroundColor(.orange)
+                                .foregroundStyle(Color.appWarning)
                         }
                         .font(.caption)
                     }
@@ -178,7 +178,7 @@ struct CloudKitContainerValidationView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     Text(note)
                         .font(.caption)
-                        .foregroundColor(.orange)
+                        .foregroundStyle(Color.appWarning)
                         .padding(.vertical, 4)
                     
                     Text("The real test is whether we can access CloudKit (see Container Access above).")
@@ -189,19 +189,19 @@ struct CloudKitContainerValidationView: View {
                     if result.canAccessPrivateDatabase {
                         HStack {
                             Image(systemName: "checkmark.circle.fill")
-                                .foregroundColor(.green)
+                                .foregroundStyle(Color.appSuccess)
                             Text("Container access works → Entitlements are correct!")
                                 .font(.caption)
-                                .foregroundColor(.green)
+                                .foregroundStyle(Color.appSuccess)
                         }
                         .padding(.top, 4)
                     } else {
                         HStack {
                             Image(systemName: "xmark.circle.fill")
-                                .foregroundColor(.red)
+                                .foregroundStyle(Color.appCritical)
                             Text("Container access failed → Check entitlements in Xcode")
                                 .font(.caption)
-                                .foregroundColor(.red)
+                                .foregroundStyle(Color.appCritical)
                         }
                         .padding(.top, 4)
                     }
@@ -224,7 +224,7 @@ struct CloudKitContainerValidationView: View {
                             HStack {
                                 if container == targetContainer {
                                     Image(systemName: "checkmark.circle.fill")
-                                        .foregroundColor(.green)
+                                        .foregroundStyle(Color.appSuccess)
                                 } else {
                                     Image(systemName: "circle")
                                         .foregroundColor(.secondary)
@@ -240,7 +240,7 @@ struct CloudKitContainerValidationView: View {
                         Text("Container Identifiers")
                         Spacer()
                         Text("❌ None Found")
-                            .foregroundColor(.red)
+                            .foregroundStyle(Color.appCritical)
                     }
                 }
                 
@@ -323,7 +323,7 @@ struct CloudKitContainerValidationView: View {
             }
         }
         
-        UIPasteboard.general.string = text
+        PlatformPasteboard.copy(text)
         print("📋 Validation report copied to clipboard")
     }
 }

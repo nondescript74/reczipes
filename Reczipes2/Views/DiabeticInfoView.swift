@@ -21,7 +21,7 @@ struct DiabeticInfoView: View {
                 Label("Diabetic-Friendly Analysis", systemImage: "heart.text.square")
                     .font(.title2)
                     .fontWeight(.bold)
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(Color.appInfo)
                 
                 Spacer()
                 
@@ -82,7 +82,7 @@ struct MedicalDisclaimerBanner: View {
     var body: some View {
         HStack(spacing: 12) {
             Image(systemName: "info.circle.fill")
-                .foregroundStyle(.blue)
+                .foregroundStyle(Color.appInfo)
             
             VStack(alignment: .leading, spacing: 4) {
                 Text("Informational Only")
@@ -184,7 +184,7 @@ struct GlycemicImpactCard: View {
             }
         }
         .padding()
-        .background(Color(.systemBackground))
+        .background(Color.appSystemBackground)
         .overlay(
             RoundedRectangle(cornerRadius: 12)
                 .stroke(impactColor.opacity(0.3), lineWidth: 2)
@@ -241,7 +241,7 @@ struct GlycemicLoadBar: View {
             ZStack(alignment: .leading) {
                 // Background
                 RoundedRectangle(cornerRadius: 4)
-                    .fill(Color(.systemGray5))
+                    .fill(Color.appGray5)
                 
                 // Fill
                 RoundedRectangle(cornerRadius: 4)
@@ -293,7 +293,7 @@ struct CarbCountView: View {
             }
         }
         .padding()
-        .background(Color(.systemGray6))
+        .background(Color.appGray6)
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 }
@@ -393,10 +393,10 @@ struct GuidanceCard: View {
             }
         }
         .padding()
-        .background(Color(.systemBackground))
+        .background(Color.appSystemBackground)
         .overlay(
             RoundedRectangle(cornerRadius: 12)
-                .stroke(Color(.systemGray4), lineWidth: 1)
+                .stroke(Color.appGray4, lineWidth: 1)
         )
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
@@ -451,7 +451,7 @@ struct SubstitutionCard: View {
                         HStack(spacing: 4) {
                             Image(systemName: "arrow.right")
                                 .font(.caption)
-                                .foregroundStyle(.green)
+                                .foregroundStyle(Color.appSuccess)
                             
                             Text(substitution.substitute)
                                 .font(.subheadline)
@@ -477,7 +477,7 @@ struct SubstitutionCard: View {
             }
         }
         .padding()
-        .background(Color(.systemGray6))
+        .background(Color.appGray6)
         .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 }
@@ -512,11 +512,11 @@ struct SourceVerificationFooter: View {
                 
                 Text("Tap to view")
                     .font(.caption2)
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(Color.appInfo)
             }
         }
         .padding()
-        .background(Color(.systemGray6).opacity(0.5))
+        .background(Color.appGray6.opacity(0.5))
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 }
@@ -560,7 +560,7 @@ struct SourcesDetailSheet: View {
                 .padding(.vertical, 4)
             }
             .navigationTitle("Verified Sources")
-            .navigationBarTitleDisplayMode(.inline)
+            .platformNavigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") {

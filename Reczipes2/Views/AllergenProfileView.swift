@@ -37,17 +37,17 @@ struct AllergenProfileView: View {
             }
             .navigationTitle("Allergen Profiles")
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
+                ToolbarItem(placement: .platformNavBarLeading) {
                     Button("Done") {
                         dismiss()
                     }
                 }
                 
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .platformNavBarTrailing) {
                     CloudKitSyncBadge()
                 }
                 
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .platformNavBarTrailing) {
                     Button {
                         showingNewProfile = true
                     } label: {
@@ -123,7 +123,7 @@ struct ProfileRow: View {
             
             if profile.isActive ?? false {
                 Image(systemName: "checkmark.circle.fill")
-                    .foregroundStyle(.green)
+                    .foregroundStyle(Color.appSuccess)
             } else {
                 Button {
                     setActiveProfile(profile)
@@ -133,7 +133,7 @@ struct ProfileRow: View {
                         .padding(.horizontal, 8)
                         .padding(.vertical, 4)
                         .background(.blue.opacity(0.1))
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(Color.appInfo)
                         .clipShape(Capsule())
                 }
                 .buttonStyle(.plain)
@@ -165,10 +165,10 @@ struct NewProfileSheet: View {
         NavigationStack {
             Form {
                 TextField("Profile Name", text: $profileName)
-                    .textInputAutocapitalization(.words)
+                    .platformTextInputAutocapitalization(.words)
             }
             .navigationTitle("New Profile")
-            .navigationBarTitleDisplayMode(.inline)
+            .platformNavigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
@@ -228,7 +228,7 @@ struct ProfileEditorView: View {
                 if profile.isActive ?? false {
                     HStack {
                         Image(systemName: "checkmark.circle.fill")
-                            .foregroundStyle(.green)
+                            .foregroundStyle(Color.appSuccess)
                         Text("This is your active profile")
                             .font(.caption)
                             .foregroundStyle(.secondary)
@@ -236,7 +236,7 @@ struct ProfileEditorView: View {
                 } else {
                     HStack {
                         Image(systemName: "info.circle")
-                            .foregroundStyle(.blue)
+                            .foregroundStyle(Color.appInfo)
                         Text("Set as active to use for recipe filtering")
                             .font(.caption)
                             .foregroundStyle(.secondary)
@@ -264,7 +264,7 @@ struct ProfileEditorView: View {
                 if profile.diabetesStatus != .none {
                     HStack {
                         Image(systemName: "info.circle")
-                            .foregroundStyle(.blue)
+                            .foregroundStyle(Color.appInfo)
                         Text(profile.diabetesStatus.description)
                             .font(.caption)
                             .foregroundStyle(.secondary)
@@ -310,14 +310,14 @@ struct ProfileEditorView: View {
                         Spacer()
                         if profile.hasNutritionalGoals {
                             Image(systemName: "checkmark.circle.fill")
-                                .foregroundStyle(.green)
+                                .foregroundStyle(Color.appSuccess)
                         }
                     }
                 }
             }
         }
         .navigationTitle(profile.name ?? "Profile")
-        .navigationBarTitleDisplayMode(.inline)
+        .platformNavigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showingAddSensitivity) {
             AddSensitivitySheet(profile: profile)
         }
@@ -352,7 +352,7 @@ struct SensitivityRow: View {
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
                         .background(severityColor)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Color.onTint)
                         .clipShape(Capsule())
                     
                     Text(sensitivity.category)
@@ -413,7 +413,7 @@ struct AddSensitivitySheet: View {
                                         Spacer()
                                         if selectedAllergen == allergen {
                                             Image(systemName: "checkmark")
-                                                .foregroundStyle(.blue)
+                                                .foregroundStyle(Color.appInfo)
                                         }
                                     }
                                 }
@@ -433,7 +433,7 @@ struct AddSensitivitySheet: View {
                                         Spacer()
                                         if selectedIntolerance == intolerance {
                                             Image(systemName: "checkmark")
-                                                .foregroundStyle(.blue)
+                                                .foregroundStyle(Color.appInfo)
                                         }
                                     }
                                 }
@@ -462,7 +462,7 @@ struct AddSensitivitySheet: View {
                 }
             }
             .navigationTitle("Add Sensitivity")
-            .navigationBarTitleDisplayMode(.inline)
+            .platformNavigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {

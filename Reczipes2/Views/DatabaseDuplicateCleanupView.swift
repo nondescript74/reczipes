@@ -36,7 +36,7 @@ struct DatabaseDuplicateCleanupView: View {
             }
             .padding()
             .navigationTitle("Remove Duplicates")
-            .navigationBarTitleDisplayMode(.inline)
+            .platformNavigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Close") {
@@ -79,7 +79,7 @@ struct DatabaseDuplicateCleanupView: View {
             // Icon
             Image(systemName: "exclamationmark.triangle.fill")
                 .font(.system(size: 60))
-                .foregroundStyle(.orange)
+                .foregroundStyle(Color.appWarning)
             
             // Title
             Text("Duplicates Found!")
@@ -93,7 +93,7 @@ struct DatabaseDuplicateCleanupView: View {
                     Spacer()
                     Text("\(info.totalRecipes)")
                         .fontWeight(.semibold)
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(Color.appWarning)
                 }
                 
                 HStack {
@@ -101,7 +101,7 @@ struct DatabaseDuplicateCleanupView: View {
                     Spacer()
                     Text("\(info.uniqueRecipes)")
                         .fontWeight(.semibold)
-                        .foregroundStyle(.green)
+                        .foregroundStyle(Color.appSuccess)
                 }
                 
                 Divider()
@@ -111,11 +111,11 @@ struct DatabaseDuplicateCleanupView: View {
                     Spacer()
                     Text("\(info.duplicateCount)")
                         .fontWeight(.bold)
-                        .foregroundStyle(.red)
+                        .foregroundStyle(Color.appCritical)
                 }
             }
             .padding()
-            .background(Color(.secondarySystemBackground))
+            .background(Color.appSecondaryBackground)
             .clipShape(RoundedRectangle(cornerRadius: 12))
             
             // Examples
@@ -131,7 +131,7 @@ struct DatabaseDuplicateCleanupView: View {
                     }
                 }
                 .padding()
-                .background(Color(.tertiarySystemBackground))
+                .background(Color.appTertiaryBackground)
                 .clipShape(RoundedRectangle(cornerRadius: 8))
             }
             
@@ -150,8 +150,8 @@ struct DatabaseDuplicateCleanupView: View {
                     .font(.headline)
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(Color.red)
-                    .foregroundColor(.white)
+                    .background(AdaptiveToneSolidFill(tone: .critical))
+                    .foregroundStyle(Color.onTint)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
                 .disabled(isRemoving)
@@ -165,9 +165,9 @@ struct DatabaseDuplicateCleanupView: View {
             if let error = error {
                 Text("Error: \(error.localizedDescription)")
                     .font(.caption)
-                    .foregroundStyle(.red)
+                    .foregroundStyle(Color.appCritical)
                     .padding()
-                    .background(Color.red.opacity(0.1))
+                    .adaptiveToneBackground(.critical, baseOpacity: 0.1)
                     .clipShape(RoundedRectangle(cornerRadius: 8))
             }
         }
@@ -178,25 +178,25 @@ struct DatabaseDuplicateCleanupView: View {
             // Animated checkmark
             Image(systemName: "checkmark.circle.fill")
                 .font(.system(size: 80))
-                .foregroundStyle(.green)
+                .foregroundStyle(Color.appSuccess)
                 .symbolEffect(.bounce, value: cleanupComplete)
             
             Text("Cleanup Complete!")
                 .font(.largeTitle)
                 .fontWeight(.bold)
-                .foregroundStyle(.green)
+                .foregroundStyle(Color.appSuccess)
             
             VStack(spacing: 16) {
                 // Results card
                 VStack(spacing: 12) {
                     HStack {
                         Image(systemName: "trash.fill")
-                            .foregroundStyle(.red)
+                            .foregroundStyle(Color.appCritical)
                         Text("Removed:")
                         Spacer()
                         Text("\(removedCount)")
                             .fontWeight(.bold)
-                            .foregroundStyle(.red)
+                            .foregroundStyle(Color.appCritical)
                         Text("duplicates")
                             .foregroundStyle(.secondary)
                     }
@@ -205,16 +205,16 @@ struct DatabaseDuplicateCleanupView: View {
                     
                     HStack {
                         Image(systemName: "checkmark.circle.fill")
-                            .foregroundStyle(.green)
+                            .foregroundStyle(Color.appSuccess)
                         Text("Clean recipes:")
                         Spacer()
                         Text("\(duplicateInfo?.uniqueRecipes ?? 0)")
                             .fontWeight(.bold)
-                            .foregroundStyle(.green)
+                            .foregroundStyle(Color.appSuccess)
                     }
                 }
                 .padding()
-                .background(Color(.secondarySystemBackground))
+                .background(Color.appSecondaryBackground)
                 .clipShape(RoundedRectangle(cornerRadius: 16))
                 
                 // Success message
@@ -238,7 +238,7 @@ struct DatabaseDuplicateCleanupView: View {
                 .frame(maxWidth: .infinity)
                 .padding()
                 .background(Color.green)
-                .foregroundColor(.white)
+                .foregroundStyle(Color.onTint)
                 .clipShape(RoundedRectangle(cornerRadius: 12))
             }
         }
@@ -249,7 +249,7 @@ struct DatabaseDuplicateCleanupView: View {
         VStack(spacing: 24) {
             Image(systemName: "checkmark.circle")
                 .font(.system(size: 60))
-                .foregroundStyle(.green)
+                .foregroundStyle(Color.appSuccess)
             
             Text("No Duplicates!")
                 .font(.title)
@@ -269,7 +269,7 @@ struct DatabaseDuplicateCleanupView: View {
             .frame(maxWidth: .infinity)
             .padding()
             .background(Color.accentColor)
-            .foregroundColor(.white)
+            .foregroundStyle(Color.onTint)
             .clipShape(RoundedRectangle(cornerRadius: 12))
         }
     }

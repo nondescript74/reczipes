@@ -275,7 +275,7 @@ class BatchRecipeExtractorViewModel: ObservableObject {
     ///   - title: The title of the link (for logging)
     /// - Returns: Tuple of (recipe, downloaded images)
     /// - Throws: Any error during extraction
-    private func performExtractionWithValues(linkID: UUID, url: String, title: String) async throws -> (RecipeX, [UIImage]) {
+    private func performExtractionWithValues(linkID: UUID, url: String, title: String) async throws -> (RecipeX, [PlatformImage]) {
         // Create extractor for this link
         let extractor = RecipeExtractorViewModel(apiKey: apiKey)
         
@@ -310,7 +310,7 @@ class BatchRecipeExtractorViewModel: ObservableObject {
         }
         
         // Download images if available
-        var downloadedImages: [UIImage] = []
+        var downloadedImages: [PlatformImage] = []
         if !imageURLs.isEmpty {
             currentStatus = "Downloading \(imageURLs.count) image(s)..."
             AppLog.info("Downloading \(imageURLs.count) images for: \(String(describing: recipe.title))", category: .batch)
@@ -344,7 +344,7 @@ class BatchRecipeExtractorViewModel: ObservableObject {
     }
     
     /// Save a recipe with its images to the database
-    private func saveRecipe(_ recipe: RecipeX, images: [UIImage], link: SavedLink) async throws {
+    private func saveRecipe(_ recipe: RecipeX, images: [PlatformImage], link: SavedLink) async throws {
         
         // Set reference to the original link URL
         recipe.reference = link.url

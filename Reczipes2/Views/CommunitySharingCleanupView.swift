@@ -57,7 +57,7 @@ struct CommunitySharingCleanupView: View {
                             Text(diagnosticResults)
                                 .font(.system(.caption, design: .monospaced))
                                 .padding(8)
-                                .background(Color(.systemGray6))
+                                .background(Color.appGray6)
                                 .cornerRadius(8)
                         }
                         .frame(maxHeight: 200)
@@ -93,7 +93,7 @@ struct CommunitySharingCleanupView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("⚠️ This will delete duplicate CloudKit records and rebuild your local tracking. Only use this if you're seeing incorrect recipe counts.")
                         .font(.caption)
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(Color.appWarning)
                     
                     Button(action: {
                         showCleanupConfirmation = true
@@ -115,7 +115,7 @@ struct CommunitySharingCleanupView: View {
                             Text(cleanupResults)
                                 .font(.system(.caption, design: .monospaced))
                                 .padding(8)
-                                .background(Color(.systemGray6))
+                                .background(Color.appGray6)
                                 .cornerRadius(8)
                         }
                         .frame(maxHeight: 200)
@@ -131,7 +131,7 @@ struct CommunitySharingCleanupView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     Text("🗑️ Remove recipes from CloudKit that don't belong to any user (orphaned records). Use this if you see recipes from unknown users.")
                         .font(.caption)
-                        .foregroundStyle(.red)
+                        .foregroundStyle(Color.appCritical)
                     
                     Button(action: {
                         showOrphanCleanupConfirmation = true
@@ -153,7 +153,7 @@ struct CommunitySharingCleanupView: View {
                             Text(orphanCleanupResults)
                                 .font(.system(.caption, design: .monospaced))
                                 .padding(8)
-                                .background(Color(.systemGray6))
+                                .background(Color.appGray6)
                                 .cornerRadius(8)
                         }
                         .frame(maxHeight: 200)
@@ -233,7 +233,7 @@ struct CommunitySharingCleanupView: View {
             }
         }
         .navigationTitle("Sharing Cleanup")
-        .navigationBarTitleDisplayMode(.inline)
+        .platformNavigationBarTitleDisplayMode(.inline)
         .confirmationDialog(
             "Clean Up Sharing Data",
             isPresented: $showCleanupConfirmation,
@@ -392,7 +392,7 @@ struct CommunitySharingCleanupView: View {
     private func helpItem(icon: String, title: String, description: String) -> some View {
         HStack(alignment: .top, spacing: 12) {
             Image(systemName: icon)
-                .foregroundStyle(.blue)
+                .foregroundStyle(Color.appInfo)
                 .frame(width: 24)
             
             VStack(alignment: .leading, spacing: 4) {

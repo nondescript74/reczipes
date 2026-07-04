@@ -49,8 +49,8 @@ struct CookingModeQuickStart: View {
                             .tag(index)
                     }
                 }
-                .tabViewStyle(.page(indexDisplayMode: .always))
-                .indexViewStyle(.page(backgroundDisplayMode: .always))
+                .platformPageTabViewStyle(indexDisplayMode: .always)
+                .platformPageIndexViewStyle(backgroundDisplayMode: .always)
                 
                 // Bottom button
                 Button {
@@ -64,7 +64,7 @@ struct CookingModeQuickStart: View {
                 } label: {
                     Text(currentPage < pages.count - 1 ? "Next" : "Get Started")
                         .font(.headline)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Color.onTint)
                         .frame(maxWidth: .infinity)
                         .padding()
                         .background(Color.accentColor)
@@ -83,7 +83,7 @@ struct CookingModeQuickStart: View {
                 }
             }
             .navigationTitle("Quick Start")
-            .navigationBarTitleDisplayMode(.inline)
+            .platformNavigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Close") {
@@ -212,7 +212,7 @@ struct CookingModeTips: View {
                             Image(systemName: "chevron.right")
                         }
                         .font(.headline)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Color.onTint)
                         .padding()
                         .background(Color.accentColor)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
@@ -221,7 +221,7 @@ struct CookingModeTips: View {
                 .padding()
             }
             .navigationTitle("Tips")
-            .navigationBarTitleDisplayMode(.inline)
+            .platformNavigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") {
@@ -257,7 +257,7 @@ private struct CookingTipCard: View {
             }
         }
         .padding()
-        .background(Color(.secondarySystemGroupedBackground))
+        .background(Color.appSecondaryGroupedBackground)
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 }
@@ -273,7 +273,7 @@ struct CookingModeHelpBanner: View {
         if isVisible {
             HStack(spacing: 12) {
                 Image(systemName: "info.circle.fill")
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(Color.appInfo)
                 
                 Text("New to Cooking Mode?")
                     .font(.subheadline)
@@ -295,7 +295,7 @@ struct CookingModeHelpBanner: View {
                 }
             }
             .padding()
-            .background(Color(.secondarySystemGroupedBackground))
+            .background(Color.appSecondaryGroupedBackground)
             .clipShape(RoundedRectangle(cornerRadius: 12))
             .padding(.horizontal)
             .transition(.move(edge: .top).combined(with: .opacity))

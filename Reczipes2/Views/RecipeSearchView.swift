@@ -65,7 +65,7 @@ struct RecipeSearchView: View {
             }
         }
         .navigationTitle("Search Recipes")
-        .navigationBarTitleDisplayMode(.inline)
+        .platformNavigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showingFilters) {
             filterSheet
         }
@@ -94,7 +94,7 @@ struct RecipeSearchView: View {
                     }
                 }
                 .padding(8)
-                .background(Color(.systemGray6))
+                .background(Color.appGray6)
                 .cornerRadius(10)
                 
                 Button {
@@ -144,17 +144,17 @@ struct RecipeSearchView: View {
                 } label: {
                     Text("Clear All")
                         .font(.caption)
-                        .foregroundStyle(.red)
+                        .foregroundStyle(Color.appCritical)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 6)
-                        .background(Color.red.opacity(0.1))
+                        .adaptiveToneBackground(.critical, baseOpacity: 0.1)
                         .cornerRadius(16)
                 }
             }
             .padding(.horizontal)
             .padding(.vertical, 8)
         }
-        .background(Color(.systemGray6))
+        .background(Color.appGray6)
     }
     
     private func filterChip(text: String, onRemove: @escaping () -> Void) -> some View {
@@ -172,7 +172,7 @@ struct RecipeSearchView: View {
         .padding(.horizontal, 12)
         .padding(.vertical, 6)
         .background(Color.blue.opacity(0.1))
-        .foregroundStyle(.blue)
+        .foregroundStyle(Color.appInfo)
         .cornerRadius(16)
     }
     
@@ -188,8 +188,8 @@ struct RecipeSearchView: View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 12) {
                 // Thumbnail
-                if let imageData = recipe.imageData, let uiImage = UIImage(data: imageData) {
-                    Image(uiImage: uiImage)
+                if let imageData = recipe.imageData, let uiImage = PlatformImage(data: imageData) {
+                    Image(platformImage: uiImage)
                         .resizable()
                         .aspectRatio(contentMode: .fill)
                         .frame(width: 60, height: 60)
@@ -253,7 +253,7 @@ struct RecipeSearchView: View {
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 4)
                                 .background(Color.blue.opacity(0.1))
-                                .foregroundStyle(.blue)
+                                .foregroundStyle(Color.appInfo)
                                 .cornerRadius(6)
                         }
                         
@@ -343,7 +343,7 @@ struct RecipeSearchView: View {
                 }
             }
             .navigationTitle("Filter Recipes")
-            .navigationBarTitleDisplayMode(.inline)
+            .platformNavigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") {
@@ -380,7 +380,7 @@ struct RecipeSearchModalView: View {
         NavigationStack {
             RecipeSearchView(recipes: .constant(recipeXObjects), selectedRecipe: recipeXSelection)
                 .toolbar {
-                    ToolbarItem(placement: .navigationBarTrailing) {
+                    ToolbarItem(placement: .platformNavBarTrailing) {
                         CloudKitSyncBadge()
                     }
                     

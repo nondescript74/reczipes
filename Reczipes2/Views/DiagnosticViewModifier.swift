@@ -121,7 +121,7 @@ struct DiagnosticMenuItem: View {
                     Text("Diagnostics (\(failureCount) issues)")
                 } icon: {
                     Image(systemName: "exclamationmark.triangle.fill")
-                        .foregroundStyle(.red)
+                        .foregroundStyle(Color.appCritical)
                 }
             } else {
                 Label("Diagnostics", systemImage: "stethoscope")
@@ -164,6 +164,11 @@ extension View {
         modifier(ShakeToShowDiagnostics())
     }
 }
+#else
+extension View {
+    /// No-op stub on platforms without shake gestures.
+    func shakeToShowDiagnostics() -> some View { self }
+}
 #endif
 
 // MARK: - Quick Access Floating Button
@@ -191,12 +196,12 @@ struct DiagnosticFloatingButton: View {
                 Button(action: { showDiagnostics() }) {
                     HStack(spacing: 8) {
                         Image(systemName: hasUnresolvedFailures ? "exclamationmark.triangle.fill" : "stethoscope")
-                            .foregroundStyle(.white)
+                            .foregroundStyle(Color.onTint)
                         
                         if hasUnresolvedFailures {
                             Text("\(failureCount)")
                                 .font(.caption.bold())
-                                .foregroundStyle(.white)
+                                .foregroundStyle(Color.onTint)
                         }
                     }
                     .padding(.horizontal, 16)

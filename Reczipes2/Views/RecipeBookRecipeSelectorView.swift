@@ -53,7 +53,7 @@ struct RecipeBookRecipeSelectorView: View {
                 }
             }
             .navigationTitle("Add Recipes")
-            .navigationBarTitleDisplayMode(.inline)
+            .platformNavigationBarTitleDisplayMode(.inline)
             .searchable(text: $searchText, prompt: "Search recipes")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -162,7 +162,7 @@ struct RecipeSelectionRow: View {
                     Image(systemName: "checkmark")
                         .font(.caption)
                         .fontWeight(.bold)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Color.onTint)
                 }
             }
             

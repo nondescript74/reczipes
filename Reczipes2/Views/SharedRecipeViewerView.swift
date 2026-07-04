@@ -29,7 +29,7 @@ struct SharedRecipeViewerView: View {
             }
         }
         .navigationTitle(preview.title)
-        .navigationBarTitleDisplayMode(.inline)
+        .platformNavigationBarTitleDisplayMode(.inline)
         .task {
             await loadFullRecipe()
         }
@@ -59,7 +59,7 @@ struct SharedRecipeViewerView: View {
         VStack(spacing: 20) {
             Image(systemName: "exclamationmark.triangle.fill")
                 .font(.system(size: 60))
-                .foregroundStyle(.orange)
+                .foregroundStyle(Color.appWarning)
             
             Text("Unable to Load Recipe")
                 .font(.title2)

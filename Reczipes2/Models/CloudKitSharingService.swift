@@ -8,7 +8,11 @@
 import Foundation
 import CloudKit
 import SwiftData
+#if canImport(UIKit)
 import UIKit
+#elseif canImport(AppKit)
+import AppKit
+#endif
 import Combine
 import SwiftUI
 
@@ -1076,17 +1080,17 @@ class CloudKitSharingService: ObservableObject {
         AppLog.info("  📷 Uploaded '\(fieldName)' from inline imageData (\(data.count) bytes)", category: .sharing)
     }
     
-    func downloadImage(from record: CKRecord, fieldName: String) async throws -> UIImage? {
+    func downloadImage(from record: CKRecord, fieldName: String) async throws -> PlatformImage? {
         guard let asset = record[fieldName] as? CKAsset,
               let fileURL = asset.fileURL else {
             return nil
         }
-        
+
         guard let data = try? Data(contentsOf: fileURL),
-              let image = UIImage(data: data) else {
+              let image = PlatformImage(data: data) else {
             return nil
         }
-        
+
         return image
     }
     
@@ -2212,7 +2216,7 @@ class CloudKitSharingService: ObservableObject {
     /// is missing (e.g. recipes stored exclusively via SwiftData after setImage()).
     /// Returns JPEG data resized to maxSize (width/height), compressed to keep file size small.
     private func createThumbnail(for imageName: String?, imageData: Data?, maxSize: CGFloat = 200) -> Data? {
-        var image: UIImage?
+        var image: PlatformImage?
 
         // --- Try the on-disk file first ---
         if let imageName = imageName {
@@ -2221,13 +2225,13 @@ class CloudKitSharingService: ObservableObject {
 
             if FileManager.default.fileExists(atPath: imageURL.path),
                let diskData = try? Data(contentsOf: imageURL) {
-                image = UIImage(data: diskData)
+                image = PlatformImage(data: diskData)
             }
         }
 
         // --- Fall back to inline imageData ---
         if image == nil, let data = imageData {
-            image = UIImage(data: data)
+            image = PlatformImage(data: data)
         }
 
         guard let sourceImage = image else { return nil }

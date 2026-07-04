@@ -1,15 +1,17 @@
 {
   "images" : [
     {
+      "filename" : "thanksgiving_1024 1.png",
       "idiom" : "universal",
       "scale" : "1x"
     },
     {
-      "filename" : "thanksgiving_1024.png",
+      "filename" : "thanksgiving_1024 2.png",
       "idiom" : "universal",
       "scale" : "2x"
     },
     {
+      "filename" : "thanksgiving_1024 3.png",
       "idiom" : "universal",
       "scale" : "3x"
     }

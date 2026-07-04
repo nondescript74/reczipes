@@ -34,7 +34,7 @@ struct VersionHistoryView: View {
             }
         }
         .navigationTitle("Version History")
-        .navigationBarTitleDisplayMode(.large)
+        .platformNavigationBarTitleDisplayMode(.large)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button {
@@ -104,7 +104,7 @@ struct VersionHistoryView: View {
         } header: {
             if record.versionString == VersionHistoryService.shared.currentVersionString {
                 Label("Current Version", systemImage: "star.fill")
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(Color.appWarning)
             }
         }
     }

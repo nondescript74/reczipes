@@ -12,7 +12,6 @@ import Foundation
 import SwiftData
 import CloudKit
 import CryptoKit
-import UIKit
 import SwiftUI
 
 /// Unified book model with automatic iCloud sharing

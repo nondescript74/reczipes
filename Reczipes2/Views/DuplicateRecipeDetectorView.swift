@@ -144,7 +144,7 @@ struct DuplicateRecipeDetectorView: View {
             duplicateGroupsSection
         }
         .navigationTitle("Duplicate Detector")
-        .navigationBarTitleDisplayMode(.inline)
+        .platformNavigationBarTitleDisplayMode(.inline)
         .confirmationDialog(
             "Delete All Duplicates?",
             isPresented: $showingConfirmation,
@@ -239,7 +239,7 @@ struct DuplicateRecipeDetectorView: View {
                     .foregroundStyle(.secondary)
             }
         }
-        .foregroundStyle(.red)
+        .foregroundStyle(Color.appCritical)
     }
 
     @ViewBuilder
@@ -305,7 +305,7 @@ struct DuplicateRecipeDetectorView: View {
                 Spacer()
 
                 Image(systemName: "exclamationmark.triangle.fill")
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(Color.appWarning)
             }
         }
     }
@@ -327,18 +327,18 @@ struct DuplicateRecipeDetectorView: View {
                 HStack {
                     if isCanonical {
                         Image(systemName: "checkmark.circle.fill")
-                            .foregroundStyle(.green)
+                            .foregroundStyle(Color.appSuccess)
                         Text("KEEP")
                             .font(.caption2)
                             .fontWeight(.bold)
-                            .foregroundStyle(.green)
+                            .foregroundStyle(Color.appSuccess)
                     } else {
                         Image(systemName: "trash.circle.fill")
-                            .foregroundStyle(.red)
+                            .foregroundStyle(Color.appCritical)
                         Text("DELETE")
                             .font(.caption2)
                             .fontWeight(.bold)
-                            .foregroundStyle(.red)
+                            .foregroundStyle(Color.appCritical)
                     }
                 }
 
@@ -378,7 +378,7 @@ struct DuplicateRecipeDetectorView: View {
                     selectedRecipe = recipe
                 } label: {
                     Image(systemName: "trash")
-                        .foregroundStyle(.red)
+                        .foregroundStyle(Color.appCritical)
                 }
                 .buttonStyle(.borderless)
             }

@@ -88,7 +88,7 @@ struct DiabeticSettingsView: View {
                         VStack(alignment: .leading, spacing: 8) {
                             HStack {
                                 Image(systemName: "info.circle.fill")
-                                    .foregroundStyle(.blue)
+                                    .foregroundStyle(Color.appInfo)
                                 Text("How It Works")
                                     .font(.subheadline)
                                     .fontWeight(.semibold)
@@ -131,7 +131,7 @@ struct DiabeticSettingsView: View {
                         }
                         .padding(.vertical, 8)
                         .padding(.horizontal, 12)
-                        .background(Color(.secondarySystemBackground))
+                        .background(Color.appSecondaryBackground)
                         .clipShape(RoundedRectangle(cornerRadius: 8))
                         
                         Divider()
@@ -140,7 +140,7 @@ struct DiabeticSettingsView: View {
                         VStack(alignment: .leading, spacing: 8) {
                             HStack {
                                 Image(systemName: "lock.shield.fill")
-                                    .foregroundStyle(.green)
+                                    .foregroundStyle(Color.appSuccess)
                                 Text("Privacy Protection")
                                     .font(.subheadline)
                                     .fontWeight(.semibold)
@@ -149,7 +149,7 @@ struct DiabeticSettingsView: View {
                             VStack(alignment: .leading, spacing: 6) {
                                 HStack(alignment: .top, spacing: 8) {
                                     Image(systemName: "checkmark.circle.fill")
-                                        .foregroundStyle(.green)
+                                        .foregroundStyle(Color.appSuccess)
                                         .font(.caption)
                                     Text("No personal health data or diabetic status stored")
                                         .font(.caption)
@@ -157,7 +157,7 @@ struct DiabeticSettingsView: View {
                                 
                                 HStack(alignment: .top, spacing: 8) {
                                     Image(systemName: "checkmark.circle.fill")
-                                        .foregroundStyle(.green)
+                                        .foregroundStyle(Color.appSuccess)
                                         .font(.caption)
                                     Text("No tracking of which recipes you analyze")
                                         .font(.caption)
@@ -165,7 +165,7 @@ struct DiabeticSettingsView: View {
                                 
                                 HStack(alignment: .top, spacing: 8) {
                                     Image(systemName: "checkmark.circle.fill")
-                                        .foregroundStyle(.green)
+                                        .foregroundStyle(Color.appSuccess)
                                         .font(.caption)
                                     Text("All caching is local to your device only")
                                         .font(.caption)
@@ -173,7 +173,7 @@ struct DiabeticSettingsView: View {
                                 
                                 HStack(alignment: .top, spacing: 8) {
                                     Image(systemName: "checkmark.circle.fill")
-                                        .foregroundStyle(.green)
+                                        .foregroundStyle(Color.appSuccess)
                                         .font(.caption)
                                     Text("Feature is completely opt-in")
                                         .font(.caption)
@@ -193,7 +193,7 @@ struct DiabeticSettingsView: View {
                             Label("Medical Disclaimer", systemImage: "exclamationmark.triangle.fill")
                                 .font(.subheadline)
                                 .fontWeight(.semibold)
-                                .foregroundStyle(.orange)
+                                .foregroundStyle(Color.appWarning)
                             
                             Text("This analysis is for informational purposes only and is not medical, dietary, or nutritional advice. The information provided:")
                                 .font(.caption)
@@ -217,7 +217,7 @@ struct DiabeticSettingsView: View {
                         }
                         .padding(.vertical, 8)
                         .padding(.horizontal, 12)
-                        .background(Color.orange.opacity(0.1))
+                        .adaptiveToneBackground(.warning, baseOpacity: 0.1)
                         .clipShape(RoundedRectangle(cornerRadius: 8))
                         
                         Divider()
@@ -226,7 +226,7 @@ struct DiabeticSettingsView: View {
                         VStack(alignment: .leading, spacing: 8) {
                             HStack {
                                 Image(systemName: "link")
-                                    .foregroundStyle(.blue)
+                                    .foregroundStyle(Color.appInfo)
                                 Text("Recommended Resources")
                                     .font(.subheadline)
                                     .fontWeight(.semibold)
@@ -247,7 +247,7 @@ struct DiabeticSettingsView: View {
                                         .font(.caption)
                                 }
                                 .padding(8)
-                                .background(Color(.secondarySystemBackground))
+                                .background(Color.appSecondaryBackground)
                                 .clipShape(RoundedRectangle(cornerRadius: 6))
                             }
                             
@@ -266,7 +266,7 @@ struct DiabeticSettingsView: View {
                                         .font(.caption)
                                 }
                                 .padding(8)
-                                .background(Color(.secondarySystemBackground))
+                                .background(Color.appSecondaryBackground)
                                 .clipShape(RoundedRectangle(cornerRadius: 6))
                             }
                             
@@ -285,13 +285,13 @@ struct DiabeticSettingsView: View {
                                         .font(.caption)
                                 }
                                 .padding(8)
-                                .background(Color(.secondarySystemBackground))
+                                .background(Color.appSecondaryBackground)
                                 .clipShape(RoundedRectangle(cornerRadius: 6))
                             }
                         }
                         .padding(.vertical, 8)
                         .padding(.horizontal, 12)
-                        .background(Color(.tertiarySystemBackground))
+                        .background(Color.appTertiaryBackground)
                         .clipShape(RoundedRectangle(cornerRadius: 8))
                     }
                 } header: {
@@ -314,7 +314,7 @@ struct DiabeticInfoRow: View {
         HStack(spacing: 12) {
             Image(systemName: icon)
                 .font(.title3)
-                .foregroundStyle(.blue)
+                .foregroundStyle(Color.appInfo)
                 .frame(width: 30)
             
             VStack(alignment: .leading, spacing: 2) {
@@ -328,7 +328,7 @@ struct DiabeticInfoRow: View {
         }
         .padding(10)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(.secondarySystemBackground))
+        .background(Color.appSecondaryBackground)
         .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 }

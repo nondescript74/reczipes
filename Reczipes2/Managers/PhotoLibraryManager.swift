@@ -6,8 +6,10 @@
 //
 
 import Photos
-#if os(iOS)
+#if canImport(UIKit)
 import UIKit
+#elseif canImport(AppKit)
+import AppKit
 #endif
 import SwiftUI
 import Combine
@@ -52,8 +54,8 @@ class PhotoLibraryManager: ObservableObject {
         print("📷 Loaded \(assets.count) photos from library")
     }
     
-    // Get UIImage for a specific asset
-    func loadImage(for asset: PHAsset, targetSize: CGSize = CGSize(width: 300, height: 300)) async -> UIImage? {
+    // Get PlatformImage for a specific asset
+    func loadImage(for asset: PHAsset, targetSize: CGSize = CGSize(width: 300, height: 300)) async -> PlatformImage? {
         await withCheckedContinuation { continuation in
             let options = PHImageRequestOptions()
             options.deliveryMode = .highQualityFormat
@@ -72,12 +74,12 @@ class PhotoLibraryManager: ObservableObject {
     }
     
     // Get a thumbnail image for display in grid
-    func loadThumbnail(for asset: PHAsset) async -> UIImage? {
+    func loadThumbnail(for asset: PHAsset) async -> PlatformImage? {
         await loadImage(for: asset, targetSize: CGSize(width: 200, height: 200))
     }
-    
+
     // Get full resolution image for detailed viewing
-    func loadFullImage(for asset: PHAsset) async -> UIImage? {
+    func loadFullImage(for asset: PHAsset) async -> PlatformImage? {
         await withCheckedContinuation { continuation in
             let options = PHImageRequestOptions()
             options.deliveryMode = .highQualityFormat

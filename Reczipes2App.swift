@@ -81,6 +81,7 @@ struct Reczipes2App: App {
                         .environmentObject(appState)
                         .environmentObject(taskRestoration)
                         .environmentObject(documentHandler)
+                        #if os(iOS)
                         .fullScreenCover(isPresented: $showLicenseAgreement) {
                             LicenseAgreementView(isPresented: $showLicenseAgreement)
                                 .onDisappear {
@@ -93,6 +94,7 @@ struct Reczipes2App: App {
                         .fullScreenCover(isPresented: $showAPIKeySetup) {
                             APIKeySetupView(isPresented: $showAPIKeySetup)
                         }
+                        #endif
                         .diagnosticsCapable()
                         .shakeToShowDiagnostics()
                         .onAppear {
@@ -162,13 +164,33 @@ struct Reczipes2App: App {
                         Color.black.opacity(0.4)
                             .ignoresSafeArea()
                             .zIndex(2)
-                        
+
                         TaskRestorationPromptView(
                             coordinator: taskRestoration,
                             modelContainer: sharedModelContainer
                         )
                         .zIndex(3)
                     }
+
+                    #if os(macOS)
+                    if showLicenseAgreement {
+                        LicenseAgreementView(isPresented: $showLicenseAgreement)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .background(Color(NSColor.windowBackgroundColor))
+                            .onDisappear {
+                                if LicenseHelper.hasAcceptedLicense {
+                                    showAPIKeySetup = !APIKeyHelper.isConfigured
+                                }
+                            }
+                            .zIndex(10)
+                    }
+                    if showAPIKeySetup {
+                        APIKeySetupView(isPresented: $showAPIKeySetup)
+                            .frame(maxWidth: .infinity, maxHeight: .infinity)
+                            .background(Color(NSColor.windowBackgroundColor))
+                            .zIndex(10)
+                    }
+                    #endif
                 }
             }
             .onChange(of: scenePhase) { oldPhase, newPhase in
@@ -185,6 +207,12 @@ struct Reczipes2App: App {
             }
         }
         .handlesExternalEvents(matching: [])
+        #if os(macOS)
+        .defaultSize(
+            width: (NSScreen.main?.frame.width ?? 1440) / 2,
+            height: (NSScreen.main?.frame.height ?? 900) / 2
+        )
+        #endif
     }
     
 
@@ -192,7 +220,7 @@ struct Reczipes2App: App {
     
     private var containerRecreationOverlay: some View {
         ZStack {
-            Color(.systemBackground)
+            Color.appSystemBackground
                 .ignoresSafeArea()
             
             VStack(spacing: 20) {
@@ -592,9 +620,15 @@ struct MainTabView: View {
                 .tag(AppTab.settings)
         }
         .toolbar {
+            #if os(iOS)
             ToolbarItem(placement: .topBarTrailing) {
                 DiagnosticButton()
             }
+            #else
+            ToolbarItem(placement: .primaryAction) {
+                DiagnosticButton()
+            }
+            #endif
         }
         .task {
             // Perform background initialization tasks after UI has appeared

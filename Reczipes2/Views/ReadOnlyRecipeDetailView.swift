@@ -121,7 +121,7 @@ struct ReadOnlyRecipeDetailView: View {
             }
             .padding()
         }
-        .navigationBarTitleDisplayMode(.inline)
+        .platformNavigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Menu {
@@ -202,8 +202,8 @@ struct ReadOnlyRecipeDetailView: View {
         VStack(alignment: .leading, spacing: 12) {
             // Image
             if let imageData = preview.imageData,
-               let uiImage = UIImage(data: imageData) {
-                Image(uiImage: uiImage)
+               let uiImage = PlatformImage(data: imageData) {
+                Image(platformImage: uiImage)
                     .resizable()
                     .aspectRatio(contentMode: .fill)
                     .frame(maxWidth: .infinity)
@@ -247,7 +247,7 @@ struct ReadOnlyRecipeDetailView: View {
     private var sharedByView: some View {
         HStack(spacing: 8) {
             Image(systemName: "person.crop.circle.fill")
-                .foregroundStyle(.blue)
+                .foregroundStyle(Color.appInfo)
             
             Text("Shared by")
                 .foregroundStyle(.secondary)
@@ -390,7 +390,7 @@ struct ReadOnlyRecipeDetailView: View {
                         HStack(alignment: .top, spacing: 12) {
                             Text("\(index + 1)")
                                 .font(.headline)
-                                .foregroundStyle(.white)
+                                .foregroundStyle(Color.onTint)
                                 .frame(width: 28, height: 28)
                                 .background(.blue)
                                 .clipShape(Circle())
@@ -422,7 +422,7 @@ struct ReadOnlyRecipeDetailView: View {
                             .padding(.horizontal, 8)
                             .padding(.vertical, 4)
                             .background(colorForNoteType(note.type))
-                            .foregroundStyle(.white)
+                            .foregroundStyle(Color.onTint)
                             .clipShape(Capsule())
                         
                         Spacer()
@@ -471,7 +471,7 @@ struct ReadOnlyRecipeDetailView: View {
                     HStack {
                         Text(reference)
                             .font(.caption)
-                            .foregroundStyle(.blue)
+                            .foregroundStyle(Color.appInfo)
                             .lineLimit(1)
                         
                         Image(systemName: "arrow.up.right.square")
@@ -585,7 +585,7 @@ struct ImportSharedRecipeView: View {
                 }
             }
             .navigationTitle("Import Recipe")
-            .navigationBarTitleDisplayMode(.inline)
+            .platformNavigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {

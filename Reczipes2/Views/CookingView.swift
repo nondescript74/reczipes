@@ -34,7 +34,7 @@ struct CookingView: View {
                 }
             }
             .navigationTitle("Cooking")
-            .navigationBarTitleDisplayMode(.inline)
+            .platformNavigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     if viewModel != nil {
@@ -104,8 +104,8 @@ struct CookingView: View {
             )
             .tag(1)
         }
-        .tabViewStyle(.page(indexDisplayMode: .always))
-        .indexViewStyle(.page(backgroundDisplayMode: .always))
+        .platformPageTabViewStyle(indexDisplayMode: .always)
+        .platformPageIndexViewStyle(backgroundDisplayMode: .always)
     }
     
     // MARK: - Keep Awake Toggle

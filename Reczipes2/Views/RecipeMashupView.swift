@@ -57,8 +57,8 @@ struct RecipeMashupView: View {
                                     .frame(maxWidth: .infinity, alignment: .leading)
                                 TextField("https://example.com/recipe", text: $addSourceURL)
                                     .textFieldStyle(.roundedBorder)
-                                    .keyboardType(.URL)
-                                    .autocapitalization(.none)
+                                    .platformKeyboardType(.URL)
+                                    .platformTextInputAutocapitalization(.never)
                                     .textContentType(.URL)
                                 Button("Add by URL") {
                                     let url = addSourceURL.trimmingCharacters(in: .whitespacesAndNewlines)
@@ -77,7 +77,7 @@ struct RecipeMashupView: View {
                                 }
                                 .buttonStyle(.borderedProminent)
                                 if let error = addSourceError {
-                                    Text(error).foregroundColor(.red).font(.caption)
+                                    Text(error).foregroundStyle(Color.appCritical).font(.caption)
                                 }
                             }
                             
@@ -113,8 +113,8 @@ struct RecipeMashupView: View {
                                             } label: {
                                                 HStack(spacing: 12) {
                                                     // Thumbnail or icon
-                                                    if let imageData = recipe.imageData, let uiImage = UIImage(data: imageData) {
-                                                        Image(uiImage: uiImage)
+                                                    if let imageData = recipe.imageData, let uiImage = PlatformImage(data: imageData) {
+                                                        Image(platformImage: uiImage)
                                                             .resizable()
                                                             .scaledToFill()
                                                             .frame(width: 48, height: 48)
@@ -122,7 +122,7 @@ struct RecipeMashupView: View {
                                                     } else {
                                                         Image(systemName: "book.fill")
                                                             .font(.title3)
-                                                            .foregroundStyle(.blue)
+                                                            .foregroundStyle(Color.appInfo)
                                                             .frame(width: 48, height: 48)
                                                             .background(Color.blue.opacity(0.1))
                                                             .clipShape(RoundedRectangle(cornerRadius: 8))
@@ -145,7 +145,7 @@ struct RecipeMashupView: View {
                                                     Spacer()
                                                     
                                                     Image(systemName: "plus.circle.fill")
-                                                        .foregroundStyle(.blue)
+                                                        .foregroundStyle(Color.appInfo)
                                                 }
                                                 .padding(12)
                                                 .background(Color.blue.opacity(0.06))
@@ -158,7 +158,7 @@ struct RecipeMashupView: View {
                             }
                         }
                         .padding()
-                        .background(Color(.systemBackground))
+                        .background(Color.appSystemBackground)
                         .clipShape(RoundedRectangle(cornerRadius: 14))
                         .shadow(radius: 3)
                         .transition(.move(edge: .top).combined(with: .opacity))
@@ -179,7 +179,7 @@ struct RecipeMashupView: View {
                 .padding()
             }
             .navigationTitle("Recipe Mashup")
-            .navigationBarTitleDisplayMode(.large)
+            .platformNavigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Close") { dismiss() }
@@ -271,7 +271,7 @@ struct RecipeMashupView: View {
         VStack(spacing: 8) {
             HStack(spacing: 8) {
                 Image(systemName: "hand.tap.fill")
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(Color.appWarning)
                 Text("Select Sections")
                     .font(.headline)
             }
@@ -290,7 +290,7 @@ struct RecipeMashupView: View {
         }
         .padding()
         .frame(maxWidth: .infinity)
-        .background(Color.orange.opacity(0.08))
+        .adaptiveToneBackground(.warning, baseOpacity: 0.08)
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 
@@ -308,7 +308,7 @@ struct RecipeMashupView: View {
             .frame(maxWidth: .infinity)
             .padding()
             .background(Color.purple)
-            .foregroundColor(.white)
+            .foregroundStyle(Color.onTint)
             .clipShape(RoundedRectangle(cornerRadius: 12))
         }
         .buttonStyle(.plain)
@@ -319,13 +319,13 @@ struct RecipeMashupView: View {
     private func errorBanner(_ message: String) -> some View {
         HStack {
             Image(systemName: "exclamationmark.triangle.fill")
-                .foregroundColor(.red)
+                .foregroundStyle(Color.appCritical)
             Text(message)
                 .font(.caption)
         }
         .padding()
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.red.opacity(0.1))
+        .adaptiveToneBackground(.critical, baseOpacity: 0.1)
         .clipShape(RoundedRectangle(cornerRadius: 10))
     }
 }
@@ -345,7 +345,7 @@ struct MashupSourceCard: View {
                 expandedContent
             }
         }
-        .background(Color(.systemBackground))
+        .background(Color.appSystemBackground)
         .clipShape(RoundedRectangle(cornerRadius: 14))
         .shadow(color: .black.opacity(0.08), radius: 4, y: 2)
     }
@@ -358,7 +358,7 @@ struct MashupSourceCard: View {
             Text(index == 0 ? "★" : "\(index + 1)")
                 .font(.caption)
                 .fontWeight(.bold)
-                .foregroundStyle(.white)
+                .foregroundStyle(Color.onTint)
                 .frame(width: 26, height: 26)
                 .background(Circle().fill(statusColor))
 
@@ -371,7 +371,7 @@ struct MashupSourceCard: View {
                 if index == 0 {
                     Text("Your recipe")
                         .font(.caption2)
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(Color.appInfo)
                 }
 
                 if !source.selectedSections.isEmpty {
@@ -387,9 +387,9 @@ struct MashupSourceCard: View {
             if source.isExtracting {
                 ProgressView().scaleEffect(0.8)
             } else if source.extractedRecipe != nil {
-                Image(systemName: "checkmark.circle.fill").foregroundStyle(.green)
+                Image(systemName: "checkmark.circle.fill").foregroundStyle(Color.appSuccess)
             } else if source.errorMessage != nil {
-                Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(.red)
+                Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(Color.appCritical)
             }
 
             // Expand / Collapse
@@ -414,7 +414,7 @@ struct MashupSourceCard: View {
                     }
                 } label: {
                     Image(systemName: "xmark.circle.fill")
-                        .foregroundStyle(.red.opacity(0.7))
+                        .foregroundStyle(Color.appCritical.opacity(0.7))
                 }
                 .buttonStyle(.plain)
             }
@@ -443,8 +443,8 @@ struct MashupSourceCard: View {
                         set: { viewModel.sources[index].url = $0 }
                     ))
                     .textFieldStyle(.roundedBorder)
-                    .autocapitalization(.none)
-                    .keyboardType(.URL)
+                    .platformTextInputAutocapitalization(.never)
+                    .platformKeyboardType(.URL)
                     .textContentType(.URL)
                     .disabled(source.isExtracting)
 
@@ -466,8 +466,8 @@ struct MashupSourceCard: View {
             if let error = source.errorMessage {
                 HStack(spacing: 6) {
                     Image(systemName: "exclamationmark.triangle.fill")
-                        .foregroundStyle(.red).font(.caption)
-                    Text(error).font(.caption).foregroundStyle(.red)
+                        .foregroundStyle(Color.appCritical).font(.caption)
+                    Text(error).font(.caption).foregroundStyle(Color.appCritical)
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
             }
@@ -489,9 +489,9 @@ struct MashupSourceCard: View {
             if index != 0 {
                 HStack {
                     Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(.green).font(.caption)
+                        .foregroundStyle(Color.appSuccess).font(.caption)
                     Text("Extracted Successfully")
-                        .font(.caption).foregroundStyle(.green)
+                        .font(.caption).foregroundStyle(Color.appSuccess)
                 }
             }
 
@@ -592,8 +592,8 @@ struct MashupSourceCard: View {
                                 viewModel.selectImageSource(source.id, imageIndex: 0)
                             } label: {
                                 HStack(spacing: 10) {
-                                    if let imageData = recipe.imageData, let uiImage = UIImage(data: imageData) {
-                                        Image(uiImage: uiImage)
+                                    if let imageData = recipe.imageData, let uiImage = PlatformImage(data: imageData) {
+                                        Image(platformImage: uiImage)
                                             .resizable()
                                             .scaledToFill()
                                             .frame(width: 60, height: 60)
@@ -619,7 +619,7 @@ struct MashupSourceCard: View {
                                     
                                     if viewModel.selectedImageSource == source.id && viewModel.selectedImageIndex == 0 {
                                         Image(systemName: "checkmark.circle.fill")
-                                            .foregroundStyle(.green)
+                                            .foregroundStyle(Color.appSuccess)
                                     }
                                 }
                                 .padding(10)
@@ -633,12 +633,12 @@ struct MashupSourceCard: View {
                         if additionalImages, let additionalData = recipe.additionalImagesData,
                            let decodedImages = try? JSONDecoder().decode([[String: Data]].self, from: additionalData) {
                             ForEach(Array(decodedImages.enumerated()), id: \.offset) { idx, imageDict in
-                                if let imageData = imageDict["data"], let uiImage = UIImage(data: imageData) {
+                                if let imageData = imageDict["data"], let uiImage = PlatformImage(data: imageData) {
                                     Button {
                                         viewModel.selectImageSource(source.id, imageIndex: idx + 1)
                                     } label: {
                                         HStack(spacing: 10) {
-                                            Image(uiImage: uiImage)
+                                            Image(platformImage: uiImage)
                                                 .resizable()
                                                 .scaledToFill()
                                                 .frame(width: 60, height: 60)
@@ -657,7 +657,7 @@ struct MashupSourceCard: View {
                                             
                                             if viewModel.selectedImageSource == source.id && viewModel.selectedImageIndex == idx + 1 {
                                                 Image(systemName: "checkmark.circle.fill")
-                                                    .foregroundStyle(.green)
+                                                    .foregroundStyle(Color.appSuccess)
                                             }
                                         }
                                         .padding(10)
@@ -708,8 +708,8 @@ struct SyntheticRecipeView: View {
                     sessionBanner
                     
                     // Display selected image if available
-                    if let imageData = recipe.imageData, let uiImage = UIImage(data: imageData) {
-                        Image(uiImage: uiImage)
+                    if let imageData = recipe.imageData, let uiImage = PlatformImage(data: imageData) {
+                        Image(platformImage: uiImage)
                             .resizable()
                             .scaledToFill()
                             .frame(height: 250)
@@ -753,7 +753,7 @@ struct SyntheticRecipeView: View {
                                 }
                                 ForEach(section.ingredients) { ing in
                                     HStack(alignment: .top, spacing: 8) {
-                                        Text("•").foregroundStyle(.green)
+                                        Text("•").foregroundStyle(Color.appSuccess)
                                         HStack(spacing: 4) {
                                             if let q = ing.quantity { Text(q).fontWeight(.medium) }
                                             if let u = ing.unit    { Text(u) }
@@ -783,7 +783,7 @@ struct SyntheticRecipeView: View {
                                     HStack(alignment: .top, spacing: 10) {
                                         Text("\(step.stepNumber)")
                                             .font(.caption).fontWeight(.bold)
-                                            .foregroundStyle(.white)
+                                            .foregroundStyle(Color.onTint)
                                             .frame(width: 24, height: 24)
                                             .background(Circle().fill(.orange))
                                         Text(step.text).font(.body)
@@ -831,7 +831,7 @@ struct SyntheticRecipeView: View {
                 .padding()
             }
             .navigationTitle("Combined Recipe")
-            .navigationBarTitleDisplayMode(.inline)
+            .platformNavigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") { dismiss() }
@@ -844,13 +844,13 @@ struct SyntheticRecipeView: View {
 
     private var sessionBanner: some View {
         HStack(spacing: 8) {
-            Image(systemName: "clock.badge.exclamationmark").foregroundStyle(.orange)
+            Image(systemName: "clock.badge.exclamationmark").foregroundStyle(Color.appWarning)
             Text("This combined recipe is temporary and will not be saved.")
                 .font(.caption).foregroundStyle(.secondary)
         }
         .padding(10)
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color.orange.opacity(0.1))
+        .adaptiveToneBackground(.warning, baseOpacity: 0.1)
         .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 
@@ -883,14 +883,14 @@ struct SyntheticRecipeView: View {
                     if let url = URL(string: urlString) {
                         HStack(spacing: 8) {
                             Image(systemName: "safari.fill")
-                                .foregroundStyle(.blue)
+                                .foregroundStyle(Color.appInfo)
                                 .font(.caption)
                             
                             VStack(alignment: .leading, spacing: 2) {
                                 Link(destination: url) {
                                     Text(urlString)
                                         .font(.caption)
-                                        .foregroundStyle(.blue)
+                                        .foregroundStyle(Color.appInfo)
                                         .lineLimit(2)
                                         .truncationMode(.tail)
                                 }

@@ -7,8 +7,10 @@
 
 import SwiftUI
 import SwiftData
-#if os(iOS)
+#if canImport(UIKit)
 import UIKit
+#elseif canImport(AppKit)
+import AppKit
 #endif
 import Combine
 
@@ -36,8 +38,8 @@ class RecipeExtractorViewModel: ObservableObject {
     @Published var extractedRecipe: RecipeX?
     @Published var isLoading = false
     @Published var errorMessage: String?
-    @Published var selectedImage: UIImage?
-    @Published var processedImage: UIImage?
+    @Published var selectedImage: PlatformImage?
+    @Published var processedImage: PlatformImage?
     @Published var usePreprocessing = true
     @Published var recipeURL: String = ""
     @Published var extractedImageURLs: [String] = [] // Image URLs from web extraction
@@ -136,7 +138,7 @@ class RecipeExtractorViewModel: ObservableObject {
         recipe.version = 1
         
         // Set device identifier for attribution
-        recipe.lastModifiedDeviceID = UIDevice.current.identifierForVendor?.uuidString
+        recipe.lastModifiedDeviceID = PlatformDevice.identifier
         
         // Calculate content fingerprint for duplicate detection
         recipe.updateContentFingerprint()
@@ -472,7 +474,7 @@ class RecipeExtractorViewModel: ObservableObject {
     }
     
     /// Extract recipe from the selected image
-    func extractRecipe(from image: UIImage) async {
+    func extractRecipe(from image: PlatformImage) async {
         // Explicitly set loading state on main actor
         await MainActor.run {
             isLoading = true
@@ -486,7 +488,7 @@ class RecipeExtractorViewModel: ObservableObject {
         // Generate processed preview if preprocessing is enabled
         if usePreprocessing {
             if let processedData = imagePreprocessor.preprocessForOCR(image),
-               let processedUIImage = UIImage(data: processedData) {
+               let processedUIImage = PlatformImage(data: processedData) {
                 await MainActor.run {
                     processedImage = processedUIImage
                 }
@@ -694,7 +696,7 @@ class RecipeExtractorViewModel: ObservableObject {
     
     
     /// Enhanced extraction workflow for images - includes validation and similar recipe search
-    func extractRecipeWithEnhancement(from image: UIImage) async {
+    func extractRecipeWithEnhancement(from image: PlatformImage) async {
         // First, do the normal extraction
         await extractRecipe(from: image)
         

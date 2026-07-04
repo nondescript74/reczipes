@@ -67,7 +67,7 @@ struct DuplicateResolutionView: View {
                 .padding()
             }
             .navigationTitle("Duplicate Detected")
-            .navigationBarTitleDisplayMode(.inline)
+            .platformNavigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
@@ -112,7 +112,7 @@ struct DuplicateResolutionView: View {
                 ForEach(duplicateMatch.reasons, id: \.self) { reason in
                     HStack {
                         Image(systemName: "checkmark.circle.fill")
-                            .foregroundColor(.green)
+                            .foregroundStyle(Color.appSuccess)
                             .font(.caption)
                         Text(reason)
                             .font(.caption)
@@ -121,7 +121,7 @@ struct DuplicateResolutionView: View {
             }
         }
         .padding()
-        .background(Color(.secondarySystemBackground))
+        .background(Color.appSecondaryBackground)
         .cornerRadius(12)
     }
     
@@ -161,7 +161,7 @@ struct DuplicateResolutionView: View {
                         Text("In \(recipeBookNames.count) recipe book\(recipeBookNames.count == 1 ? "" : "s")")
                     }
                     .font(.caption)
-                    .foregroundColor(.blue)
+                    .foregroundStyle(Color.appInfo)
                 }
                 
                 if isShared {
@@ -175,7 +175,7 @@ struct DuplicateResolutionView: View {
             }
         }
         .padding()
-        .background(Color(.secondarySystemBackground))
+        .background(Color.appSecondaryBackground)
         .cornerRadius(12)
     }
     
@@ -185,7 +185,7 @@ struct DuplicateResolutionView: View {
                 Text(isShared ? "Cannot Replace Shared Recipe" : "Cannot Replace Recipe in Recipe Book")
             } icon: {
                 Image(systemName: "exclamationmark.triangle.fill")
-                    .foregroundColor(.orange)
+                    .foregroundStyle(Color.appWarning)
             }
             .font(.headline)
             
@@ -194,7 +194,7 @@ struct DuplicateResolutionView: View {
                 .foregroundColor(.secondary)
         }
         .padding()
-        .background(Color.orange.opacity(0.1))
+        .adaptiveToneBackground(.warning, baseOpacity: 0.1)
         .cornerRadius(12)
     }
     
@@ -260,7 +260,7 @@ struct DuplicateResolutionView: View {
                     .font(.headline)
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(Color(.systemBackground))
+                    .background(Color.appSystemBackground)
                     .foregroundColor(.primary)
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
@@ -304,7 +304,7 @@ struct DuplicateResolutionView: View {
                 }
             }
             .padding()
-            .background(disabled ? Color(.systemGray5) : Color(.secondarySystemBackground))
+            .background(disabled ? Color.appGray5 : Color.appSecondaryBackground)
             .cornerRadius(12)
         }
         .disabled(disabled)

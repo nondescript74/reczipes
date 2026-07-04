@@ -88,7 +88,7 @@ struct BookRecipeManagerView: View {
                 }
             }
             .navigationTitle("Manage Recipes")
-            .navigationBarTitleDisplayMode(.inline)
+            .platformNavigationBarTitleDisplayMode(.inline)
             .searchable(text: $searchText, prompt: "Search recipes")
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
@@ -144,8 +144,8 @@ private struct BookRecipeRowView: View {
         HStack {
             // Recipe thumbnail
             if let imageData = recipe.imageData,
-               let uiImage = UIImage(data: imageData) {
-                Image(uiImage: uiImage)
+               let uiImage = PlatformImage(data: imageData) {
+                Image(platformImage: uiImage)
                     .resizable()
                     .aspectRatio(contentMode: .fill)
                     .frame(width: 60, height: 60)

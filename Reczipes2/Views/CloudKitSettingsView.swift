@@ -51,7 +51,7 @@ struct CloudKitInfoView: View {
             VStack(alignment: .leading, spacing: 20) {
                 Image(systemName: "icloud.fill")
                     .font(.system(size: 60))
-                    .foregroundColor(.blue)
+                    .foregroundStyle(Color.appInfo)
                     .frame(maxWidth: .infinity, alignment: .center)
                     .padding(.top)
                 
@@ -107,7 +107,7 @@ struct CloudKitInfoView: View {
             .padding()
         }
         .navigationTitle("About Sync")
-        .navigationBarTitleDisplayMode(.inline)
+        .platformNavigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
                 Button("Done") {
@@ -121,7 +121,7 @@ struct CloudKitInfoView: View {
         HStack(alignment: .top, spacing: 16) {
             Image(systemName: icon)
                 .font(.title2)
-                .foregroundColor(.blue)
+                .foregroundStyle(Color.appInfo)
                 .frame(width: 30)
             
             VStack(alignment: .leading, spacing: 4) {
@@ -139,7 +139,7 @@ struct CloudKitInfoView: View {
     private func requirementRow(text: String) -> some View {
         HStack(spacing: 8) {
             Image(systemName: "checkmark.circle.fill")
-                .foregroundColor(.green)
+                .foregroundStyle(Color.appSuccess)
                 .font(.caption)
             
             Text(text)

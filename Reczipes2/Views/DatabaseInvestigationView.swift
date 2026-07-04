@@ -29,7 +29,7 @@ struct DatabaseInvestigationView: View {
                 }
             }
             .navigationTitle("Database Investigation")
-            .navigationBarTitleDisplayMode(.inline)
+            .platformNavigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Close") {
@@ -96,7 +96,7 @@ struct DatabaseInvestigationView: View {
                         }
                     } icon: {
                         Image(systemName: "exclamationmark.triangle.fill")
-                            .foregroundStyle(.orange)
+                            .foregroundStyle(Color.appWarning)
                     }
                 }
             }
@@ -124,7 +124,7 @@ struct DatabaseInvestigationView: View {
                                 
                                 if dbInfo.url == results.currentDatabase.url {
                                     Image(systemName: "checkmark.circle.fill")
-                                        .foregroundStyle(.green)
+                                        .foregroundStyle(Color.appSuccess)
                                 }
                             }
                             
@@ -148,7 +148,7 @@ struct DatabaseInvestigationView: View {
                             if dbInfo.error != nil {
                                 Label("Could not read database", systemImage: "exclamationmark.circle")
                                     .font(.caption)
-                                    .foregroundStyle(.red)
+                                    .foregroundStyle(Color.appCritical)
                             }
                         }
                         .padding(.vertical, 4)
@@ -195,7 +195,7 @@ struct DatabaseInvestigationView: View {
         VStack(spacing: 20) {
             Image(systemName: "exclamationmark.triangle")
                 .font(.system(size: 60))
-                .foregroundStyle(.red)
+                .foregroundStyle(Color.appCritical)
             
             Text("Investigation Failed")
                 .font(.title)
@@ -225,15 +225,20 @@ struct DatabaseInvestigationView: View {
         let report = results.generateReport()
         
         // Share the report
+        #if os(iOS)
         let activityVC = UIActivityViewController(
             activityItems: [report],
             applicationActivities: nil
         )
-        
+
         if let windowScene = UIApplication.shared.connectedScenes.first as? UIWindowScene,
            let rootVC = windowScene.windows.first?.rootViewController {
             rootVC.present(activityVC, animated: true)
         }
+        #elseif os(macOS)
+        // macOS fallback: copy the report to the clipboard.
+        PlatformPasteboard.copy(report)
+        #endif
     }
 }
 
@@ -272,13 +277,13 @@ struct DatabaseContentView: View {
                                 if recipe.hasImage {
                                     Label("Has Image", systemImage: "photo")
                                         .font(.caption)
-                                        .foregroundStyle(.blue)
+                                        .foregroundStyle(Color.appInfo)
                                 }
                                 
                                 if recipe.hasIngredients {
                                     Label("Has Ingredients", systemImage: "list.bullet")
                                         .font(.caption)
-                                        .foregroundStyle(.green)
+                                        .foregroundStyle(Color.appSuccess)
                                 }
                             }
                         }
@@ -286,7 +291,7 @@ struct DatabaseContentView: View {
                 }
             }
             .navigationTitle(databaseInfo.name)
-            .navigationBarTitleDisplayMode(.inline)
+            .platformNavigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Done") {

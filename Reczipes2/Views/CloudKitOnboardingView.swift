@@ -33,9 +33,9 @@ struct CloudKitOnboardingView: View {
                 .padding()
             }
             .navigationTitle("Community Sharing Setup")
-            .navigationBarTitleDisplayMode(.large)
+            .platformNavigationBarTitleDisplayMode(.large)
             .toolbar {
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: .platformNavBarTrailing) {
                     Button("Done") {
                         dismiss()
                     }
@@ -116,7 +116,7 @@ struct CloudKitOnboardingView: View {
             }
         }
         .padding()
-        .background(Color(.secondarySystemBackground))
+        .background(Color.appSecondaryBackground)
         .cornerRadius(12)
     }
     
@@ -160,7 +160,7 @@ struct CloudKitOnboardingView: View {
         VStack(spacing: 16) {
             Text("🎉 Everything is set up!")
                 .font(.headline)
-                .foregroundStyle(.green)
+                .foregroundStyle(Color.appSuccess)
             
             Text("You're ready to share your recipes with the community and browse recipes shared by others.")
                 .font(.subheadline)
@@ -206,12 +206,12 @@ struct CloudKitOnboardingView: View {
                 OnboardingInstructionStep(number: 5, text: "Return to this app")
             }
             .padding()
-            .background(Color(.tertiarySystemBackground))
+            .background(Color.appTertiaryBackground)
             .cornerRadius(8)
             
             Button(action: {
                 if let url = URL(string: "App-prefs:root=CASTLE") {
-                    UIApplication.shared.open(url)
+                    PlatformURLOpener.open(url)
                 }
             }) {
                 Label("Open Settings", systemImage: "gear")
@@ -342,12 +342,12 @@ struct CloudKitOnboardingView: View {
                 OnboardingInstructionStep(number: 3, text: "Ensure iCloud is allowed")
             }
             .padding()
-            .background(Color(.tertiarySystemBackground))
+            .background(Color.appTertiaryBackground)
             .cornerRadius(8)
             
             Button(action: {
                 if let url = URL(string: "App-prefs:root=SCREEN_TIME") {
-                    UIApplication.shared.open(url)
+                    PlatformURLOpener.open(url)
                 }
             }) {
                 Label("Open Screen Time Settings", systemImage: "hourglass")
@@ -368,10 +368,10 @@ struct CloudKitOnboardingView: View {
             if let errorDetails = onboarding.errorDetails {
                 Text(errorDetails)
                     .font(.caption)
-                    .foregroundStyle(.red)
+                    .foregroundStyle(Color.appCritical)
                     .multilineTextAlignment(.center)
                     .padding()
-                    .background(Color.red.opacity(0.1))
+                    .adaptiveToneBackground(.critical, baseOpacity: 0.1)
                     .cornerRadius(8)
             }
             
@@ -436,7 +436,7 @@ struct CloudKitOnboardingView: View {
             .font(.caption)
         }
         .padding()
-        .background(Color(.secondarySystemBackground))
+        .background(Color.appSecondaryBackground)
         .cornerRadius(12)
     }
     
@@ -455,7 +455,7 @@ struct CloudKitOnboardingView: View {
         .font(.caption)
         .foregroundStyle(.secondary)
         .padding()
-        .background(Color(.tertiarySystemBackground))
+        .background(Color.appTertiaryBackground)
         .cornerRadius(8)
     }
     
@@ -470,7 +470,7 @@ struct CloudKitOnboardingView: View {
             }) {
                 HStack {
                     Image(systemName: "questionmark.circle.fill")
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(Color.appInfo)
                     
                     Text("Community Sharing Help")
                         .font(.headline)
@@ -571,13 +571,13 @@ struct CloudKitOnboardingView: View {
                     }
                 }
                 .padding()
-                .background(Color(.tertiarySystemBackground))
+                .background(Color.appTertiaryBackground)
                 .cornerRadius(8)
                 .transition(.opacity.combined(with: .move(edge: .top)))
             }
         }
         .padding()
-        .background(Color(.secondarySystemBackground))
+        .background(Color.appSecondaryBackground)
         .cornerRadius(12)
     }
     
@@ -642,7 +642,7 @@ struct HelpStep: View {
         HStack(alignment: .top, spacing: 8) {
             Text("\(number).")
                 .fontWeight(.semibold)
-                .foregroundStyle(.blue)
+                .foregroundStyle(Color.appInfo)
                 .frame(width: 20, alignment: .leading)
             
             Text(text)
@@ -658,7 +658,7 @@ struct HelpBullet: View {
     var body: some View {
         HStack(alignment: .top, spacing: 8) {
             Text("•")
-                .foregroundStyle(.blue)
+                .foregroundStyle(Color.appInfo)
                 .frame(width: 12, alignment: .leading)
             
             Text(text)
@@ -704,7 +704,7 @@ struct OnboardingStepRow: View {
                 ProgressView()
             } else {
                 Image(systemName: "checkmark.circle.fill")
-                    .foregroundStyle(.green)
+                    .foregroundStyle(Color.appSuccess)
             }
             
             Text(stepTitle)
@@ -736,7 +736,7 @@ struct OnboardingInstructionStep: View {
             Text("\(number).")
                 .font(.subheadline)
                 .fontWeight(.bold)
-                .foregroundStyle(.blue)
+                .foregroundStyle(Color.appInfo)
                 .frame(width: 24, alignment: .leading)
             
             Text(text)
@@ -771,7 +771,7 @@ struct DiagnosticsDetailView: View {
                 }
             }
             .navigationTitle("Diagnostics Report")
-            .navigationBarTitleDisplayMode(.inline)
+            .platformNavigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Close") {
@@ -798,6 +798,7 @@ struct DiagnosticsDetailView: View {
 
 // MARK: - Share Sheet Helper
 
+#if os(iOS)
 struct ShareSheet: UIViewControllerRepresentable {
     let items: [Any]
     
@@ -807,6 +808,12 @@ struct ShareSheet: UIViewControllerRepresentable {
     
     func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
+#else
+struct ShareSheet: View {
+    let items: [Any]
+    var body: some View { MacShareView(items: items) }
+}
+#endif
 
 // MARK: - Preview
 

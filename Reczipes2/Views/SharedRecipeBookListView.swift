@@ -76,7 +76,7 @@ struct SharedRecipeBookListView: View {
             }
         }
         .navigationTitle(book.name ?? "No Name")
-        .navigationBarTitleDisplayMode(.large)
+        .platformNavigationBarTitleDisplayMode(.large)
         .searchable(text: $searchText, prompt: "Search recipes")
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
@@ -131,7 +131,7 @@ struct SharedRecipeBookListView: View {
                 }
             }
         }
-        .listStyle(.insetGrouped)
+        .platformInsetGroupedListStyle()
     }
     
     // MARK: - Book Header
@@ -150,7 +150,7 @@ struct SharedRecipeBookListView: View {
                         .overlay {
                             Image(systemName: "book.fill")
                                 .font(.system(size: 60))
-                                .foregroundStyle(.white.opacity(0.5))
+                                .foregroundStyle(Color.onTint.opacity(0.5))
                         }
                 }
                 .frame(height: 200)
@@ -162,7 +162,7 @@ struct SharedRecipeBookListView: View {
                     .overlay {
                         Image(systemName: "book.fill")
                             .font(.system(size: 60))
-                            .foregroundStyle(.white.opacity(0.5))
+                            .foregroundStyle(Color.onTint.opacity(0.5))
                     }
                     .frame(height: 200)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
@@ -249,8 +249,8 @@ struct RecipePreviewRow: View {
             // Thumbnail
             Group {
                 if let imageData = preview.imageData,
-                   let uiImage = UIImage(data: imageData) {
-                    Image(uiImage: uiImage)
+                   let uiImage = PlatformImage(data: imageData) {
+                    Image(platformImage: uiImage)
                         .resizable()
                         .aspectRatio(contentMode: .fill)
                 } else {

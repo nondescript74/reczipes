@@ -70,7 +70,7 @@ struct DatabaseDiagnosticsView: View {
                             Section {
                                 HStack(spacing: 12) {
                                     Image(systemName: "exclamationmark.triangle.fill")
-                                        .foregroundStyle(.orange)
+                                        .foregroundStyle(Color.appWarning)
                                     VStack(alignment: .leading, spacing: 4) {
                                         Text("Recent Recovery Failures")
                                             .font(.subheadline)
@@ -155,7 +155,7 @@ struct DatabaseDiagnosticsView: View {
                         
                         Text("Running diagnostics...")
                             .font(.headline)
-                            .foregroundStyle(.white)
+                            .foregroundStyle(Color.onTint)
                     }
                     .padding(32)
                     .background(
@@ -166,7 +166,7 @@ struct DatabaseDiagnosticsView: View {
                 }
             }
             .navigationTitle("Database Diagnostics")
-            .navigationBarTitleDisplayMode(.inline)
+            .platformNavigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Done") {
@@ -423,7 +423,7 @@ private struct InfoBlock: View {
         HStack(alignment: .top, spacing: 12) {
             Image(systemName: icon)
                 .font(.title3)
-                .foregroundStyle(.blue)
+                .foregroundStyle(Color.appInfo)
                 .frame(width: 24)
             
             VStack(alignment: .leading, spacing: 4) {

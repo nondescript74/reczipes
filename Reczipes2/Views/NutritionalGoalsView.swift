@@ -187,7 +187,7 @@ struct NutritionalGoalsView: View {
                         Label("Medical Disclaimer", systemImage: "info.circle.fill")
                             .font(.caption)
                             .fontWeight(.semibold)
-                            .foregroundStyle(.orange)
+                            .foregroundStyle(Color.appWarning)
                         
                         Text("These guidelines are based on recommendations from the American Heart Association, American Diabetes Association, and CDC. Always consult with your healthcare provider for personalized nutritional advice.")
                             .font(.caption2)
@@ -196,7 +196,7 @@ struct NutritionalGoalsView: View {
                 }
             }
             .navigationTitle("Nutritional Goals")
-            .navigationBarTitleDisplayMode(.inline)
+            .platformNavigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
@@ -249,7 +249,7 @@ struct NutrientField: View {
             Spacer()
             
             TextField("Not set", text: $textValue)
-                .keyboardType(.decimalPad)
+                .platformKeyboardType(.decimalPad)
                 .multilineTextAlignment(.trailing)
                 .frame(width: 80)
                 .focused($isFocused)
@@ -305,7 +305,7 @@ struct PresetPickerView: View {
                             VStack(alignment: .leading, spacing: 4) {
                                 HStack {
                                     Image(systemName: preset.icon)
-                                        .foregroundStyle(.blue)
+                                        .foregroundStyle(Color.appInfo)
                                     Text(preset.rawValue)
                                         .font(.headline)
                                 }
@@ -319,7 +319,7 @@ struct PresetPickerView: View {
                             
                             if selectedPreset == preset {
                                 Image(systemName: "checkmark.circle.fill")
-                                    .foregroundStyle(.blue)
+                                    .foregroundStyle(Color.appInfo)
                             }
                         }
                     }
@@ -327,7 +327,7 @@ struct PresetPickerView: View {
                 }
             }
             .navigationTitle("Choose Goal Type")
-            .navigationBarTitleDisplayMode(.inline)
+            .platformNavigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {

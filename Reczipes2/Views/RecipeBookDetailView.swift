@@ -7,7 +7,6 @@
 
 import SwiftUI
 import SwiftData
-import UIKit
 
 struct RecipeBookDetailView: View {
     @Environment(\.dismiss) private var dismiss
@@ -49,7 +48,7 @@ struct RecipeBookDetailView: View {
                 }
             }
             .navigationTitle(book.name ?? "No Name")
-            .navigationBarTitleDisplayMode(.inline)
+            .platformNavigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Done") {
@@ -79,14 +78,14 @@ struct RecipeBookDetailView: View {
                 NavigationStack {
                     RecipeBookRecipeSelectorView(book: book)
                 }
-                .presentationDetents([.medium, .large])
+                .platformPresentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
             }
             .sheet(isPresented: $showingBookEditor) {
                 NavigationStack {
                     RecipeBookEditorView(book: book)
                 }
-                .presentationDetents([.medium, .large])
+                .platformPresentationDetents([.medium, .large])
                 .presentationDragIndicator(.visible)
             }
         }
@@ -146,7 +145,7 @@ struct RecipeBookDetailView: View {
                 }
             }
             .padding()
-            .background(Color(.systemBackground))
+            .background(Color.appSystemBackground)
             
             // Page turning view
             TabView(selection: $currentPage) {
@@ -160,8 +159,8 @@ struct RecipeBookDetailView: View {
                     .tag(index)
                 }
             }
-            .tabViewStyle(.page(indexDisplayMode: .never))
-            .indexViewStyle(.page(backgroundDisplayMode: .never))
+            .platformPageTabViewStyle(indexDisplayMode: .never)
+            .platformPageIndexViewStyle(backgroundDisplayMode: .never)
         }
     }
 }
@@ -311,7 +310,7 @@ struct RecipePageView: View {
                                             Text("\(index + 1)")
                                                 .font(.body)
                                                 .fontWeight(.bold)
-                                                .foregroundStyle(.white)
+                                                .foregroundStyle(Color.onTint)
                                                 .frame(width: 28, height: 28)
                                                 .background(bookColor, in: Circle())
                                             
@@ -364,7 +363,7 @@ struct RecipePageView: View {
                     .padding()
                 }
             }
-            .fullScreenCover(isPresented: $showingFullDetail) {
+            .platformFullScreenCover(isPresented: $showingFullDetail) {
                 NavigationStack {
                     RecipeDetailView(recipe: recipe)
                         .toolbar {
@@ -396,7 +395,7 @@ struct RecipePageView: View {
                             }
                         }
                 }
-                .presentationDetents([.large])
+                .platformPresentationDetents([.large])
                 .presentationDragIndicator(.visible)
             }
         }

@@ -5,7 +5,13 @@
 //  Created for optimized image compression with size constraints
 //
 
+import Foundation
+import CoreGraphics
+#if canImport(UIKit)
 import UIKit
+#elseif canImport(AppKit)
+import AppKit
+#endif
 
 /// Utility for compressing images to a target file size while maintaining quality
 enum ImageCompressionUtility {
@@ -25,9 +31,9 @@ enum ImageCompressionUtility {
     ///   - targetSize: Target maximum file size in bytes (default: 100KB)
     ///   - maintainAspectRatio: Whether to maintain aspect ratio when resizing (default: true)
     /// - Returns: Compressed image data, or nil if compression fails
-    static func compressImage(_ image: UIImage, targetSize: Int = targetMaxSize, maintainAspectRatio: Bool = true) -> Data? {
+    static func compressImage(_ image: PlatformImage, targetSize: Int = targetMaxSize, maintainAspectRatio: Bool = true) -> Data? {
         AppLog.info("Starting compression for image size: \(image.size), scale: \(image.scale), target: \(formatSize(targetSize))", category: .image)
-        
+
         // First, resize if image is too large
         let resizedImage = resizeIfNeeded(image, maxDimension: maxDimension)
         if resizedImage.size != image.size {
@@ -37,7 +43,7 @@ enum ImageCompressionUtility {
         // Try progressive compression with quality reduction
         let compressionQuality: CGFloat = 0.85
         var imageData = resizedImage.jpegData(compressionQuality: compressionQuality)
-        
+
         guard let initialData = imageData else {
             AppLog.error("Failed to create initial JPEG data from image", category: .image)
             return nil
@@ -103,7 +109,7 @@ enum ImageCompressionUtility {
     ///   - image: Source image
     ///   - maxDimension: Maximum allowed dimension
     /// - Returns: Resized image if needed, original if within limits
-    static func resizeIfNeeded(_ image: UIImage, maxDimension: CGFloat) -> UIImage {
+    static func resizeIfNeeded(_ image: PlatformImage, maxDimension: CGFloat) -> PlatformImage {
         let size = image.size
 
         // Check if resizing is needed
@@ -129,12 +135,42 @@ enum ImageCompressionUtility {
     ///   - image: Source image
     ///   - size: Target size
     /// - Returns: Resized image or nil on failure
-    static func resize(_ image: UIImage, to size: CGSize) -> UIImage? {
+    static func resize(_ image: PlatformImage, to size: CGSize) -> PlatformImage? {
+        #if canImport(UIKit)
         UIGraphicsBeginImageContextWithOptions(size, false, 1.0)
         defer { UIGraphicsEndImageContext() }
 
         image.draw(in: CGRect(origin: .zero, size: size))
         return UIGraphicsGetImageFromCurrentImageContext()
+        #elseif canImport(AppKit)
+        // Redraw into a CGContext then wrap in NSImage.
+        guard let cgImage = image.cgImage else { return nil }
+        let width = Int(size.width)
+        let height = Int(size.height)
+        guard width > 0, height > 0 else { return nil }
+
+        let bitsPerComponent = 8
+        let bytesPerRow = width * 4
+        let colorSpace = CGColorSpaceCreateDeviceRGB()
+        let bitmapInfo = CGImageAlphaInfo.premultipliedLast.rawValue
+
+        guard let context = CGContext(
+            data: nil,
+            width: width,
+            height: height,
+            bitsPerComponent: bitsPerComponent,
+            bytesPerRow: bytesPerRow,
+            space: colorSpace,
+            bitmapInfo: bitmapInfo
+        ) else { return nil }
+
+        context.interpolationQuality = .high
+        context.draw(cgImage, in: CGRect(origin: .zero, size: size))
+        guard let resizedCGImage = context.makeImage() else { return nil }
+        return NSImage(cgImage: resizedCGImage, size: size)
+        #else
+        return nil
+        #endif
     }
 
     /// Get human-readable size string
@@ -149,14 +185,14 @@ enum ImageCompressionUtility {
     /// Compress image for thumbnail use (smaller target size)
     /// - Parameter image: Source image
     /// - Returns: Compressed thumbnail data
-    static func compressForThumbnail(_ image: UIImage) -> Data? {
+    static func compressForThumbnail(_ image: PlatformImage) -> Data? {
         return compressImage(image, targetSize: 50_000) // 50KB for thumbnails
     }
 
     /// Compress image for book cover (slightly larger allowed)
     /// - Parameter image: Source image
     /// - Returns: Compressed book cover data
-    static func compressForBookCover(_ image: UIImage) -> Data? {
+    static func compressForBookCover(_ image: PlatformImage) -> Data? {
         return compressImage(image, targetSize: 150_000) // 150KB for book covers (more detail)
     }
 }

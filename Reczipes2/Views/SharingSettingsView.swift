@@ -93,7 +93,7 @@ struct SharingSettingsView: View {
                     if !sharingStatus.isEmpty {
                         Text(sharingStatus)
                             .font(.headline)
-                            .foregroundStyle(.white)
+                            .foregroundStyle(Color.onTint)
                             .multilineTextAlignment(.center)
                             .padding(.horizontal)
                     }
@@ -107,7 +107,7 @@ struct SharingSettingsView: View {
             }
         }
         .navigationTitle("Public Sharing")
-        .navigationBarTitleDisplayMode(.inline)
+        .platformNavigationBarTitleDisplayMode(.inline)
         .onAppear {
             // Initialize CloudKitSharingService with current preferences
             sharingService.updateUserDisplayName(from: preferences)
@@ -198,7 +198,7 @@ struct SharingSettingsView: View {
             VStack(alignment: .leading, spacing: 12) {
                 HStack(spacing: 8) {
                     Image(systemName: "info.circle.fill")
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(Color.appInfo)
                         .font(.title3)
                     Text("About Public Sharing & License")
                         .font(.headline)
@@ -213,11 +213,11 @@ struct SharingSettingsView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     Label("iCloud Sync: Always On", systemImage: "checkmark.circle.fill")
                         .font(.caption)
-                        .foregroundStyle(.green)
+                        .foregroundStyle(Color.appSuccess)
                     
                     Label("Public Sharing: Your Choice", systemImage: "person.3.fill")
                         .font(.caption)
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(Color.appInfo)
                 }
                 
                 Divider()
@@ -225,7 +225,7 @@ struct SharingSettingsView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     HStack(spacing: 4) {
                         Image(systemName: "checkmark.shield.fill")
-                            .foregroundStyle(.green)
+                            .foregroundStyle(Color.appSuccess)
                         Text("Sharing License")
                             .font(.caption)
                             .fontWeight(.semibold)
@@ -315,7 +315,7 @@ struct SharingSettingsView: View {
                     } else if let lastSync = sharingService.lastSyncDate {
                         HStack(spacing: 4) {
                             Image(systemName: "checkmark.circle.fill")
-                                .foregroundStyle(.green)
+                                .foregroundStyle(Color.appSuccess)
                                 .font(.caption)
                             Text("Last synced: \(lastSync, style: .relative) ago")
                                 .font(.caption)
@@ -325,7 +325,7 @@ struct SharingSettingsView: View {
                         if let timeUntilNext = sharingService.timeUntilNextSync, timeUntilNext > 0 {
                             HStack(spacing: 4) {
                                 Image(systemName: "clock")
-                                    .foregroundStyle(.blue)
+                                    .foregroundStyle(Color.appInfo)
                                     .font(.caption)
                                 Text("Next sync in \(Int(timeUntilNext))s")
                                     .font(.caption)
@@ -1213,7 +1213,7 @@ struct RecipeSelectorView: View {
             .buttonStyle(.plain)
         }
         .navigationTitle("Select Recipes")
-        .navigationBarTitleDisplayMode(.inline)
+        .platformNavigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
                 Button("Cancel") {
@@ -1250,7 +1250,7 @@ struct RecipeSelectorView: View {
             
             if selectedRecipes.contains(where: { $0.id == recipe.id }) {
                 Image(systemName: "checkmark.circle.fill")
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(Color.appInfo)
             }
         }
     }
@@ -1319,7 +1319,7 @@ struct BookSelectorView: View {
             .buttonStyle(.plain)
         }
         .navigationTitle("Select Books")
-        .navigationBarTitleDisplayMode(.inline)
+        .platformNavigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
                 Button("Cancel") {
@@ -1356,7 +1356,7 @@ struct BookSelectorView: View {
             
             if selectedBooks.contains(where: { $0.id == book.id }) {
                 Image(systemName: "checkmark.circle.fill")
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(Color.appInfo)
             }
         }
     }
@@ -1476,7 +1476,7 @@ struct ManageSharedContentView: View {
                                         if sharedRecipe.cloudRecordID == nil {
                                             Text("⚠️ No CloudKit ID")
                                                 .font(.caption2)
-                                                .foregroundStyle(.orange)
+                                                .foregroundStyle(Color.appWarning)
                                         }
                                     }
                                     
@@ -1489,7 +1489,7 @@ struct ManageSharedContentView: View {
                                         } label: {
                                             Label("Unshare", systemImage: "xmark.circle.fill")
                                                 .labelStyle(.iconOnly)
-                                                .foregroundStyle(.red)
+                                                .foregroundStyle(Color.appCritical)
                                         }
                                         .buttonStyle(.plain)
                                     } else {
@@ -1499,7 +1499,7 @@ struct ManageSharedContentView: View {
                                             showingAlert = true
                                         } label: {
                                             Image(systemName: "exclamationmark.triangle.fill")
-                                                .foregroundStyle(.orange)
+                                                .foregroundStyle(Color.appWarning)
                                         }
                                         .buttonStyle(.plain)
                                     }
@@ -1547,7 +1547,7 @@ struct ManageSharedContentView: View {
                                         if book.cloudRecordID == nil {
                                             Text("⚠️ No CloudKit ID")
                                                 .font(.caption2)
-                                                .foregroundStyle(.orange)
+                                                .foregroundStyle(Color.appWarning)
                                         }
                                     }
                                     
@@ -1560,7 +1560,7 @@ struct ManageSharedContentView: View {
                                         } label: {
                                             Label("Unshare", systemImage: "xmark.circle.fill")
                                                 .labelStyle(.iconOnly)
-                                                .foregroundStyle(.red)
+                                                .foregroundStyle(Color.appCritical)
                                         }
                                         .buttonStyle(.plain)
                                     } else {
@@ -1570,7 +1570,7 @@ struct ManageSharedContentView: View {
                                             showingAlert = true
                                         } label: {
                                             Image(systemName: "exclamationmark.triangle.fill")
-                                                .foregroundStyle(.orange)
+                                                .foregroundStyle(Color.appWarning)
                                         }
                                         .buttonStyle(.plain)
                                     }
@@ -1739,7 +1739,7 @@ struct SharedBooksBrowserView: View {
                     
                     Text("Refreshing...")
                         .font(.headline)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Color.onTint)
                 }
                 .padding(32)
                 .background(
@@ -1750,10 +1750,10 @@ struct SharedBooksBrowserView: View {
             }
         }
         .navigationTitle("Browse Community Books")
-        .navigationBarTitleDisplayMode(.inline)
+        .platformNavigationBarTitleDisplayMode(.inline)
         .toolbar {
             if !isLoading {
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .platformNavBarTrailing) {
                     Button {
                         Task { await loadBooks() }
                     } label: {
@@ -1766,7 +1766,7 @@ struct SharedBooksBrowserView: View {
             if !sharedBooks.isEmpty {
                 HStack {
                     Image(systemName: "books.vertical.fill")
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(Color.appInfo)
                     Text("\(filteredBooks.count) \(filteredBooks.count == 1 ? "Book" : "Books")")
                         .font(.subheadline)
                         .fontWeight(.medium)
@@ -1939,7 +1939,7 @@ struct SharedBookDetailView: View {
                 }
             }
             .navigationTitle(book.name)
-            .navigationBarTitleDisplayMode(.inline)
+            .platformNavigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") {

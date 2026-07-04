@@ -44,9 +44,9 @@ struct CookingModeView: View {
             }
             .padding()
         }
-        .background(Color(.systemBackground))
+        .background(Color.appSystemBackground)
         .navigationTitle("Cooking Mode")
-        .navigationBarTitleDisplayMode(.inline)
+        .platformNavigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
                 Button("Done") {
@@ -126,7 +126,7 @@ struct CookingModeView: View {
                     }
                 }
                 .padding()
-                .background(Color(.systemGray6))
+                .background(Color.appGray6)
                 .clipShape(RoundedRectangle(cornerRadius: 12))
             }
         }
@@ -146,7 +146,7 @@ struct CookingModeView: View {
                         if let title = section.title {
                             Text(title)
                                 .font(.headline)
-                                .foregroundStyle(.blue)
+                                .foregroundStyle(Color.appInfo)
                         }
                         
                         ForEach(section.ingredients) { ingredient in
@@ -164,7 +164,7 @@ struct CookingModeView: View {
                 }
             }
             .padding()
-            .background(Color(.systemGray6))
+            .background(Color.appGray6)
             .clipShape(RoundedRectangle(cornerRadius: 12))
         }
     }
@@ -183,7 +183,7 @@ struct CookingModeView: View {
                         if let title = section.title {
                             Text(title)
                                 .font(.headline)
-                                .foregroundStyle(.green)
+                                .foregroundStyle(Color.appSuccess)
                                 .padding(.top, 8)
                         }
                         
@@ -222,7 +222,7 @@ struct CookingModeView: View {
         }
         .padding()
         .background(
-            completedSteps.contains(globalIndex) ? Color(.systemGray6) : Color(.systemGray5)
+            completedSteps.contains(globalIndex) ? Color.appGray6 : Color.appGray5
         )
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
@@ -259,7 +259,7 @@ struct CookingModeView: View {
             }
         }
         .padding()
-        .background(Color(.systemGray6))
+        .background(Color.appGray6)
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
     

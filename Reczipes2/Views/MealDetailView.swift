@@ -51,7 +51,7 @@ struct MealDetailView: View {
                 }
             }
             .navigationTitle(meal.displayName)
-            .navigationBarTitleDisplayMode(.inline)
+            .platformNavigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Done") { dismiss() }
@@ -93,7 +93,7 @@ struct MealDetailView: View {
             } label: {
                 HStack(spacing: 12) {
                     Image(systemName: "fork.knife.circle.fill")
-                        .foregroundStyle(.green)
+                        .foregroundStyle(Color.appSuccess)
                         .font(.title3)
                     VStack(alignment: .leading, spacing: 2) {
                         Text(course.name)
@@ -112,7 +112,7 @@ struct MealDetailView: View {
         } else {
             HStack(spacing: 12) {
                 Image(systemName: "circle.dashed")
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(Color.appWarning)
                     .font(.title3)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(course.name)

@@ -12,6 +12,32 @@ enum StatusBadgeTone {
     case info
 }
 
+struct AdaptiveToneFill: View {
+    @Environment(\.colorScheme) private var colorScheme
+    let tone: StatusBadgeTone
+    let baseOpacity: Double
+
+    var body: some View {
+        toneColor.opacity(adjustedOpacity)
+    }
+
+    private var toneColor: Color {
+        switch tone {
+        case .critical: return .red
+        case .warning: return .orange
+        case .success: return .green
+        case .info: return .blue
+        }
+    }
+
+    private var adjustedOpacity: Double {
+        if colorScheme == .dark {
+            return min(baseOpacity + 0.15, 0.5)
+        }
+        return baseOpacity
+    }
+}
+
 private struct StatusBadgeModifier: ViewModifier {
     @Environment(\.colorScheme) private var colorScheme
     let tone: StatusBadgeTone
@@ -42,5 +68,9 @@ private struct StatusBadgeModifier: ViewModifier {
 extension View {
     func statusBadgeStyle(tone: StatusBadgeTone) -> some View {
         modifier(StatusBadgeModifier(tone: tone))
+    }
+
+    func adaptiveToneBackground(_ tone: StatusBadgeTone, baseOpacity: Double) -> some View {
+        background(AdaptiveToneFill(tone: tone, baseOpacity: baseOpacity))
     }
 }

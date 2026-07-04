@@ -104,7 +104,7 @@ struct FODMAPCategoryInfo: View {
             }
         }
         .padding(8)
-        .background(Color(.secondarySystemBackground))
+        .background(Color.appSecondaryBackground)
         .clipShape(RoundedRectangle(cornerRadius: 6))
     }
 }

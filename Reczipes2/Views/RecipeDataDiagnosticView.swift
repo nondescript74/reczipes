@@ -122,12 +122,12 @@ struct RecipeDataDiagnosticView: View {
                         
                         Text("⚠️ This will try to migrate any file-based images to the database. Make sure you have a backup!")
                             .font(.caption)
-                            .foregroundStyle(.orange)
+                            .foregroundStyle(Color.appWarning)
                     }
                 }
             }
             .navigationTitle("Recipe Diagnostics")
-            .navigationBarTitleDisplayMode(.inline)
+            .platformNavigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") {
@@ -484,7 +484,7 @@ struct RecipeDataInspectorView: View {
             }
         }
         .navigationTitle("Recipe Data Inspector")
-        .navigationBarTitleDisplayMode(.inline)
+        .platformNavigationBarTitleDisplayMode(.inline)
     }
 }
 

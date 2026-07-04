@@ -63,7 +63,7 @@ struct CourseSearchView: View {
                 sendToExtractSection
             }
             .navigationTitle(trimmedQuery.isEmpty ? "Find a Recipe" : "Find: \(trimmedQuery)")
-            .navigationBarTitleDisplayMode(.inline)
+            .platformNavigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
@@ -89,7 +89,7 @@ struct CourseSearchView: View {
                 } label: {
                     HStack(spacing: 12) {
                         Image(systemName: "book.closed.fill")
-                            .foregroundStyle(.green)
+                            .foregroundStyle(Color.appSuccess)
                             .font(.title3)
                         VStack(alignment: .leading, spacing: 2) {
                             Text(recipe.title ?? "Untitled Recipe")
@@ -153,8 +153,8 @@ struct CourseSearchView: View {
             HStack(spacing: 8) {
                 TextField("https://example.com/recipe", text: $pasteURL)
                     .textFieldStyle(.plain)
-                    .autocapitalization(.none)
-                    .keyboardType(.URL)
+                    .platformTextInputAutocapitalization(.never)
+                    .platformKeyboardType(.URL)
                     .textContentType(.URL)
                     .submitLabel(.go)
                     .onSubmit { sendToExtract() }
@@ -168,7 +168,7 @@ struct CourseSearchView: View {
                     .buttonStyle(.plain)
                 }
                 Button {
-                    if let pasted = UIPasteboard.general.string {
+                    if let pasted = PlatformPasteboard.string {
                         pasteURL = pasted
                     }
                 } label: {

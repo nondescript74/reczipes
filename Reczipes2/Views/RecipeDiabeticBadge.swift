@@ -50,13 +50,13 @@ struct RecipeDiabeticBadge: View {
                 if isDiabeticFriendly(info) {
                     if !compact {
                         Image(systemName: "heart.circle.fill")
-                            .foregroundStyle(.green)
+                            .foregroundStyle(Color.appSuccess)
                         Text("Diabetic-Friendly")
                             .font(.caption)
-                            .foregroundStyle(.green)
+                            .foregroundStyle(Color.appSuccess)
                     } else {
                         Image(systemName: "heart.circle.fill")
-                            .foregroundStyle(.green)
+                            .foregroundStyle(Color.appSuccess)
                     }
                 } else {
                     Image(systemName: "exclamationmark.triangle.fill")

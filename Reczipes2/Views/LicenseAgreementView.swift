@@ -21,7 +21,7 @@ struct LicenseAgreementView: View {
                     HStack(spacing: 12) {
                         Image(systemName: "doc.text.fill")
                             .font(.system(size: 44))
-                            .foregroundStyle(.blue)
+                            .foregroundStyle(Color.appInfo)
                         
                         VStack(alignment: .leading, spacing: 4) {
                             Text("License Agreement")
@@ -40,7 +40,7 @@ struct LicenseAgreementView: View {
                     Divider()
                 }
                 .padding()
-                .background(Color(.systemBackground))
+                .background(Color.appSystemBackground)
                 
                 // License content
                 ScrollView {
@@ -73,13 +73,16 @@ struct LicenseAgreementView: View {
                 .coordinateSpace(name: "scroll")
                 .onPreferenceChange(ScrollOffsetPreferenceKey.self) { value in
                     // Consider "scrolled to bottom" when close to the end
+                    // Dispatch to avoid publishing state changes during a view update
                     if value < 50 && !hasScrolledToBottom {
-                        hasScrolledToBottom = true
-                        // Haptic feedback when reaching bottom
-                        #if os(iOS)
-                        let generator = UINotificationFeedbackGenerator()
-                        generator.notificationOccurred(.success)
-                        #endif
+                        DispatchQueue.main.async {
+                            hasScrolledToBottom = true
+                            // Haptic feedback when reaching bottom
+                            #if os(iOS)
+                            let generator = UINotificationFeedbackGenerator()
+                            generator.notificationOccurred(.success)
+                            #endif
+                        }
                     }
                 }
                 
@@ -89,14 +92,14 @@ struct LicenseAgreementView: View {
                 if !hasScrolledToBottom {
                     HStack {
                         Image(systemName: "arrow.down.circle.fill")
-                            .foregroundStyle(.blue)
+                            .foregroundStyle(Color.appInfo)
                         Text("Scroll to read the entire agreement")
                             .font(.callout)
                             .foregroundStyle(.secondary)
                     }
                     .padding(.vertical, 8)
                     .frame(maxWidth: .infinity)
-                    .background(Color(.systemBackground))
+                    .background(Color.appSystemBackground)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
                 
@@ -147,11 +150,11 @@ struct LicenseAgreementView: View {
                         .padding(.horizontal)
                         .padding(.bottom, 12)
                     }
-                    .background(Color(.systemBackground))
+                    .background(Color.appSystemBackground)
                     .transition(.move(edge: .bottom).combined(with: .opacity))
                 }
             }
-            .navigationBarTitleDisplayMode(.inline)
+            .platformNavigationBarTitleDisplayMode(.inline)
             .alert("Decline License Agreement", isPresented: $showingDeclineAlert) {
                 Button("Continue Reading", role: .cancel) { }
                 Button("Exit App", role: .destructive) {

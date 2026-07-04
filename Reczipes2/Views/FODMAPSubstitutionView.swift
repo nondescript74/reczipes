@@ -22,7 +22,7 @@ struct FODMAPSubstitutionSection: View {
                 Label("FODMAP Substitutions", systemImage: "arrow.triangle.swap")
                     .font(.title2)
                     .fontWeight(.bold)
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(Color.appWarning)
                 
                 Spacer()
                 
@@ -33,7 +33,7 @@ struct FODMAPSubstitutionSection: View {
             if analysis.isSafeWithoutSubstitutions {
                 HStack(spacing: 8) {
                     Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(.green)
+                        .foregroundStyle(Color.appSuccess)
                     Text("This recipe is already low FODMAP!")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
@@ -45,14 +45,14 @@ struct FODMAPSubstitutionSection: View {
             } else {
                 HStack(spacing: 8) {
                     Image(systemName: "info.circle.fill")
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(Color.appWarning)
                     Text("\(analysis.totalHighFODMAPIngredients) ingredient\(analysis.totalHighFODMAPIngredients == 1 ? "" : "s") can be substituted")
                         .font(.subheadline)
                         .foregroundStyle(.secondary)
                 }
                 .padding(.vertical, 8)
                 .padding(.horizontal, 12)
-                .background(Color.orange.opacity(0.1))
+                .adaptiveToneBackground(.warning, baseOpacity: 0.1)
                 .clipShape(RoundedRectangle(cornerRadius: 8))
             }
             
@@ -92,7 +92,7 @@ struct IngredientSubstitutionCard: View {
                     // FODMAP warning icon
                     Image(systemName: "exclamationmark.triangle.fill")
                         .font(.title3)
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(Color.appWarning)
                     
                     // Original ingredient info
                     VStack(alignment: .leading, spacing: 4) {
@@ -127,7 +127,7 @@ struct IngredientSubstitutionCard: View {
                     // Expand/collapse icon
                     Image(systemName: isExpanded ? "chevron.up.circle.fill" : "chevron.down.circle.fill")
                         .font(.title3)
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(Color.appInfo)
                 }
             }
             .buttonStyle(.plain)
@@ -150,10 +150,10 @@ struct IngredientSubstitutionCard: View {
                             .font(.caption)
                             .italic()
                     }
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(Color.appWarning)
                     .padding(8)
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color.orange.opacity(0.1))
+                    .adaptiveToneBackground(.warning, baseOpacity: 0.1)
                     .clipShape(RoundedRectangle(cornerRadius: 6))
                 }
                 
@@ -163,7 +163,7 @@ struct IngredientSubstitutionCard: View {
                 VStack(alignment: .leading, spacing: 12) {
                     HStack {
                         Image(systemName: "arrow.right.circle.fill")
-                            .foregroundStyle(.green)
+                            .foregroundStyle(Color.appSuccess)
                         Text("Substitute with:")
                             .font(.subheadline)
                             .fontWeight(.semibold)
@@ -178,7 +178,7 @@ struct IngredientSubstitutionCard: View {
         .padding(16)
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color(.systemBackground))
+                .fill(Color.appSystemBackground)
                 .shadow(color: .black.opacity(0.1), radius: 4, x: 0, y: 2)
         )
         .overlay(
@@ -299,10 +299,10 @@ struct InlineSubstituteSuggestion: View {
                 Image(systemName: "chevron.right")
                     .font(.caption2)
             }
-            .foregroundStyle(.orange)
+            .foregroundStyle(Color.appWarning)
             .padding(.horizontal, 8)
             .padding(.vertical, 4)
-            .background(Color.orange.opacity(0.15))
+            .adaptiveToneBackground(.warning, baseOpacity: 0.15)
             .clipShape(Capsule())
         }
         .buttonStyle(.plain)
@@ -327,7 +327,7 @@ struct SubstitutionDetailSheet: View {
                         HStack {
                             Image(systemName: "exclamationmark.triangle.fill")
                                 .font(.title)
-                                .foregroundStyle(.orange)
+                                .foregroundStyle(Color.appWarning)
                             Text(substitution.originalIngredient)
                                 .font(.title2)
                                 .fontWeight(.bold)
@@ -343,14 +343,14 @@ struct SubstitutionDetailSheet: View {
                                         .font(.caption)
                                 }
                                 .padding(8)
-                                .background(Color.orange.opacity(0.1))
+                                .adaptiveToneBackground(.warning, baseOpacity: 0.1)
                                 .clipShape(RoundedRectangle(cornerRadius: 8))
                             }
                         }
                     }
                     .padding()
                     .frame(maxWidth: .infinity, alignment: .leading)
-                    .background(Color.orange.opacity(0.1))
+                    .adaptiveToneBackground(.warning, baseOpacity: 0.1)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                     
                     // Explanation
@@ -368,14 +368,14 @@ struct SubstitutionDetailSheet: View {
                         VStack(alignment: .leading, spacing: 8) {
                             Label("Portion Guidance", systemImage: "ruler")
                                 .font(.headline)
-                                .foregroundStyle(.orange)
+                                .foregroundStyle(Color.appWarning)
                             Text(portionNote)
                                 .font(.body)
                                 .foregroundStyle(.secondary)
                         }
                         .padding()
                         .frame(maxWidth: .infinity, alignment: .leading)
-                        .background(Color.orange.opacity(0.1))
+                        .adaptiveToneBackground(.warning, baseOpacity: 0.1)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
                     
@@ -383,7 +383,7 @@ struct SubstitutionDetailSheet: View {
                     VStack(alignment: .leading, spacing: 12) {
                         Label("Substitute Options", systemImage: "arrow.triangle.swap")
                             .font(.headline)
-                            .foregroundStyle(.green)
+                            .foregroundStyle(Color.appSuccess)
                         
                         ForEach(substitution.substitutes) { substitute in
                             SubstituteOptionDetailCard(substitute: substitute)
@@ -394,7 +394,7 @@ struct SubstitutionDetailSheet: View {
                 .padding()
             }
             .navigationTitle("FODMAP Substitute")
-            .navigationBarTitleDisplayMode(.inline)
+            .platformNavigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") {
@@ -452,7 +452,7 @@ struct SubstituteOptionDetailCard: View {
         .frame(maxWidth: .infinity, alignment: .leading)
         .background(
             RoundedRectangle(cornerRadius: 10)
-                .fill(Color(.secondarySystemBackground))
+                .fill(Color.appSecondaryBackground)
         )
         .overlay(
             RoundedRectangle(cornerRadius: 10)
@@ -500,7 +500,7 @@ struct IngredientRowWithFODMAP: View {
                         if substitution != nil {
                             Image(systemName: "exclamationmark.triangle.fill")
                                 .font(.caption)
-                                .foregroundStyle(.orange)
+                                .foregroundStyle(Color.appWarning)
                         }
                     }
                     

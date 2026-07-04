@@ -9,7 +9,7 @@ import SwiftUI
 
 /// A full-screen image viewer with zoom, pan, and pinch-to-zoom gestures
 struct ExpandableImageViewer: View {
-    let image: UIImage
+    let image: PlatformImage
     @Environment(\.dismiss) private var dismiss
     
     @State private var scale: CGFloat = 1.0
@@ -26,7 +26,7 @@ struct ExpandableImageViewer: View {
                 Color.black.edgesIgnoringSafeArea(.all)
                 
                 GeometryReader { geometry in
-                    Image(uiImage: image)
+                    Image(platformImage: image)
                         .resizable()
                         .aspectRatio(contentMode: .fit)
                         .frame(width: geometry.size.width, height: geometry.size.height)
@@ -86,15 +86,15 @@ struct ExpandableImageViewer: View {
                 }
             }
             .navigationTitle("Image Viewer")
-            .navigationBarTitleDisplayMode(.inline)
+            .platformNavigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
+                ToolbarItem(placement: .platformNavBarLeading) {
                     Button("Done") {
                         dismiss()
                     }
                 }
                 
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .platformNavBarTrailing) {
                     HStack(spacing: 16) {
                         // Zoom out button
                         Button {
@@ -135,8 +135,10 @@ struct ExpandableImageViewer: View {
                     }
                 }
             }
+            #if os(iOS)
             .toolbarBackground(.visible, for: .navigationBar)
             .toolbarBackground(.ultraThinMaterial, for: .navigationBar)
+            #endif
         }
     }
     
@@ -154,5 +156,5 @@ struct ExpandableImageViewer: View {
 }
 
 #Preview {
-    ExpandableImageViewer(image: UIImage(systemName: "photo")!)
+    ExpandableImageViewer(image: PlatformImage.systemSymbol("photo")!)
 }

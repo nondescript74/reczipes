@@ -55,7 +55,7 @@ struct RecipeImageAssignmentView: View {
             }
             .navigationTitle("Recipe Images")
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .platformNavBarTrailing) {
                     CloudKitSyncBadge()
                 }
                 
@@ -107,7 +107,7 @@ struct RecipeImageAssignmentView: View {
         } description: {
             Text("Please enable photo library access in Settings to assign images to recipes")
         } actions: {
-            if let settingsUrl = URL(string: UIApplication.openSettingsURLString) {
+            if let settingsUrl = URL(string: PlatformURLOpener.settingsURLString) {
                 Link("Open Settings", destination: settingsUrl)
                     .buttonStyle(.borderedProminent)
             }
@@ -175,7 +175,7 @@ struct RecipePhotoRow: View {
     let modelContext: ModelContext
     
     @State private var showingPhotoPicker = false
-    @State private var thumbnailImages: [UIImage] = []
+    @State private var thumbnailImages: [PlatformImage] = []
     
     private var additionalImageCount: Int {
         recipeEntity.additionalImageNames?.count ?? 0
@@ -192,7 +192,7 @@ struct RecipePhotoRow: View {
                 // Main image thumbnail (read-only from imageData)
                 Group {
                     if let image = recipeEntity.getMainImage() {
-                        Image(uiImage: image)
+                        Image(platformImage: image)
                             .resizable()
                             .scaledToFill()
                     } else {
@@ -214,9 +214,9 @@ struct RecipePhotoRow: View {
                     if hasMainImage {
                         Text("MAIN")
                             .font(.system(size: 8, weight: .bold))
-                            .foregroundStyle(.white)
+                            .foregroundStyle(Color.onTint)
                             .padding(2)
-                            .background(Color.blue)
+                            .background(AdaptiveToneSolidFill(tone: .info))
                             .clipShape(RoundedRectangle(cornerRadius: 4))
                             .padding(2)
                     }
@@ -231,7 +231,7 @@ struct RecipePhotoRow: View {
                         if hasMainImage {
                             Image(systemName: "checkmark.circle.fill")
                                 .font(.caption)
-                                .foregroundStyle(.green)
+                                .foregroundStyle(Color.appSuccess)
                             Text("Main image + \(additionalImageCount) more")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
@@ -249,7 +249,7 @@ struct RecipePhotoRow: View {
                 Button(action: { showingPhotoPicker = true }) {
                     Label("Add", systemImage: "plus.circle.fill")
                         .labelStyle(.iconOnly)
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(Color.appInfo)
                 }
                 .buttonStyle(.plain)
             }
@@ -260,7 +260,7 @@ struct RecipePhotoRow: View {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 8) {
                         ForEach(Array(additionalImages.enumerated()), id: \.offset) { index, image in
-                            Image(uiImage: image)
+                            Image(platformImage: image)
                                 .resizable()
                                 .scaledToFill()
                                 .frame(width: 50, height: 50)
@@ -276,7 +276,7 @@ struct RecipePhotoRow: View {
                                     }) {
                                         Image(systemName: "xmark.circle.fill")
                                             .font(.caption)
-                                            .foregroundStyle(.white)
+                                            .foregroundStyle(Color.onTint)
                                             .background(Circle().fill(Color.red))
                                     }
                                     .buttonStyle(.plain)
@@ -335,7 +335,7 @@ struct MultiPhotoPickerSheet: View {
                 .padding()
             }
             .navigationTitle("Add Photos")
-            .navigationBarTitleDisplayMode(.inline)
+            .platformNavigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
@@ -409,13 +409,13 @@ struct SelectablePhotoThumbnailView: View {
     let isSelected: Bool
     let onToggle: () -> Void
     
-    @State private var thumbnail: UIImage?
+    @State private var thumbnail: PlatformImage?
     
     var body: some View {
         Button(action: onToggle) {
             Group {
                 if let thumbnail {
-                    Image(uiImage: thumbnail)
+                    Image(platformImage: thumbnail)
                         .resizable()
                         .scaledToFill()
                 } else {
@@ -435,7 +435,7 @@ struct SelectablePhotoThumbnailView: View {
                 if isSelected {
                     Image(systemName: "checkmark.circle.fill")
                         .font(.title2)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Color.onTint)
                         .background(Circle().fill(Color.blue))
                         .padding(6)
                 }

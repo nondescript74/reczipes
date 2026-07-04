@@ -408,8 +408,8 @@ struct BookCardView: View {
         VStack(alignment: .leading, spacing: 8) {
             // Cover image or placeholder
             ZStack {
-                if let imageData = cachedCoverImageData, let uiImage = UIImage(data: imageData) {
-                    Image(uiImage: uiImage)
+                if let imageData = cachedCoverImageData, let uiImage = PlatformImage(data: imageData) {
+                    Image(platformImage: uiImage)
                         .resizable()
                         .aspectRatio(contentMode: .fill)
                         .frame(width: 160, height: 220)
@@ -428,11 +428,11 @@ struct BookCardView: View {
                             VStack(spacing: 8) {
                                 Image(systemName: "book.closed.fill")
                                     .font(.system(size: 48))
-                                    .foregroundStyle(.white)
+                                    .foregroundStyle(Color.onTint)
                                 
                                 Text(cachedBookName)
                                     .font(.headline)
-                                    .foregroundStyle(.white)
+                                    .foregroundStyle(Color.onTint)
                                     .multilineTextAlignment(.center)
                                     .lineLimit(3)
                                     .padding(.horizontal, 8)
@@ -447,7 +447,7 @@ struct BookCardView: View {
                         Text("\(cachedRecipeCount)")
                             .font(.caption)
                             .fontWeight(.semibold)
-                            .foregroundStyle(.white)
+                            .foregroundStyle(Color.onTint)
                             .padding(.horizontal, 8)
                             .padding(.vertical, 4)
                             .background(.ultraThinMaterial, in: Capsule())
@@ -474,7 +474,7 @@ struct BookCardView: View {
                 HStack(spacing: 4) {
                     Image(systemName: "person.crop.circle.fill")
                         .font(.caption2)
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(Color.appInfo)
                     Text("By \(ownerName)")
                         .font(.caption2)
                         .foregroundStyle(.secondary)

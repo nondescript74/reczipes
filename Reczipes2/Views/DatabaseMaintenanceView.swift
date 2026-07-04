@@ -78,10 +78,10 @@ struct DatabaseMaintenanceView: View {
                             Spacer()
                             if report.hasIssues {
                                 Image(systemName: "exclamationmark.circle.fill")
-                                    .foregroundStyle(.orange)
+                                    .foregroundStyle(Color.appWarning)
                             } else {
                                 Image(systemName: "checkmark.circle.fill")
-                                    .foregroundStyle(.green)
+                                    .foregroundStyle(Color.appSuccess)
                             }
                         }
                     }
@@ -136,10 +136,10 @@ struct DatabaseMaintenanceView: View {
                     Spacer()
                     if duplicateMonitor.isSyncing {
                         Label("Syncing", systemImage: "arrow.triangle.2.circlepath")
-                            .foregroundStyle(.blue)
+                            .foregroundStyle(Color.appInfo)
                     } else {
                         Label("Idle", systemImage: "checkmark.circle.fill")
-                            .foregroundStyle(.green)
+                            .foregroundStyle(Color.appSuccess)
                     }
                 }
                 
@@ -157,7 +157,7 @@ struct DatabaseMaintenanceView: View {
                         Text("Duplicates Detected")
                         Spacer()
                         Text("\(duplicateMonitor.duplicatesDetected)")
-                            .foregroundStyle(.red)
+                            .foregroundStyle(Color.appCritical)
                             .fontWeight(.bold)
                     }
                 }
@@ -166,7 +166,7 @@ struct DatabaseMaintenanceView: View {
             }
         }
         .navigationTitle("Database Maintenance")
-        .navigationBarTitleDisplayMode(.inline)
+        .platformNavigationBarTitleDisplayMode(.inline)
         .alert("Full Cleanup", isPresented: $showingFullCleanupAlert) {
             Button("Execute Cleanup", role: .destructive) {
                 executeFullCleanup()
@@ -290,10 +290,10 @@ struct ReportDetailView: View {
             Section {
                 if report.hasIssues {
                     Label("Issues detected in database", systemImage: "exclamationmark.triangle.fill")
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(Color.appWarning)
                 } else {
                     Label("Database is clean", systemImage: "checkmark.circle.fill")
-                        .foregroundStyle(.green)
+                        .foregroundStyle(Color.appSuccess)
                 }
             } header: {
                 Text("Status")
@@ -315,7 +315,7 @@ struct ReportDetailView: View {
                             Text("Orphaned Assignments")
                         } icon: {
                             Image(systemName: "exclamationmark.triangle.fill")
-                                .foregroundStyle(.orange)
+                                .foregroundStyle(Color.appWarning)
                         }
                         .badge("\(report.orphanedAssignments)")
                     }
@@ -325,7 +325,7 @@ struct ReportDetailView: View {
                             Text("Duplicate Recipes")
                         } icon: {
                             Image(systemName: "doc.on.doc.fill")
-                                .foregroundStyle(.red)
+                                .foregroundStyle(Color.appCritical)
                         }
                         .badge("\(report.totalDuplicateRecipes)")
                     }
@@ -335,7 +335,7 @@ struct ReportDetailView: View {
             }
         }
         .navigationTitle("Database Report")
-        .navigationBarTitleDisplayMode(.inline)
+        .platformNavigationBarTitleDisplayMode(.inline)
     }
 }
 

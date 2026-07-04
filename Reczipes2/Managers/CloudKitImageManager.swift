@@ -8,6 +8,11 @@
 import Foundation
 import SwiftUI
 import CloudKit
+#if canImport(UIKit)
+import UIKit
+#elseif canImport(AppKit)
+import AppKit
+#endif
 
 /// Manages recipe images with CloudKit sync support
 /// Images are stored as CKAssets which can handle large files
@@ -32,7 +37,7 @@ class CloudKitImageManager {
     // MARK: - Image Storage
     
     /// Save an image and return a filename that can be synced
-    func saveImage(_ image: UIImage, for recipeID: UUID) -> String? {
+    func saveImage(_ image: PlatformImage, for recipeID: UUID) -> String? {
         // Generate a unique filename
         let filename = "\(recipeID.uuidString)_\(UUID().uuidString).jpg"
         let fileURL = imageDirectory.appendingPathComponent(filename)
@@ -54,11 +59,11 @@ class CloudKitImageManager {
     }
     
     /// Load an image by filename
-    func loadImage(named filename: String) -> UIImage? {
+    func loadImage(named filename: String) -> PlatformImage? {
         let fileURL = imageDirectory.appendingPathComponent(filename)
-        
+
         guard let imageData = try? Data(contentsOf: fileURL),
-              let image = UIImage(data: imageData) else {
+              let image = PlatformImage(data: imageData) else {
             AppLog.warning("⚠️ Could not load image: \(filename)", category: .image)
             return nil
         }
@@ -168,7 +173,7 @@ class CloudKitImageManager {
 extension CloudKitImageManager {
     /// Load an image asynchronously for SwiftUI
     @MainActor
-    func loadImageAsync(named filename: String) async -> UIImage? {
+    func loadImageAsync(named filename: String) async -> PlatformImage? {
         return await Task.detached(priority: .userInitiated) {
             return await self.loadImage(named: filename)
         }.value

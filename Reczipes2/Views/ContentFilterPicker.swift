@@ -39,7 +39,7 @@ struct ContentFilterPicker: View {
             .padding(.horizontal)
             .padding(.bottom, 4)
         }
-        .background(Color(.systemGroupedBackground))
+        .background(Color.appGroupedBackground)
     }
     
     private var filterDescription: String {

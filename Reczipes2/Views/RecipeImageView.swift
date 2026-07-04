@@ -16,7 +16,7 @@ struct RecipeImageView: View {
     let aspectRatio: ContentMode
     let cornerRadius: CGFloat
     
-    @State private var loadedImage: UIImage?
+    @State private var loadedImage: PlatformImage?
     
     init(imageName: String?, 
          imageData: Data? = nil, // NEW: Optional image data parameter
@@ -35,27 +35,27 @@ struct RecipeImageView: View {
             if let loadedImage {
                 // Display loaded image from documents
                 if let size {
-                    Image(uiImage: loadedImage)
+                    Image(platformImage: loadedImage)
                         .resizable()
                         .aspectRatio(contentMode: aspectRatio)
                         .frame(width: size.width, height: size.height)
                         .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
                 } else {
-                    Image(uiImage: loadedImage)
+                    Image(platformImage: loadedImage)
                         .resizable()
                         .aspectRatio(contentMode: aspectRatio)
                         .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
                 }
-            } else if let imageName = imageName, let assetImage = UIImage(named: imageName) {
+            } else if let imageName = imageName, let assetImage = PlatformImage(named: imageName) {
                 // Try to load from Assets catalog
                 if let size {
-                    Image(uiImage: assetImage)
+                    Image(platformImage: assetImage)
                         .resizable()
                         .aspectRatio(contentMode: aspectRatio)
                         .frame(width: size.width, height: size.height)
                         .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
                 } else {
-                    Image(uiImage: assetImage)
+                    Image(platformImage: assetImage)
                         .resizable()
                         .aspectRatio(contentMode: aspectRatio)
                         .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
@@ -84,7 +84,7 @@ struct RecipeImageView: View {
         }
         .task(id: imageName) {
             // Priority 1: Try imageData from SwiftData (CloudKit-synced)
-            if let imageData, let image = UIImage(data: imageData) {
+            if let imageData, let image = PlatformImage(data: imageData) {
                 loadedImage = image
                 return
             }
@@ -102,13 +102,13 @@ struct RecipeImageView: View {
         }
         .onChange(of: imageData) { _, newValue in
             // Reload when imageData changes (e.g., after migration)
-            if let newValue, let image = UIImage(data: newValue) {
+            if let newValue, let image = PlatformImage(data: newValue) {
                 loadedImage = image
             }
         }
     }
     
-    private func loadImageFromDocuments(_ filename: String) -> UIImage? {
+    private func loadImageFromDocuments(_ filename: String) -> PlatformImage? {
         let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
         let fileURL = documentsPath.appendingPathComponent(filename)
         
@@ -116,7 +116,7 @@ struct RecipeImageView: View {
             return nil
         }
         
-        return UIImage(data: data)
+        return PlatformImage(data: data)
     }
 }
 

@@ -9,6 +9,22 @@ import Foundation
 
 #if os(iOS)
 import UIKit
+#elseif os(macOS)
+import AppKit
+#endif
+
+// The App Clip target does NOT include PlatformCompat.swift, so it needs its own
+// PlatformImage typealias. The main app (and, via @testable import, the test
+// target) gets the canonical `public typealias PlatformImage` from
+// PlatformCompat.swift, so this declaration must be App-Clip-only — otherwise it
+// collides with PlatformCompat's (invalid redeclaration of 'PlatformImage').
+#if APPCLIP
+#if os(iOS)
+typealias PlatformImage = UIImage
+#elseif os(macOS)
+import AppKit
+typealias PlatformImage = NSImage
+#endif
 #endif
 
 class ClaudeAPIClient {
@@ -419,7 +435,7 @@ class ClaudeAPIClient {
     
     /// Extract a recipe from an image using Claude's vision capabilities
     /// - Parameters:
-    ///   - image: The UIImage containing the recipe
+    ///   - image: The PlatformImage containing the recipe
     ///   - usePreprocessing: Whether to apply image preprocessing for better OCR results
     /// - Returns: A RecipeX parsed from the image
     /// - Note: Only available in the main app target (requires SwiftData / RecipeX)
@@ -505,8 +521,8 @@ class ClaudeAPIClient {
         
         // Preprocess the image if requested
         let finalImageData: Data
-        if usePreprocessing, let uiImage = UIImage(data: imageData) {
-            AppLog.debug("Converting to UIImage for preprocessing", category: .extraction)
+        if usePreprocessing, let uiImage = PlatformImage(data: imageData) {
+            AppLog.debug("Converting to PlatformImage for preprocessing", category: .extraction)
             if let processedData = imagePreprocessor.preprocessForOCR(uiImage) {
                 finalImageData = processedData
                 AppLog.info("Image preprocessed - new size: \(finalImageData.count) bytes", category: .extraction)

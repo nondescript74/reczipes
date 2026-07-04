@@ -23,7 +23,7 @@ struct ImageAssignmentDebugView: View {
                 Section("All Assignments") {
                     if assignments.isEmpty {
                         Text("No assignments found!")
-                            .foregroundStyle(.red)
+                            .foregroundStyle(Color.appCritical)
                     } else {
                         ForEach(assignments, id: \.recipeID) { assignment in
                             VStack(alignment: .leading, spacing: 4) {

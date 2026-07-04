@@ -35,7 +35,7 @@ struct CombinedRecipeBadge: View {
                     .fontWeight(.medium)
             }
         }
-        .foregroundStyle(.white)
+        .foregroundStyle(Color.onTint)
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
         .background(
@@ -70,7 +70,7 @@ struct CombinedRecipeBadge: View {
         .padding()
         .background(
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color(.secondarySystemBackground))
+                .fill(Color.appSecondaryBackground)
         )
     }
     
@@ -91,7 +91,7 @@ struct CombinedRecipeBadge: View {
     private func allergenDetailRow(_ allergenScore: RecipeAllergenScore) -> some View {
         HStack {
             Image(systemName: "exclamationmark.triangle.fill")
-                .foregroundStyle(.orange)
+                .foregroundStyle(Color.appWarning)
             
             if allergenScore.isSafe {
                 Text("No allergens detected")
@@ -112,7 +112,7 @@ struct CombinedRecipeBadge: View {
     private func diabetesDetailRow(_ diabetesScore: DiabetesScore) -> some View {
         HStack {
             Image(systemName: "heart.text.square.fill")
-                .foregroundStyle(.blue)
+                .foregroundStyle(Color.appInfo)
             
             Text(diabetesScore.suitability.displayName)
                 .foregroundStyle(.primary)
@@ -124,7 +124,7 @@ struct CombinedRecipeBadge: View {
                     .foregroundStyle(.secondary)
             } else {
                 Image(systemName: "checkmark.circle.fill")
-                    .foregroundStyle(.green)
+                    .foregroundStyle(Color.appSuccess)
             }
         }
     }

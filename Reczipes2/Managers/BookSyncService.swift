@@ -10,7 +10,11 @@ import Foundation
 import CloudKit
 import SwiftData
 import OSLog
+#if canImport(UIKit)
 import UIKit
+#elseif canImport(AppKit)
+import AppKit
+#endif
 import Combine
 
 /// Manages CloudKit sync for Book models
@@ -402,7 +406,7 @@ class BookSyncService: ObservableObject {
 
         // Use centralized compression utility for book covers
         let compressedData: Data
-        if let uiImage = UIImage(data: imageData),
+        if let uiImage = PlatformImage(data: imageData),
            let compressed = ImageCompressionUtility.compressForBookCover(uiImage) {
             compressedData = compressed
         } else {

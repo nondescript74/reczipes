@@ -12,7 +12,11 @@ import Foundation
 import SwiftData
 import CloudKit
 import CryptoKit
+#if canImport(UIKit)
 import UIKit
+#elseif canImport(AppKit)
+import AppKit
+#endif
 import SwiftUI
 
 /// Unified recipe model with automatic iCloud sharing
@@ -444,27 +448,27 @@ extension RecipeX {
 
 extension RecipeX {
     
-    /// Get main image as UIImage
-    func getMainImage() -> UIImage? {
+    /// Get main image as PlatformImage
+    func getMainImage() -> PlatformImage? {
         guard let imageData = imageData else { return nil }
-        return UIImage(data: imageData)
+        return PlatformImage(data: imageData)
     }
-    
+
     /// Get all additional images
-    func getAdditionalImages() -> [UIImage] {
+    func getAdditionalImages() -> [PlatformImage] {
         guard let additionalImagesData = additionalImagesData,
               let decoded = try? JSONDecoder().decode([[String: Data]].self, from: additionalImagesData) else {
             return []
         }
-        
+
         return decoded.compactMap { imageDict in
             guard let data = imageDict["data"] else { return nil }
-            return UIImage(data: data)
+            return PlatformImage(data: data)
         }
     }
-    
+
     /// Get image by index (0 = main, 1+ = additional)
-    func getImage(at index: Int) -> UIImage? {
+    func getImage(at index: Int) -> PlatformImage? {
         if index == 0 {
             return getMainImage()
         } else {
@@ -497,7 +501,7 @@ extension RecipeX {
     
     /// Set main image
     @MainActor
-    func setImage(_ image: UIImage, isMainImage: Bool = true) {
+    func setImage(_ image: PlatformImage, isMainImage: Bool = true) {
         // Try optimized compression first
         var imageData = ImageCompressionUtility.compressImage(image)
         

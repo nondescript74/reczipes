@@ -22,7 +22,7 @@ class DuplicateDetectionService {
     // MARK: - Image-Based Detection
     
     /// Find recipes with similar images
-    func findSimilarByImage(_ image: UIImage, threshold: Double = 0.95) async -> [RecipeX] {
+    func findSimilarByImage(_ image: PlatformImage, threshold: Double = 0.95) async -> [RecipeX] {
         guard let imageHash = imageHashService.generateHash(for: image) else {
             return []
         }

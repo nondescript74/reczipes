@@ -67,11 +67,11 @@ struct DiagnosticLogView: View {
                             Text("\(logEntries.count) entries")
                         }
                     }
-                    .listStyle(.insetGrouped)
+                    .platformInsetGroupedListStyle()
                 }
             }
             .navigationTitle("Diagnostic Log")
-            .navigationBarTitleDisplayMode(.inline)
+            .platformNavigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Done") {
@@ -173,6 +173,7 @@ struct DiagnosticLogView: View {
 
 // MARK: - Share Sheet
 
+#if os(iOS)
 struct ShareSheet_DLV: UIViewControllerRepresentable {
     let items: [Any]
     
@@ -188,6 +189,12 @@ struct ShareSheet_DLV: UIViewControllerRepresentable {
         // No update needed
     }
 }
+#else
+struct ShareSheet_DLV: View {
+    let items: [Any]
+    var body: some View { MacShareView(items: items) }
+}
+#endif
 
 // MARK: - Log Entry Model
 

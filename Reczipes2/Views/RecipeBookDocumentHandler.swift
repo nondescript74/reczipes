@@ -104,7 +104,7 @@ struct RecipeBookImportSheet: View {
                     // Success state
                     Image(systemName: "checkmark.circle.fill")
                         .font(.system(size: 60))
-                        .foregroundStyle(.green)
+                        .foregroundStyle(Color.appSuccess)
                     
                     Text("Import Successful!")
                         .font(.title2)
@@ -123,8 +123,8 @@ struct RecipeBookImportSheet: View {
                             .font(.headline)
                             .frame(maxWidth: .infinity)
                             .padding()
-                            .background(Color.blue)
-                            .foregroundStyle(.white)
+                            .background(AdaptiveToneSolidFill(tone: .info))
+                            .foregroundStyle(Color.onTint)
                             .cornerRadius(12)
                     }
                     .padding(.horizontal)
@@ -133,7 +133,7 @@ struct RecipeBookImportSheet: View {
                     // Error state
                     Image(systemName: "exclamationmark.triangle.fill")
                         .font(.system(size: 60))
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(Color.appWarning)
                     
                     Text("Import Failed")
                         .font(.title2)
@@ -154,7 +154,7 @@ struct RecipeBookImportSheet: View {
                             .frame(maxWidth: .infinity)
                             .padding()
                             .background(Color.secondary)
-                            .foregroundStyle(.white)
+                            .foregroundStyle(Color.onTint)
                             .cornerRadius(12)
                     }
                     .padding(.horizontal)
@@ -163,7 +163,7 @@ struct RecipeBookImportSheet: View {
                     // Ready to import state
                     Image(systemName: "books.vertical.fill")
                         .font(.system(size: 60))
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(Color.appInfo)
                     
                     Text("Import Recipe Book")
                         .font(.title2)
@@ -196,8 +196,8 @@ struct RecipeBookImportSheet: View {
                                 .font(.headline)
                                 .frame(maxWidth: .infinity)
                                 .padding()
-                                .background(Color.blue)
-                                .foregroundStyle(.white)
+                                .background(AdaptiveToneSolidFill(tone: .info))
+                                .foregroundStyle(Color.onTint)
                                 .cornerRadius(12)
                         }
                         
@@ -219,7 +219,7 @@ struct RecipeBookImportSheet: View {
             }
             .padding()
             .navigationTitle("Recipe Book Import")
-            .navigationBarTitleDisplayMode(.inline)
+            .platformNavigationBarTitleDisplayMode(.inline)
         }
     }
     

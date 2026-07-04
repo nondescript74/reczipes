@@ -105,6 +105,10 @@ struct RecipeShareButton: View {
         .sheet(isPresented: $sharingService.showingShareSheet) {
             ShareSheetView(items: sharingService.shareItems)
         }
+        #else
+        .sheet(isPresented: $sharingService.showingShareSheet) {
+            MacShareView(items: sharingService.shareItems)
+        }
         #endif
         .alert(setupHelpTitle, isPresented: $showingSetupHelp) {
             Button("OK") {
@@ -112,8 +116,8 @@ struct RecipeShareButton: View {
             }
             #if os(iOS)
             Button("Open Settings") {
-                if let settingsURL = URL(string: UIApplication.openSettingsURLString) {
-                    UIApplication.shared.open(settingsURL)
+                if let settingsURL = URL(string: PlatformURLOpener.settingsURLString) {
+                    PlatformURLOpener.open(settingsURL)
                 }
             }
             #endif
@@ -232,7 +236,7 @@ struct RecipeShareView: View {
                         VStack(spacing: 12) {
                             HStack(spacing: 8) {
                                 Image(systemName: "exclamationmark.triangle.fill")
-                                    .foregroundStyle(.orange)
+                                    .foregroundStyle(Color.appWarning)
                                 Text(unavailabilityMessage)
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
@@ -251,14 +255,14 @@ struct RecipeShareView: View {
                             .controlSize(.small)
                         }
                         .padding()
-                        .background(Color.orange.opacity(0.1))
+                        .adaptiveToneBackground(.warning, baseOpacity: 0.1)
                         .clipShape(RoundedRectangle(cornerRadius: 8))
                     }
                 }
                 .padding()
             }
             .navigationTitle("Share Recipe")
-            .navigationBarTitleDisplayMode(.inline)
+            .platformNavigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
@@ -275,6 +279,10 @@ struct RecipeShareView: View {
             }
             .sheet(isPresented: $sharingService.showingShareSheet) {
                 ShareSheetView(items: sharingService.shareItems)
+            }
+            #else
+            .sheet(isPresented: $sharingService.showingShareSheet) {
+                MacShareView(items: sharingService.shareItems)
             }
             #endif
             .alert("Sharing Error", isPresented: $sharingService.showingError) {

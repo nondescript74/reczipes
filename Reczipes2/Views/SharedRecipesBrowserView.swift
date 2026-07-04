@@ -65,7 +65,7 @@ struct SharedRecipesBrowserView: View {
                     
                     Text("Refreshing...")
                         .font(.headline)
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Color.onTint)
                 }
                 .padding(32)
                 .background(
@@ -76,7 +76,7 @@ struct SharedRecipesBrowserView: View {
             }
         }
         .navigationTitle("Community Recipes")
-        .navigationBarTitleDisplayMode(.inline)
+        .platformNavigationBarTitleDisplayMode(.inline)
         .toolbar {
             if !isLoading {
                 ToolbarItem(placement: .primaryAction) {
@@ -94,7 +94,7 @@ struct SharedRecipesBrowserView: View {
             if !sharedRecipes.isEmpty {
                 HStack {
                     Image(systemName: "person.3.fill")
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(Color.appInfo)
                     Text("\(filteredRecipes.count) \(filteredRecipes.count == 1 ? "Recipe" : "Recipes")")
                         .font(.subheadline)
                         .fontWeight(.medium)
@@ -306,7 +306,7 @@ struct SharedRecipeDetailView: View {
                         }
                     }
                     .padding()
-                    .background(Color(.secondarySystemBackground))
+                    .background(Color.appSecondaryBackground)
                     .cornerRadius(12)
                     
                     // Ingredients
@@ -340,7 +340,7 @@ struct SharedRecipeDetailView: View {
                         }
                     }
                     .padding()
-                    .background(Color(.secondarySystemBackground))
+                    .background(Color.appSecondaryBackground)
                     .cornerRadius(12)
                     
                     // Instructions
@@ -360,7 +360,7 @@ struct SharedRecipeDetailView: View {
                                     HStack(alignment: .top, spacing: 8) {
                                         Text("\(step.stepNumber).")
                                             .fontWeight(.semibold)
-                                            .foregroundStyle(.blue)
+                                            .foregroundStyle(Color.appInfo)
                                         
                                         Text(step.text)
                                     }
@@ -370,7 +370,7 @@ struct SharedRecipeDetailView: View {
                         }
                     }
                     .padding()
-                    .background(Color(.secondarySystemBackground))
+                    .background(Color.appSecondaryBackground)
                     .cornerRadius(12)
                     
                     // Notes
@@ -391,7 +391,7 @@ struct SharedRecipeDetailView: View {
                             }
                         }
                         .padding()
-                        .background(Color(.secondarySystemBackground))
+                        .background(Color.appSecondaryBackground)
                         .cornerRadius(12)
                     }
                     
@@ -406,14 +406,14 @@ struct SharedRecipeDetailView: View {
                                 .foregroundStyle(.secondary)
                         }
                         .padding()
-                        .background(Color(.secondarySystemBackground))
+                        .background(Color.appSecondaryBackground)
                         .cornerRadius(12)
                     }
                 }
                 .padding()
             }
             .navigationTitle("Recipe Details")
-            .navigationBarTitleDisplayMode(.inline)
+            .platformNavigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Close") {

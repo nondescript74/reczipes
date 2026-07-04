@@ -63,14 +63,14 @@ struct RecipeShareCardView: View {
                 Text(recipe.title ?? "No Name")
                     .font(.system(size: 32, weight: .bold, design: .rounded))
                     .multilineTextAlignment(.center)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Color.onTint)
                 
                 // Header notes
                 if let headerNotes = recipe.headerNotes {
                     Text(headerNotes)
                         .font(.subheadline)
                         .multilineTextAlignment(.center)
-                        .foregroundStyle(.white.opacity(0.9))
+                        .foregroundStyle(Color.onTint.opacity(0.9))
                 }
             }
             .padding(24)
@@ -109,7 +109,7 @@ struct RecipeShareCardView: View {
                 }
             }
             .padding(.vertical, 16)
-            .background(Color(.systemGray6))
+            .background(Color.appGray6)
             
             // Content
             ScrollView {
@@ -148,14 +148,14 @@ struct RecipeShareCardView: View {
                                 if let transitionNote = section.transitionNote {
                                     HStack(alignment: .top, spacing: 8) {
                                         Image(systemName: "exclamationmark.triangle.fill")
-                                            .foregroundStyle(.orange)
+                                            .foregroundStyle(Color.appWarning)
                                             .font(.caption)
                                         Text(transitionNote)
                                             .font(.caption)
                                             .foregroundStyle(.secondary)
                                     }
                                     .padding(12)
-                                    .background(Color.orange.opacity(0.1))
+                                    .adaptiveToneBackground(.warning, baseOpacity: 0.1)
                                     .clipShape(RoundedRectangle(cornerRadius: 8))
                                 }
                             }
@@ -224,9 +224,9 @@ struct RecipeShareCardView: View {
             }
             .padding(.vertical, 16)
             .frame(maxWidth: .infinity)
-            .background(Color(.systemGray6))
+            .background(Color.appGray6)
         }
-        .background(Color(.systemBackground))
+        .background(Color.appSystemBackground)
     }
     
     // MARK: - Computed Properties
@@ -317,7 +317,7 @@ private struct InstructionStepView: View {
                         .frame(width: 32, height: 32)
                     Text("\(step.stepNumber)")
                         .font(.system(size: 14, weight: .bold))
-                        .foregroundStyle(.white)
+                        .foregroundStyle(Color.onTint)
                 }
             } else {
                 Text("•")

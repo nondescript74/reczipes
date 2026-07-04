@@ -40,7 +40,7 @@ extension Color {
     
     /// Convert a Color to a hex string
     func toHex() -> String? {
-        guard let components = UIColor(self).cgColor.components else {
+        guard let components = PlatformColor(self).cgColor.components else {
             return nil
         }
         

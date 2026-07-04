@@ -9,8 +9,8 @@ import SwiftUI
 
 /// Interactive image cropping view for recipe extraction
 struct ImageCropView: View {
-    let image: UIImage
-    let onCrop: (UIImage) -> Void
+    let image: PlatformImage
+    let onCrop: (PlatformImage) -> Void
     let onCancel: () -> Void
     
     @State private var cropRect: CGRect = .zero
@@ -34,13 +34,13 @@ struct ImageCropView: View {
                         // Instructions
                         Text("Drag corners to crop")
                             .font(.subheadline)
-                            .foregroundColor(.white)
+                            .foregroundStyle(Color.onTint)
                             .padding(.vertical, 8)
                         
                         // Image with crop overlay
                         ZStack {
                             // The image
-                            Image(uiImage: image)
+                            Image(platformImage: image)
                                 .resizable()
                                 .aspectRatio(contentMode: .fit)
                                 .scaleEffect(scale)
@@ -102,7 +102,7 @@ struct ImageCropView: View {
                                 resetCrop()
                             }) {
                                 Label("Reset", systemImage: "arrow.counterclockwise")
-                                    .foregroundColor(.white)
+                                    .foregroundStyle(Color.onTint)
                                     .font(.subheadline)
                             }
                             
@@ -110,7 +110,7 @@ struct ImageCropView: View {
                             
                             Button(action: onCancel) {
                                 Text("Cancel")
-                                    .foregroundColor(.white)
+                                    .foregroundStyle(Color.onTint)
                                     .font(.subheadline)
                             }
                             
@@ -119,7 +119,7 @@ struct ImageCropView: View {
                                 onCrop(image)
                             }) {
                                 Text("Skip")
-                                    .foregroundColor(.white)
+                                    .foregroundStyle(Color.onTint)
                                     .font(.subheadline)
                             }
                             
@@ -138,7 +138,7 @@ struct ImageCropView: View {
                     }
                 }
             }
-            .navigationBarHidden(true)
+            .platformNavigationBarHidden(true)
         }
     }
     
@@ -193,7 +193,7 @@ struct ImageCropView: View {
         onCrop(croppedImage)
     }
     
-    private func cropImage() -> UIImage? {
+    private func cropImage() -> PlatformImage? {
         // Calculate the scale factor between displayed image and actual image
         let scaleX = image.size.width / imageSize.width
         let scaleY = image.size.height / imageSize.height
@@ -212,7 +212,11 @@ struct ImageCropView: View {
             return nil
         }
         
-        return UIImage(cgImage: croppedCGImage, scale: image.scale, orientation: image.imageOrientation)
+        #if os(iOS)
+        return PlatformImage(cgImage: croppedCGImage, scale: image.scale, orientation: image.imageOrientation)
+        #else
+        return PlatformImage(cgImage: croppedCGImage)
+        #endif
     }
 }
 
@@ -494,7 +498,7 @@ struct CornerHandle: View {
 
 #Preview {
     ImageCropView(
-        image: UIImage(systemName: "photo")!,
+        image: PlatformImage.systemSymbol("photo")!,
         onCrop: { _ in },
         onCancel: { }
     )

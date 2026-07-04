@@ -19,7 +19,7 @@ struct LinkExtractionView: View {
     @StateObject private var viewModel: RecipeExtractorViewModel
     @State private var showingSaveConfirmation = false
     @State private var selectedWebImageURLs: [String] = []
-    @State private var downloadedWebImages: [UIImage] = []
+    @State private var downloadedWebImages: [PlatformImage] = []
     @State private var isDownloadingImage = false
     @State private var showWebImagePicker = false
     
@@ -57,7 +57,7 @@ struct LinkExtractionView: View {
                 .padding()
             }
             .navigationTitle("Extract Recipe")
-            .navigationBarTitleDisplayMode(.inline)
+            .platformNavigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
@@ -136,7 +136,7 @@ struct LinkExtractionView: View {
             }
             .padding()
             .frame(maxWidth: .infinity, alignment: .leading)
-            .background(Color(.systemGray6))
+            .background(Color.appGray6)
             .cornerRadius(8)
         }
     }
@@ -149,7 +149,7 @@ struct LinkExtractionView: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Image(systemName: "exclamationmark.triangle.fill")
-                    .foregroundColor(.red)
+                    .foregroundStyle(Color.appCritical)
                 Text("Error")
                     .font(.headline)
             }
@@ -172,7 +172,7 @@ struct LinkExtractionView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
         .padding()
-        .background(Color.red.opacity(0.1))
+        .adaptiveToneBackground(.critical, baseOpacity: 0.1)
         .cornerRadius(12)
         .onAppear {
             // Report error but don't dismiss automatically
@@ -213,7 +213,7 @@ struct LinkExtractionView: View {
     private var recipeSuccessHeader: some View {
         HStack {
             Image(systemName: "checkmark.circle.fill")
-                .foregroundColor(.green)
+                .foregroundStyle(Color.appSuccess)
                 .font(.title2)
             Text("Recipe Extracted Successfully!")
                 .font(.headline)
@@ -309,7 +309,7 @@ struct LinkExtractionView: View {
                         .frame(width: 120, height: 120)
                         .overlay(
                             Image(systemName: "exclamationmark.triangle")
-                                .foregroundColor(.red)
+                                .foregroundStyle(Color.appCritical)
                         )
                 case .empty:
                     RoundedRectangle(cornerRadius: 8)
@@ -324,7 +324,7 @@ struct LinkExtractionView: View {
             if index == 0 {
                 Text("Main Image")
                     .font(.caption2)
-                    .foregroundColor(.blue)
+                    .foregroundStyle(Color.appInfo)
                     .fontWeight(.semibold)
             } else {
                 Text("Image \(index + 1)")
@@ -345,7 +345,7 @@ struct LinkExtractionView: View {
             .frame(maxWidth: .infinity)
             .padding()
             .background(Color.blue.opacity(0.1))
-            .foregroundColor(.blue)
+            .foregroundStyle(Color.appInfo)
             .cornerRadius(8)
         }
         .buttonStyle(.plain)
@@ -380,15 +380,15 @@ struct LinkExtractionView: View {
                 .frame(maxWidth: .infinity)
                 .padding()
                 .background(Color.blue.opacity(0.7))
-                .foregroundColor(.white)
+                .foregroundStyle(Color.onTint)
                 .cornerRadius(12)
             } else {
                 Label("Save to Collection", systemImage: "square.and.arrow.down.fill")
                     .font(.headline)
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(Color.blue)
-                    .foregroundColor(.white)
+                    .background(AdaptiveToneSolidFill(tone: .info))
+                    .foregroundStyle(Color.onTint)
                     .cornerRadius(12)
             }
         }
@@ -411,7 +411,7 @@ struct LinkExtractionView: View {
             
             Text("Tap recipe title below to view full details →")
                 .font(.caption)
-                .foregroundColor(.blue)
+                .foregroundStyle(Color.appInfo)
                 .italic()
         }
         .padding()
@@ -483,12 +483,13 @@ struct LinkExtractionView: View {
     
     private func recipeNavigationLink(recipe: RecipeX) -> some View {
         NavigationLink {
-            // Add the first downloaded image if available
-            if let firstImage = downloadedWebImages.first {
-                recipe.setImage(firstImage, isMainImage: true)
-            }
-            
-            return RecipeDetailView(recipe: recipe)
+            RecipeDetailView(recipe: recipe)
+                .onAppear {
+                    // Add the first downloaded image if available
+                    if let firstImage = downloadedWebImages.first {
+                        recipe.setImage(firstImage, isMainImage: true)
+                    }
+                }
         } label: {
             HStack {
                 VStack(alignment: .leading) {
@@ -509,7 +510,7 @@ struct LinkExtractionView: View {
                     .foregroundColor(.secondary)
             }
             .padding()
-            .background(Color(.systemBackground))
+            .background(Color.appSystemBackground)
             .cornerRadius(12)
             .shadow(radius: 2)
         }
@@ -537,7 +538,7 @@ struct LinkExtractionView: View {
     
     private func downloadImages(imageURLs: [String]) async {
         isDownloadingImage = true
-        var downloadedImages: [UIImage] = []
+        var downloadedImages: [PlatformImage] = []
         
         for (index, imageURL) in imageURLs.enumerated() {
             do {
@@ -703,7 +704,7 @@ struct LinkExtractionView: View {
     // Note: saveImageToDisk() is no longer used - images are saved via recipe.setImage() in RecipeX
     
     @available(*, deprecated, message: "Use recipe.setImage() instead - images are now stored in RecipeX.imageData")
-    private func saveImageToDisk(_ image: UIImage, filename: String) {
+    private func saveImageToDisk(_ image: PlatformImage, filename: String) {
         guard let imageData = image.jpegData(compressionQuality: 0.8) else {
             AppLog.error("Failed to convert image to JPEG data", category: .storage)
             return

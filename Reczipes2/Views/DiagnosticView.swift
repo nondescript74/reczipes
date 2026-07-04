@@ -85,15 +85,15 @@ struct DiagnosticView: View {
                 }
             }
             .navigationTitle("Diagnostics")
-            .navigationBarTitleDisplayMode(.large)
+            .platformNavigationBarTitleDisplayMode(.large)
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
+                ToolbarItem(placement: .platformNavBarLeading) {
                     Button("Done") {
                         dismiss()
                     }
                 }
                 
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: .platformNavBarTrailing) {
                     Menu {
                         Button(action: { exportDiagnostics() }) {
                             Label("Export Report", systemImage: "square.and.arrow.up")
@@ -169,7 +169,7 @@ struct DiagnosticView: View {
                 Text(emptyStateTitle)
             } icon: {
                 Image(systemName: emptyStateIcon)
-                    .foregroundStyle(.green)
+                    .foregroundStyle(Color.appSuccess)
             }
         } description: {
             Text(emptyStateMessage)
@@ -277,7 +277,7 @@ private struct DiagnosticEventRow: View {
                 
                 if event.isResolved {
                     Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(.green)
+                        .foregroundStyle(Color.appSuccess)
                 }
                 
                 Image(systemName: "chevron.right")
@@ -352,7 +352,7 @@ private struct DiagnosticActionButton: View {
             HStack(spacing: 12) {
                 Image(systemName: action.actionType.icon)
                     .font(.body)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Color.onTint)
                     .frame(width: 32, height: 32)
                     .background(Color.accentColor)
                     .clipShape(Circle())
@@ -433,13 +433,13 @@ private struct DiagnosticActionButton: View {
         case .wifi:
             urlString = "App-Prefs:WIFI"
         case .general:
-            urlString = UIApplication.openSettingsURLString
+            urlString = PlatformURLOpener.settingsURLString
         }
         
         if let url = URL(string: urlString) {
-            UIApplication.shared.open(url)
-        } else if let settingsUrl = URL(string: UIApplication.openSettingsURLString) {
-            UIApplication.shared.open(settingsUrl)
+            PlatformURLOpener.open(url)
+        } else if let settingsUrl = URL(string: PlatformURLOpener.settingsURLString) {
+            PlatformURLOpener.open(settingsUrl)
         }
     }
     
@@ -457,7 +457,7 @@ private struct DiagnosticActionButton: View {
         let encoded = "mailto:\(email)?subject=\(subject.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")&body=\(body.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) ?? "")"
         
         if let url = URL(string: encoded) {
-            UIApplication.shared.open(url)
+            PlatformURLOpener.open(url)
         }
     }
     
@@ -488,15 +488,15 @@ private struct ExportSheet: View {
                     .padding()
             }
             .navigationTitle("Diagnostic Report")
-            .navigationBarTitleDisplayMode(.inline)
+            .platformNavigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
+                ToolbarItem(placement: .platformNavBarLeading) {
                     Button("Done") {
                         dismiss()
                     }
                 }
                 
-                ToolbarItem(placement: .topBarTrailing) {
+                ToolbarItem(placement: .platformNavBarTrailing) {
                     ShareLink(item: text) {
                         Label("Share", systemImage: "square.and.arrow.up")
                     }

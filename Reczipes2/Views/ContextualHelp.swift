@@ -845,7 +845,7 @@ struct HelpDetailView: View {
                     VStack(alignment: .leading, spacing: 16) {
                         Label("Tips & Tricks", systemImage: "lightbulb.fill")
                             .font(.headline)
-                            .foregroundStyle(.orange)
+                            .foregroundStyle(Color.appWarning)
                         
                         ForEach(Array(topic.tips.enumerated()), id: \.offset) { index, tip in
                             HStack(alignment: .top, spacing: 12) {
@@ -868,7 +868,7 @@ struct HelpDetailView: View {
                         VStack(alignment: .leading, spacing: 12) {
                             Label("Related Topics", systemImage: "link")
                                 .font(.headline)
-                                .foregroundStyle(.blue)
+                                .foregroundStyle(Color.appInfo)
                             
                             FlowLayout(spacing: 8) {
                                 ForEach(topic.relatedTopics, id: \.self) { related in
@@ -877,7 +877,7 @@ struct HelpDetailView: View {
                                         .padding(.horizontal, 12)
                                         .padding(.vertical, 6)
                                         .background(Color.blue.opacity(0.1))
-                                        .foregroundStyle(.blue)
+                                        .foregroundStyle(Color.appInfo)
                                         .clipShape(Capsule())
                                 }
                             }
@@ -887,7 +887,7 @@ struct HelpDetailView: View {
                 .padding()
             }
             .navigationTitle(topic.title)
-            .navigationBarTitleDisplayMode(.large)
+            .platformNavigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") {
@@ -1029,7 +1029,7 @@ extension View {
     /// Add a help button to any view's toolbar
     func helpButton(for topicKey: String) -> some View {
         toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
+            ToolbarItem(placement: .platformNavBarTrailing) {
                 HelpButton(topicKey: topicKey)
             }
         }
@@ -1068,7 +1068,7 @@ struct QuickReferenceCard: View {
                     .lineLimit(3)
             }
             .padding()
-            .background(Color(.systemBackground))
+            .background(Color.appSystemBackground)
             .clipShape(RoundedRectangle(cornerRadius: 12))
             .shadow(color: .black.opacity(0.05), radius: 8, x: 0, y: 2)
         }

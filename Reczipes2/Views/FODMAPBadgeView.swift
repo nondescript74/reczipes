@@ -78,7 +78,7 @@ struct StandardFODMAPBadge: View {
                 Text("\(Int(score.basicAnalysis.overallScore))")
                     .font(.caption)
                     .fontWeight(.bold)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Color.onTint)
                     .padding(.horizontal, 6)
                     .padding(.vertical, 3)
                     .background(badgeColor)
@@ -133,7 +133,7 @@ struct CompactFODMAPBadge: View {
                 Text("\(Int(score.basicAnalysis.overallScore))")
                     .font(.caption2)
                     .fontWeight(.bold)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Color.onTint)
                     .padding(.horizontal, 4)
                     .padding(.vertical, 2)
                     .background(badgeColor)
@@ -181,7 +181,7 @@ struct StandardLoadingBadge: View {
         }
         .padding(.horizontal, 12)
         .padding(.vertical, 8)
-        .background(Color(.systemGray6))
+        .background(Color.appGray6)
         .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 }
@@ -198,7 +198,7 @@ struct CompactLoadingBadge: View {
         .foregroundStyle(.secondary)
         .padding(.horizontal, 8)
         .padding(.vertical, 4)
-        .background(Color(.systemGray6))
+        .background(Color.appGray6)
         .clipShape(Capsule())
     }
 }
@@ -245,7 +245,7 @@ struct FODMAPAnalysisDetailView: View {
                 .padding()
             }
             .navigationTitle("FODMAP Analysis")
-            .navigationBarTitleDisplayMode(.inline)
+            .platformNavigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") { dismiss() }
@@ -345,7 +345,7 @@ struct FODMAPCategoryBreakdownView: View {
             }
         }
         .padding()
-        .background(Color(.systemBackground))
+        .background(Color.appSystemBackground)
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .shadow(color: .black.opacity(0.05), radius: 5, x: 0, y: 2)
     }
@@ -398,7 +398,7 @@ struct FODMAPCategoryRow: View {
                                 .font(.caption)
                                 .padding(.horizontal, 8)
                                 .padding(.vertical, 4)
-                                .background(Color(.systemGray6))
+                                .background(Color.appGray6)
                                 .clipShape(Capsule())
                         }
                     }
@@ -406,7 +406,7 @@ struct FODMAPCategoryRow: View {
             }
         }
         .padding()
-        .background(Color(.systemGray6).opacity(0.5))
+        .background(Color.appGray6.opacity(0.5))
         .clipShape(RoundedRectangle(cornerRadius: 8))
     }
     
@@ -437,7 +437,7 @@ struct DetectedFODMAPFoodsView: View {
             }
         }
         .padding()
-        .background(Color(.systemBackground))
+        .background(Color.appSystemBackground)
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .shadow(color: .black.opacity(0.05), radius: 5, x: 0, y: 2)
     }
@@ -469,8 +469,8 @@ struct DetectedFODMAPFoodRow: View {
                     .bold()
                     .padding(.horizontal, 8)
                     .padding(.vertical, 3)
-                    .background(Color.red.opacity(0.2))
-                    .foregroundStyle(.red)
+                    .adaptiveToneBackground(.critical, baseOpacity: 0.2)
+                    .foregroundStyle(Color.appCritical)
                     .clipShape(Capsule())
             }
             
@@ -487,7 +487,7 @@ struct DetectedFODMAPFoodRow: View {
                     Text("Serving: \(servingSize)")
                         .font(.caption)
                 }
-                .foregroundStyle(.orange)
+                .foregroundStyle(Color.appWarning)
             }
             
             // Additional notes
@@ -506,12 +506,12 @@ struct DetectedFODMAPFoodRow: View {
                     Text("Portion size matters - may be acceptable in small amounts")
                         .font(.caption)
                 }
-                .foregroundStyle(.blue)
+                .foregroundStyle(Color.appInfo)
                 .padding(.top, 4)
             }
         }
         .padding()
-        .background(Color(.systemGray6).opacity(0.5))
+        .background(Color.appGray6.opacity(0.5))
         .clipShape(RoundedRectangle(cornerRadius: 8))
     }
 }
@@ -540,7 +540,7 @@ struct ClaudeFODMAPInsightsView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
                         Image(systemName: "book.fill")
-                            .foregroundStyle(.blue)
+                            .foregroundStyle(Color.appInfo)
                         Text("Monash University Guidance")
                             .font(.subheadline)
                             .bold()
@@ -556,7 +556,7 @@ struct ClaudeFODMAPInsightsView: View {
             }
         }
         .padding()
-        .background(Color(.systemBackground))
+        .background(Color.appSystemBackground)
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .shadow(color: .black.opacity(0.05), radius: 5, x: 0, y: 2)
     }
@@ -571,7 +571,7 @@ struct LowFODMAPAlternativesView: View {
         VStack(alignment: .leading, spacing: 16) {
             HStack {
                 Image(systemName: "arrow.triangle.2.circlepath")
-                    .foregroundStyle(.green)
+                    .foregroundStyle(Color.appSuccess)
                 Text("Low FODMAP Alternatives")
                     .font(.headline)
             }
@@ -581,7 +581,7 @@ struct LowFODMAPAlternativesView: View {
                     HStack(alignment: .top, spacing: 10) {
                         Image(systemName: "checkmark.circle.fill")
                             .font(.caption)
-                            .foregroundStyle(.green)
+                            .foregroundStyle(Color.appSuccess)
                             .padding(.top, 2)
                         
                         Text(alternative)
@@ -591,7 +591,7 @@ struct LowFODMAPAlternativesView: View {
             }
         }
         .padding()
-        .background(Color(.systemBackground))
+        .background(Color.appSystemBackground)
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .shadow(color: .black.opacity(0.05), radius: 5, x: 0, y: 2)
     }
@@ -626,7 +626,7 @@ struct ModificationTipsView: View {
             }
         }
         .padding()
-        .background(Color(.systemBackground))
+        .background(Color.appSystemBackground)
         .clipShape(RoundedRectangle(cornerRadius: 12))
         .shadow(color: .black.opacity(0.05), radius: 5, x: 0, y: 2)
     }
@@ -639,7 +639,7 @@ struct MonashAttributionView: View {
         VStack(spacing: 12) {
             HStack {
                 Image(systemName: "info.circle")
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(Color.appInfo)
                 Text("About FODMAP Data")
                     .font(.subheadline)
                     .bold()
@@ -661,7 +661,7 @@ struct MonashAttributionView: View {
         }
         .padding()
         .frame(maxWidth: .infinity)
-        .background(Color(.systemGray6).opacity(0.5))
+        .background(Color.appGray6.opacity(0.5))
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 }

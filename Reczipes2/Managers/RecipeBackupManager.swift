@@ -7,7 +7,9 @@
 
 import Foundation
 import SwiftData
+#if canImport(UIKit)
 import UIKit
+#endif
 
 enum RecipeBackupError: LocalizedError {
     case noRecipesToBackup
@@ -514,7 +516,7 @@ class RecipeBackupManager {
             recipe.version = 1
             
             // Set device identifier
-            recipe.lastModifiedDeviceID = UIDevice.current.identifierForVendor?.uuidString
+            recipe.lastModifiedDeviceID = PlatformDevice.identifier
             
             // Restore images to SwiftData (these aren't in RecipeData, they're in RecipeBackup)
             if let mainImage = recipeBackup.mainImage {

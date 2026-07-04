@@ -81,7 +81,7 @@ struct EmptyRecipeSlot: View {
             VStack(spacing: 20) {
                 Image(systemName: "plus.circle.fill")
                     .font(.system(size: 64))
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(Color.appInfo)
                 
                 VStack(spacing: 8) {
                     Text("Select a Recipe")
@@ -93,7 +93,7 @@ struct EmptyRecipeSlot: View {
                 }
             }
             .frame(maxWidth: .infinity, maxHeight: .infinity)
-            .background(Color(.systemGroupedBackground))
+            .background(Color.appGroupedBackground)
         }
         .buttonStyle(.plain)
     }

@@ -74,14 +74,14 @@ struct MealImportView: View {
         Section("Current Library") {
             HStack {
                 Image(systemName: "fork.knife")
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(Color.appWarning)
                 Text("Meals")
                 Spacer()
                 Text("\(meals.count)").bold()
             }
             HStack {
                 Image(systemName: "book.closed")
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(Color.appInfo)
                 Text("Recipes")
                 Spacer()
                 Text("\(recipes.count)").bold()
@@ -95,7 +95,7 @@ struct MealImportView: View {
                 VStack(alignment: .leading, spacing: 6) {
                     HStack {
                         Image(systemName: "checkmark.circle.fill")
-                            .foregroundStyle(.green)
+                            .foregroundStyle(Color.appSuccess)
                         Text("Export ready")
                             .font(.body)
                     }
@@ -137,7 +137,7 @@ struct MealImportView: View {
             if let bundledPreview {
                 HStack {
                     Image(systemName: "tray.full")
-                        .foregroundStyle(.green)
+                        .foregroundStyle(Color.appSuccess)
                     VStack(alignment: .leading, spacing: 2) {
                         Text(bundledPreview.source ?? "Bundled Meal Plans")
                             .font(.body)
@@ -211,7 +211,7 @@ struct MealImportView: View {
         var body: some View {
             HStack(alignment: .top, spacing: 12) {
                 Image(systemName: icon)
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(Color.appInfo)
                     .frame(width: 24)
                 VStack(alignment: .leading, spacing: 2) {
                     Text(title).font(.subheadline).bold()

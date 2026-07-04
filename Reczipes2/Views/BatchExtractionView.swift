@@ -24,7 +24,7 @@ struct BatchExtractionView: View {
         NavigationStack {
             contentView
                 .navigationTitle("Batch Extract Recipes")
-                .navigationBarTitleDisplayMode(.inline)
+                .platformNavigationBarTitleDisplayMode(.inline)
                 .toolbar {
                     ToolbarItem(placement: .cancellationAction) {
                         Button(manager.isExtracting ? "Close" : "Done") {
@@ -103,7 +103,7 @@ struct BatchExtractionView: View {
         VStack(spacing: 12) {
             Image(systemName: "arrow.down.circle.fill")
                 .font(.system(size: 60))
-                .foregroundStyle(.blue)
+                .foregroundStyle(Color.appInfo)
             
             Text("Automated Recipe Extraction")
                 .font(.title2)
@@ -121,10 +121,10 @@ struct BatchExtractionView: View {
                 Text("Maximum 50 recipes per batch")
                     .font(.caption)
             }
-            .foregroundStyle(.orange)
+            .foregroundStyle(Color.appWarning)
             .padding(.horizontal, 12)
             .padding(.vertical, 6)
-            .background(Color.orange.opacity(0.15))
+            .adaptiveToneBackground(.warning, baseOpacity: 0.15)
             .clipShape(Capsule())
         }
     }
@@ -153,7 +153,7 @@ struct BatchExtractionView: View {
                 HStack {
                     Text("\(Int((Double(status.currentIndex) / Double(status.totalCount)) * 100))%")
                         .font(.caption)
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(Color.appInfo)
                         .fontWeight(.semibold)
                     
                     Spacer()
@@ -251,7 +251,7 @@ struct BatchExtractionView: View {
             .padding(.horizontal)
         }
         .padding()
-        .background(Color(.systemGray6))
+        .background(Color.appGray6)
         .clipShape(RoundedRectangle(cornerRadius: 16))
     }
     
@@ -263,7 +263,7 @@ struct BatchExtractionView: View {
             ForEach(manager.recentlyExtracted.prefix(5), id: \.id) { recipe in
                 HStack(spacing: 12) {
                     Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(.green)
+                        .foregroundStyle(Color.appSuccess)
                         .font(.title3)
                     
                     VStack(alignment: .leading, spacing: 4) {
@@ -287,7 +287,7 @@ struct BatchExtractionView: View {
             }
         }
         .padding()
-        .background(Color(.systemGray6))
+        .background(Color.appGray6)
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
     
@@ -295,7 +295,7 @@ struct BatchExtractionView: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Image(systemName: "checkmark.circle.fill")
-                    .foregroundStyle(.green)
+                    .foregroundStyle(Color.appSuccess)
                 Text("Recipe Extracted")
                     .font(.headline)
             }
@@ -366,7 +366,7 @@ struct BatchExtractionView: View {
             }
         }
         .padding()
-        .background(Color(.systemGray6))
+        .background(Color.appGray6)
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
     
@@ -384,7 +384,7 @@ struct BatchExtractionView: View {
                         Text("Will extract \(willProcess) of \(unprocessedCount) unprocessed recipes")
                             .font(.caption)
                     }
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(Color.appWarning)
                     .padding(.vertical, 8)
                 }
                 
@@ -398,8 +398,8 @@ struct BatchExtractionView: View {
                         .font(.headline)
                         .frame(maxWidth: .infinity)
                         .padding()
-                        .background(Color.blue)
-                        .foregroundStyle(.white)
+                        .background(AdaptiveToneSolidFill(tone: .info))
+                        .foregroundStyle(Color.onTint)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
                 .buttonStyle(.plain)
@@ -421,7 +421,7 @@ struct BatchExtractionView: View {
                     .frame(maxWidth: .infinity)
                     .padding()
                     .background(manager.isPaused ? Color.green : Color.orange)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Color.onTint)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
                 .buttonStyle(.plain)
@@ -434,8 +434,8 @@ struct BatchExtractionView: View {
                         .font(.headline)
                         .frame(maxWidth: .infinity)
                         .padding()
-                        .background(Color.red)
-                        .foregroundStyle(.white)
+                        .background(AdaptiveToneSolidFill(tone: .critical))
+                        .foregroundStyle(Color.onTint)
                         .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
                 .buttonStyle(.plain)
@@ -449,7 +449,7 @@ struct BatchExtractionView: View {
         } label: {
             HStack {
                 Image(systemName: "exclamationmark.triangle.fill")
-                    .foregroundStyle(.red)
+                    .foregroundStyle(Color.appCritical)
                 Text("View Error Log (\(manager.errorLog.count))")
                     .font(.subheadline)
                     .fontWeight(.medium)
@@ -459,7 +459,7 @@ struct BatchExtractionView: View {
                     .foregroundStyle(.secondary)
             }
             .padding()
-            .background(Color.red.opacity(0.1))
+            .adaptiveToneBackground(.critical, baseOpacity: 0.1)
             .clipShape(RoundedRectangle(cornerRadius: 12))
         }
         .buttonStyle(.plain)
@@ -483,7 +483,7 @@ struct BatchExtractionView: View {
                 }
             }
             .navigationTitle("Extraction Errors")
-            .navigationBarTitleDisplayMode(.inline)
+            .platformNavigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") {

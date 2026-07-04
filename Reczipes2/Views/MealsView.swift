@@ -115,7 +115,7 @@ struct MealsView: View {
                 }
             }
         }
-        .listStyle(.insetGrouped)
+        .platformInsetGroupedListStyle()
     }
 
     private func delete(_ meal: Meal) {
@@ -147,7 +147,7 @@ private struct MealRow: View {
                     ))
                 Image(systemName: "fork.knife")
                     .font(.title2)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Color.onTint)
             }
             .frame(width: 56, height: 56)
 
@@ -162,7 +162,7 @@ private struct MealRow: View {
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2)
                             .background(Color.blue.opacity(0.15), in: Capsule())
-                            .foregroundStyle(.blue)
+                            .foregroundStyle(Color.appInfo)
                     }
                 }
 

@@ -84,11 +84,11 @@ struct CloudKitSyncStatusMonitorView: View {
                     
                     HStack {
                         Image(systemName: "doc.badge.gearshape")
-                            .foregroundColor(.green)
+                            .foregroundStyle(Color.appSuccess)
                         Text("RecipeX (CloudKit)")
                         Spacer()
                         Text("\(recipeXCount)")
-                            .foregroundColor(.green)
+                            .foregroundStyle(Color.appSuccess)
                     }
                     .font(.caption)
                 }
@@ -186,7 +186,7 @@ struct CloudKitSyncStatusMonitorView: View {
             }
         }
         .navigationTitle("Sync Monitor")
-        .navigationBarTitleDisplayMode(.inline)
+        .platformNavigationBarTitleDisplayMode(.inline)
         .task {
             await initialSetup()
         }
@@ -363,7 +363,7 @@ struct CloudKitSyncStatusMonitorView: View {
             text += "[\(event.timestamp.formatted(date: .omitted, time: .standard))] \(event.icon) \(event.message)\n"
         }
         
-        UIPasteboard.general.string = text
+        PlatformPasteboard.copy(text)
         
         syncLogger.addEvent("Status copied to clipboard", type: .info)
     }
@@ -428,7 +428,7 @@ struct SyncTipRow: View {
     var body: some View {
         HStack(spacing: 12) {
             Image(systemName: icon)
-                .foregroundColor(.blue)
+                .foregroundStyle(Color.appInfo)
                 .frame(width: 24)
             
             Text(tip)

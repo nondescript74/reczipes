@@ -20,7 +20,7 @@ struct APIKeyManagerView: View {
     @State private var isRecipeAPIKeyConfigured = APIKeyHelper.isRecipeAPIConfigured
     
     var body: some View {
-        NavigationView {
+        NavigationStack {
             Form {
                 Section {
                     if isAPIKeyConfigured {
@@ -28,7 +28,7 @@ struct APIKeyManagerView: View {
                             Text("Claude Status")
                             Spacer()
                             Label("Configured", systemImage: "checkmark.circle.fill")
-                                .foregroundColor(.green)
+                                .foregroundStyle(Color.appSuccess)
                         }
 
                         Button("Remove Claude API Key", role: .destructive) {
@@ -41,7 +41,7 @@ struct APIKeyManagerView: View {
                             Text("Recipe API Status")
                             Spacer()
                             Label("Configured", systemImage: "checkmark.circle.fill")
-                                .foregroundColor(.green)
+                                .foregroundStyle(Color.appSuccess)
                         }
 
                         Button("Remove Recipe API Key", role: .destructive) {
@@ -56,10 +56,16 @@ struct APIKeyManagerView: View {
                 }
                 
                 Section {
-                    SecureField("Enter new API key (sk-ant-... or rapi_...)", text: $newAPIKey)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
-                        .disabled(isValidating)
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("sk-ant-... or rapi_...")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        SecureField("Enter new API key", text: $newAPIKey)
+                            .labelsHidden()
+                            .platformTextInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+                            .disabled(isValidating)
+                    }
                     
                     Button(isValidating ? "Validating..." : "Update API Key") {
                         Task {
@@ -87,13 +93,13 @@ struct APIKeyManagerView: View {
                         
                         if showSuccess {
                             Label("API key validated and saved successfully!", systemImage: "checkmark.circle.fill")
-                                .foregroundColor(.green)
+                                .foregroundStyle(Color.appSuccess)
                         }
                         
                         if showError {
                             VStack(alignment: .leading, spacing: 4) {
                                 Label("Failed to validate API key", systemImage: "xmark.circle.fill")
-                                    .foregroundColor(.red)
+                                    .foregroundStyle(Color.appCritical)
                                 Text(errorMessage)
                                     .font(.caption)
                                     .foregroundColor(.secondary)
@@ -103,9 +109,9 @@ struct APIKeyManagerView: View {
                 }
             }
             .navigationTitle("API Key Manager")
-            .navigationBarTitleDisplayMode(.inline)
+            .platformNavigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .platformNavBarTrailing) {
                     Button("Done") {
                         dismiss()
                     }

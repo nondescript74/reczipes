@@ -15,11 +15,13 @@ struct APIKeySetupView: View {
     @State private var errorMessage = ""
     @State private var isValidating = false
     @State private var skipValidation = false
-    
+    @State private var showSuccess = false
+    @State private var successMessage = ""
+
     var log = OSLog(subsystem: "com.headydiscy.Reczipes2", category: "APIKeySetupView")
-    
+
     var body: some View {
-        NavigationView {
+        NavigationStack {
             Form {
                 Section {
                     VStack(alignment: .leading, spacing: 12) {
@@ -45,11 +47,17 @@ struct APIKeySetupView: View {
                 }
                 
                 Section {
-                    SecureField("Enter API Key (sk-ant-... or rapi_...)", text: $apiKey)
-                        .textInputAutocapitalization(.never)
-                        .autocorrectionDisabled()
-                        .disabled(isValidating)
-                        .font(.system(.body, design: .monospaced))
+                    VStack(alignment: .leading, spacing: 6) {
+                        Text("sk-ant-... or rapi_...")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                        SecureField("Enter API Key", text: $apiKey)
+                            .labelsHidden()
+                            .platformTextInputAutocapitalization(.never)
+                            .autocorrectionDisabled()
+                            .disabled(isValidating)
+                            .font(.system(.body, design: .monospaced))
+                    }
                     
                     if !apiKey.isEmpty {
                         HStack {
@@ -62,7 +70,7 @@ struct APIKeySetupView: View {
                                 .foregroundColor(.secondary)
                             if apiKey.count < 8 {
                                 Image(systemName: "exclamationmark.triangle.fill")
-                                    .foregroundColor(.orange)
+                                    .foregroundStyle(Color.appWarning)
                                     .font(.caption)
                             }
                         }
@@ -82,14 +90,14 @@ struct APIKeySetupView: View {
                         HStack {
                             ProgressView()
                                 .padding(.trailing, 8)
-                            Text("Testing API key with Anthropic...")
+                            Text("Testing API key...")
                                 .foregroundColor(.secondary)
                         }
                     }
                     
                     if showError {
                         Label(errorMessage, systemImage: "exclamationmark.triangle.fill")
-                            .foregroundColor(.red)
+                            .foregroundStyle(Color.appCritical)
                             .font(.caption)
                     }
                 } header: {
@@ -102,27 +110,39 @@ struct APIKeySetupView: View {
                         Text("It's stored securely in the Keychain.")
                         Text("Supported key formats: 'sk-ant-...' (Anthropic) or 'rapi_...' (recipe-api.com)")
                             .bold()
-                        if apiKey.count < 8 {
+                        if !apiKey.isEmpty && apiKey.count < 8 {
                             Text("⚠️ Your key looks very short. Double-check you copied the entire key.")
-                                .foregroundColor(.orange)
+                                .foregroundStyle(Color.appWarning)
                         }
                     }
                     .font(.caption)
                     .foregroundColor(.secondary)
                 }
                 
-                Section {
-                    Button("Skip for Now") {
-                        isPresented = false
+                if showSuccess {
+                    Section {
+                        Label(successMessage, systemImage: "checkmark.circle.fill")
+                            .foregroundStyle(Color.appSuccess)
+                        Button("Done") {
+                            isPresented = false
+                        }
                     }
-                    .foregroundColor(.secondary)
-                } footer: {
-                    Text("You can add your API key later in Settings. Without an API key, you won't be able to extract recipes from images.")
-                        .font(.caption)
+                }
+
+                if !showSuccess {
+                    Section {
+                        Button("Skip for Now") {
+                            isPresented = false
+                        }
+                        .foregroundColor(.secondary)
+                    } footer: {
+                        Text("You can add your API key later in Settings. Without an API key, you won't be able to extract recipes from images.")
+                            .font(.caption)
+                    }
                 }
             }
             .navigationTitle("Setup")
-            .navigationBarTitleDisplayMode(.large)
+            .platformNavigationBarTitleDisplayMode(.inline)
         }
         .interactiveDismissDisabled(isValidating)
     }
@@ -168,7 +188,11 @@ struct APIKeySetupView: View {
                 : APIKeyHelper.setRecipeAPIKey(cleanedKey)
             if saved {
                 print("🔑 API key saved successfully (without validation)!")
-                isPresented = false
+                showSuccess = true
+                successMessage = isClaudeKey
+                    ? "Claude API key saved (validation skipped)."
+                    : "Recipe API key saved (validation skipped)."
+                apiKey = ""
             } else {
                 showError = true
                 errorMessage = "Failed to save the API key to Keychain."
@@ -176,7 +200,7 @@ struct APIKeySetupView: View {
             isValidating = false
             return
         }
-        
+
         // Validate with matching provider
         let isValid: Bool
         if isClaudeKey {
@@ -186,9 +210,9 @@ struct APIKeySetupView: View {
             let client = RecipeAPIClient(apiKey: cleanedKey)
             isValid = await client.validateAPIKey()
         }
-        
+
         isValidating = false
-        
+
         if isValid {
             print("🔑 API key is valid, saving...")
             let saved = isClaudeKey
@@ -196,8 +220,11 @@ struct APIKeySetupView: View {
                 : APIKeyHelper.setRecipeAPIKey(cleanedKey)
             if saved {
                 print("🔑 API key saved successfully!")
-                // Dismiss the setup view
-                isPresented = false
+                showSuccess = true
+                successMessage = isClaudeKey
+                    ? "Claude API key validated and saved."
+                    : "Recipe API key validated and saved."
+                apiKey = ""
             } else {
                 showError = true
                 errorMessage = "Failed to save the API key to Keychain."

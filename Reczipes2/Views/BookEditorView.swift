@@ -68,16 +68,16 @@ struct BookEditorView: View {
                         .lineLimit(3...6)
                     
                     TextField("Category (Optional)", text: $category)
-                        .textInputAutocapitalization(.words)
+                        .platformTextInputAutocapitalization(.words)
                     
                     TextField("Cuisine (Optional)", text: $cuisine)
-                        .textInputAutocapitalization(.words)
+                        .platformTextInputAutocapitalization(.words)
                 }
                 
                 Section("Cover Image") {
-                    if let imageData = coverImageData, let uiImage = UIImage(data: imageData) {
+                    if let imageData = coverImageData, let uiImage = PlatformImage(data: imageData) {
                         HStack {
-                            Image(uiImage: uiImage)
+                            Image(platformImage: uiImage)
                                 .resizable()
                                 .aspectRatio(contentMode: .fill)
                                 .frame(width: 120, height: 160)
@@ -118,7 +118,7 @@ struct BookEditorView: View {
                                         Circle()
                                             .strokeBorder(.white, lineWidth: 3)
                                         Image(systemName: "checkmark")
-                                            .foregroundStyle(.white)
+                                            .foregroundStyle(Color.onTint)
                                             .fontWeight(.bold)
                                     }
                                 }
@@ -153,7 +153,7 @@ struct BookEditorView: View {
                 }
             }
             .navigationTitle(book == nil ? "New Book" : "Edit Book")
-            .navigationBarTitleDisplayMode(.inline)
+            .platformNavigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
@@ -196,7 +196,7 @@ struct BookEditorView: View {
         
         do {
             guard let data = try await photoItem.loadTransferable(type: Data.self),
-                  let uiImage = UIImage(data: data) else {
+                  let uiImage = PlatformImage(data: data) else {
                 AppLog.error("Failed to load image data", category: .recipe)
                 return
             }

@@ -48,7 +48,7 @@ struct RecipeComparisonView: View {
                 actionButtons
             }
             .navigationTitle("Compare Recipes")
-            .navigationBarTitleDisplayMode(.inline)
+            .platformNavigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
@@ -68,7 +68,7 @@ struct RecipeComparisonView: View {
                 VStack(alignment: .leading, spacing: 12) {
                     Text("Existing")
                         .font(.headline)
-                        .foregroundColor(.blue)
+                        .foregroundStyle(Color.appInfo)
                         .frame(maxWidth: .infinity, alignment: .center)
                     
                     recipeCard_a(for: existingRecipe)
@@ -81,7 +81,7 @@ struct RecipeComparisonView: View {
                 VStack(alignment: .leading, spacing: 12) {
                     Text("New")
                         .font(.headline)
-                        .foregroundColor(.green)
+                        .foregroundStyle(Color.appSuccess)
                         .frame(maxWidth: .infinity, alignment: .center)
                     
                     recipeCard_a(for: newRecipe)
@@ -199,7 +199,7 @@ struct RecipeComparisonView: View {
             }
         }
         .padding()
-        .background(Color(.secondarySystemBackground))
+        .background(Color.appSecondaryBackground)
         .cornerRadius(12)
     }
     
@@ -218,8 +218,8 @@ struct RecipeComparisonView: View {
                 }
                 .frame(maxWidth: .infinity)
                 .padding()
-                .background(Color.blue)
-                .foregroundColor(.white)
+                .background(AdaptiveToneSolidFill(tone: .info))
+                .foregroundStyle(Color.onTint)
                 .cornerRadius(12)
             }
             
@@ -235,7 +235,7 @@ struct RecipeComparisonView: View {
                 .frame(maxWidth: .infinity)
                 .padding()
                 .background(Color.green)
-                .foregroundColor(.white)
+                .foregroundStyle(Color.onTint)
                 .cornerRadius(12)
             }
             
@@ -251,7 +251,7 @@ struct RecipeComparisonView: View {
                 .frame(maxWidth: .infinity)
                 .padding()
                 .background(canReplaceExisting ? Color.orange : Color.gray)
-                .foregroundColor(.white)
+                .foregroundStyle(Color.onTint)
                 .cornerRadius(12)
             }
             .disabled(!canReplaceExisting)

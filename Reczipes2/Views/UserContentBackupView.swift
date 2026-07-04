@@ -65,7 +65,7 @@ struct UserContentBackupView: View {
             }
         }
         .navigationTitle("User Content Import/Export")
-        .navigationBarTitleDisplayMode(.inline)
+        .platformNavigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
                 Button("Done") {
@@ -130,7 +130,7 @@ struct UserContentBackupView: View {
             Section("Current Database") {
                 HStack {
                     Image(systemName: "book.fill")
-                        .foregroundColor(.blue)
+                        .foregroundStyle(Color.appInfo)
                     Text("Total Recipes")
                     Spacer()
                     Text("\(recipes.count)")
@@ -140,7 +140,7 @@ struct UserContentBackupView: View {
                 if recipes.count > 0 {
                     HStack {
                         Image(systemName: "photo.fill")
-                            .foregroundColor(.orange)
+                            .foregroundStyle(Color.appWarning)
                         Text("With Images")
                         Spacer()
                         Text("\(recipesWithImages)")
@@ -258,7 +258,7 @@ struct UserContentBackupView: View {
             Section("Current Library") {
                 HStack {
                     Image(systemName: "books.vertical.fill")
-                        .foregroundColor(.blue)
+                        .foregroundStyle(Color.appInfo)
                     Text("Total Books")
                     Spacer()
                     Text("\(books.count)")
@@ -268,7 +268,7 @@ struct UserContentBackupView: View {
                 if books.count > 0 {
                     HStack {
                         Image(systemName: "book.pages.fill")
-                            .foregroundColor(.orange)
+                            .foregroundStyle(Color.appWarning)
                         Text("Total Recipes in Books")
                         Spacer()
                         Text("\(totalRecipesInBooks)")
@@ -417,7 +417,7 @@ struct UserContentBackupView: View {
             HStack(alignment: .top, spacing: 12) {
                 Image(systemName: icon)
                     .font(.title3)
-                    .foregroundColor(.blue)
+                    .foregroundStyle(Color.appInfo)
                     .frame(width: 24)
                 
                 VStack(alignment: .leading, spacing: 2) {

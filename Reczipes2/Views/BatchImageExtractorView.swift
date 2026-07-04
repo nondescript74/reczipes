@@ -23,7 +23,7 @@ struct BatchImageExtractorView: View {
     @State private var showingImagePicker = false
     @State private var showingDocumentPicker = false
     @State private var selectedAssets: [PHAsset] = []
-    @State private var selectedImages: [UIImage] = [] // For iCloud Drive images
+    @State private var selectedImages: [PlatformImage] = [] // For iCloud Drive images
     @State private var showingCropOptions = false
     @State private var showingCompletionAlert = false
     @State private var shouldCropImages = false
@@ -58,7 +58,7 @@ struct BatchImageExtractorView: View {
                 }
             }
             .navigationTitle("Batch Image Extract")
-            .navigationBarTitleDisplayMode(.large)
+            .platformNavigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Close") {
@@ -185,8 +185,10 @@ struct BatchImageExtractorView: View {
                     
                     if successCount > 0 {
                         // Success haptic
+                        #if os(iOS)
                         let generator = UINotificationFeedbackGenerator()
                         generator.notificationOccurred(.success)
+                        #endif
                         
                         AppLog.info("Finished loading images: \(successCount) loaded successfully", category: .ui)
                     }
@@ -195,7 +197,7 @@ struct BatchImageExtractorView: View {
                     loadingProgress = LoadingProgress(current: 0, total: 0)
                 }
             }
-            .fullScreenCover(isPresented: $viewModel.showingCropForBatch) {
+            .platformFullScreenCover(isPresented: $viewModel.showingCropForBatch) {
                 if let image = viewModel.imageToCropInBatch {
                     ImageCropView(
                         image: image,
@@ -280,12 +282,12 @@ struct BatchImageExtractorView: View {
                 VStack(spacing: 8) {
                     Text("Loading Images from Files")
                         .font(.headline)
-                        .foregroundColor(.white)
+                        .foregroundStyle(Color.onTint)
                     
                     if loadingProgress.total > 0 {
                         Text(loadingProgress.progressText)
                             .font(.subheadline)
-                            .foregroundColor(.white.opacity(0.9))
+                            .foregroundStyle(Color.onTint.opacity(0.9))
                             .multilineTextAlignment(.center)
                             .padding(.horizontal)
                         
@@ -331,8 +333,8 @@ struct BatchImageExtractorView: View {
                         .font(.headline)
                         .padding()
                         .frame(maxWidth: .infinity)
-                        .background(Color.blue)
-                        .foregroundColor(.white)
+                        .background(AdaptiveToneSolidFill(tone: .info))
+                        .foregroundStyle(Color.onTint)
                         .cornerRadius(12)
                 }
                 .buttonStyle(.plain)
@@ -346,7 +348,7 @@ struct BatchImageExtractorView: View {
                         .padding()
                         .frame(maxWidth: .infinity)
                         .background(Color.purple)
-                        .foregroundColor(.white)
+                        .foregroundStyle(Color.onTint)
                         .cornerRadius(12)
                 }
                 .buttonStyle(.plain)
@@ -382,7 +384,7 @@ struct BatchImageExtractorView: View {
             HStack {
                 Image(systemName: "photo.stack.fill")
                     .font(.title)
-                    .foregroundColor(.blue)
+                    .foregroundStyle(Color.appInfo)
                 
                 VStack(alignment: .leading, spacing: 4) {
                     Text("Images Selected")
@@ -397,7 +399,7 @@ struct BatchImageExtractorView: View {
                             HStack(spacing: 2) {
                                 Image(systemName: "photo.fill")
                                     .font(.system(size: 10))
-                                    .foregroundColor(.blue)
+                                    .foregroundStyle(Color.appInfo)
                                 Text("\(selectedAssets.count)")
                             }
                             Text("•")
@@ -417,7 +419,7 @@ struct BatchImageExtractorView: View {
                             Text("From Photos Library")
                         }
                         .font(.caption2)
-                        .foregroundColor(.blue)
+                        .foregroundStyle(Color.appInfo)
                     } else if !selectedImages.isEmpty {
                         HStack(spacing: 2) {
                             Image(systemName: "folder.fill")
@@ -448,12 +450,12 @@ struct BatchImageExtractorView: View {
                 } label: {
                     Image(systemName: "plus.circle.fill")
                         .font(.title2)
-                        .foregroundColor(.blue)
+                        .foregroundStyle(Color.appInfo)
                 }
             }
         }
         .padding()
-        .background(Color(.systemBackground))
+        .background(Color.appSystemBackground)
         .cornerRadius(16)
         .shadow(radius: 2)
     }
@@ -485,7 +487,7 @@ struct BatchImageExtractorView: View {
             if !shouldCropImages {
                 HStack {
                     Image(systemName: "info.circle")
-                        .foregroundColor(.blue)
+                        .foregroundStyle(Color.appInfo)
                         .font(.caption)
                     Text("Images will be processed as-is up to 10 at a time")
                         .font(.caption)
@@ -494,7 +496,7 @@ struct BatchImageExtractorView: View {
             }
         }
         .padding()
-        .background(Color(.systemBackground))
+        .background(Color.appSystemBackground)
         .cornerRadius(12)
         .shadow(radius: 1)
     }
@@ -546,7 +548,7 @@ struct BatchImageExtractorView: View {
             .frame(maxWidth: .infinity)
             .padding()
             .background(Color.purple)
-            .foregroundColor(.white)
+            .foregroundStyle(Color.onTint)
             .cornerRadius(12)
         }
         .buttonStyle(.plain)
@@ -592,7 +594,7 @@ struct BatchImageExtractorView: View {
             }
         }
         .padding()
-        .background(Color(.systemBackground))
+        .background(Color.appSystemBackground)
         .cornerRadius(12)
         .shadow(radius: 1)
     }
@@ -676,7 +678,7 @@ struct BatchImageExtractorView: View {
             }
         }
         .padding()
-        .background(Color(.systemBackground))
+        .background(Color.appSystemBackground)
         .cornerRadius(16)
         .shadow(radius: 2)
     }
@@ -705,7 +707,7 @@ struct BatchImageExtractorView: View {
                     VStack(alignment: .leading, spacing: 8) {
                         HStack {
                             Image(systemName: "checkmark.circle.fill")
-                                .foregroundColor(.green)
+                                .foregroundStyle(Color.appSuccess)
                             Text("Extracted: \(String(describing: recipe.title))")
                                 .font(.subheadline)
                                 .fontWeight(.semibold)
@@ -752,8 +754,8 @@ struct BatchImageExtractorView: View {
                     .font(.headline)
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(Color.orange)
-                    .foregroundColor(.white)
+                    .background(AdaptiveToneSolidFill(tone: .warning))
+                    .foregroundStyle(Color.onTint)
                     .cornerRadius(12)
                 }
                 .buttonStyle(.plain)
@@ -769,15 +771,15 @@ struct BatchImageExtractorView: View {
                     .font(.headline)
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(Color.blue)
-                    .foregroundColor(.white)
+                    .background(AdaptiveToneSolidFill(tone: .info))
+                    .foregroundStyle(Color.onTint)
                     .cornerRadius(12)
                 }
                 .buttonStyle(.plain)
             }
         }
         .padding()
-        .background(Color(.systemBackground))
+        .background(Color.appSystemBackground)
         .cornerRadius(12)
         .shadow(radius: 2)
     }
@@ -788,7 +790,7 @@ struct BatchImageExtractorView: View {
             if keepAwakeManager.isKeepAwakeEnabled {
                 HStack {
                     Image(systemName: "moon.zzz.fill")
-                        .foregroundColor(.orange)
+                        .foregroundStyle(Color.appWarning)
                     Text("Device will stay awake during extraction")
                         .font(.caption)
                         .foregroundColor(.secondary)
@@ -796,7 +798,7 @@ struct BatchImageExtractorView: View {
                 }
                 .padding(.horizontal, 12)
                 .padding(.vertical, 8)
-                .background(Color.orange.opacity(0.1))
+                .adaptiveToneBackground(.warning, baseOpacity: 0.1)
                 .cornerRadius(8)
             }
             
@@ -835,7 +837,7 @@ struct BatchImageExtractorView: View {
                     .frame(maxWidth: .infinity)
                     .padding()
                     .background(viewModel.isPaused ? Color.green : Color.orange)
-                    .foregroundColor(.white)
+                    .foregroundStyle(Color.onTint)
                     .cornerRadius(12)
                 }
                 .buttonStyle(.plain)
@@ -851,8 +853,8 @@ struct BatchImageExtractorView: View {
                     .font(.headline)
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(Color.red)
-                    .foregroundColor(.white)
+                    .background(AdaptiveToneSolidFill(tone: .critical))
+                    .foregroundStyle(Color.onTint)
                     .cornerRadius(12)
                 }
                 .buttonStyle(.plain)
@@ -889,7 +891,7 @@ struct BatchImageExtractorView: View {
                             }
                         }
                         
-                        // Show UIImage thumbnails (if no PHAssets, or to fill remaining)
+                        // Show PlatformImage thumbnails (if no PHAssets, or to fill remaining)
                         ForEach(0..<min(10 - viewModel.remainingAssets.count, viewModel.remainingImages.count), id: \.self) { index in
                             if index < viewModel.remainingImages.count {
                                 QueuedUIImageThumbnail(
@@ -904,7 +906,7 @@ struct BatchImageExtractorView: View {
             }
         }
         .padding()
-        .background(Color(.systemBackground))
+        .background(Color.appSystemBackground)
         .cornerRadius(12)
         .shadow(radius: 1)
     }
@@ -913,7 +915,7 @@ struct BatchImageExtractorView: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Image(systemName: "exclamationmark.triangle.fill")
-                    .foregroundColor(.red)
+                    .foregroundStyle(Color.appCritical)
                 Text("Errors (\(viewModel.errorLog.count))")
                     .font(.headline)
             }
@@ -933,13 +935,13 @@ struct BatchImageExtractorView: View {
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(8)
-                    .background(Color.red.opacity(0.1))
+                    .adaptiveToneBackground(.critical, baseOpacity: 0.1)
                     .cornerRadius(8)
                 }
             }
         }
         .padding()
-        .background(Color(.systemBackground))
+        .background(Color.appSystemBackground)
         .cornerRadius(12)
         .shadow(radius: 1)
     }
@@ -951,7 +953,7 @@ struct BatchImageExtractorView: View {
             VStack(spacing: 24) {
                 Image(systemName: "photo.stack")
                     .font(.system(size: 60))
-                    .foregroundColor(.blue)
+                    .foregroundStyle(Color.appInfo)
                 
                 Text("Select Image Source")
                     .font(.title2)
@@ -975,13 +977,13 @@ struct BatchImageExtractorView: View {
                                     .font(.headline)
                                 Text("Select from your device's photos")
                                     .font(.caption)
-                                    .foregroundColor(.white.opacity(0.8))
+                                    .foregroundStyle(Color.onTint.opacity(0.8))
                             }
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding()
-                        .background(Color.blue)
-                        .foregroundColor(.white)
+                        .background(AdaptiveToneSolidFill(tone: .info))
+                        .foregroundStyle(Color.onTint)
                         .cornerRadius(12)
                     }
                     .buttonStyle(.plain)
@@ -997,13 +999,13 @@ struct BatchImageExtractorView: View {
                                     .font(.headline)
                                 Text("Select from Files app and iCloud Drive")
                                     .font(.caption)
-                                    .foregroundColor(.white.opacity(0.8))
+                                    .foregroundStyle(Color.onTint.opacity(0.8))
                             }
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding()
                         .background(Color.purple)
-                        .foregroundColor(.white)
+                        .foregroundStyle(Color.onTint)
                         .cornerRadius(12)
                     }
                     .buttonStyle(.plain)
@@ -1014,7 +1016,7 @@ struct BatchImageExtractorView: View {
             }
             .padding()
             .navigationTitle("Select Source")
-            .navigationBarTitleDisplayMode(.inline)
+            .platformNavigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
@@ -1030,7 +1032,7 @@ struct BatchImageExtractorView: View {
             VStack(spacing: 24) {
                 Image(systemName: "crop.rotate")
                     .font(.system(size: 60))
-                    .foregroundColor(.blue)
+                    .foregroundStyle(Color.appInfo)
                 
                 Text("Crop Before Extraction?")
                     .font(.title2)
@@ -1060,8 +1062,8 @@ struct BatchImageExtractorView: View {
                         .font(.headline)
                         .frame(maxWidth: .infinity)
                         .padding()
-                        .background(Color.blue)
-                        .foregroundColor(.white)
+                        .background(AdaptiveToneSolidFill(tone: .info))
+                        .foregroundStyle(Color.onTint)
                         .cornerRadius(12)
                     }
                     .buttonStyle(.plain)
@@ -1084,7 +1086,7 @@ struct BatchImageExtractorView: View {
                         .frame(maxWidth: .infinity)
                         .padding()
                         .background(Color.purple)
-                        .foregroundColor(.white)
+                        .foregroundStyle(Color.onTint)
                         .cornerRadius(12)
                     }
                     .buttonStyle(.plain)
@@ -1095,7 +1097,7 @@ struct BatchImageExtractorView: View {
             }
             .padding()
             .navigationTitle("Cropping Options")
-            .navigationBarTitleDisplayMode(.inline)
+            .platformNavigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
@@ -1109,8 +1111,9 @@ struct BatchImageExtractorView: View {
 
 // MARK: - Document Picker for iCloud Drive
 
+#if os(iOS)
 struct DocumentPickerView: UIViewControllerRepresentable {
-    @Binding var selectedImages: [UIImage]
+    @Binding var selectedImages: [PlatformImage]
     @Binding var isLoadingImages: Bool
     @Binding var loadingProgress: LoadingProgress
     @Environment(\.dismiss) private var dismiss
@@ -1156,7 +1159,7 @@ struct DocumentPickerView: UIViewControllerRepresentable {
             // We must load them immediately before iOS cleans up the temp directory
             
             Task {
-                var loadedImages: [UIImage] = []
+                var loadedImages: [PlatformImage] = []
                 var successCount = 0
                 var failureCount = 0
                 
@@ -1194,15 +1197,15 @@ struct DocumentPickerView: UIViewControllerRepresentable {
                         let imageData = try Data(contentsOf: url)
                         AppLog.debug("  Successfully loaded \(imageData.count) bytes from \(url.lastPathComponent)", category: .storage)
                         
-                        // Create UIImage
-                        if let image = UIImage(data: imageData) {
-                            AppLog.debug("  ✅ Created UIImage (size: \(image.size.width)x\(image.size.height))", category: .image)
+                        // Create PlatformImage
+                        if let image = PlatformImage(data: imageData) {
+                            AppLog.debug("  ✅ Created PlatformImage (size: \(image.size.width)x\(image.size.height))", category: .image)
                             await MainActor.run {
                                 loadedImages.append(image)
                             }
                             successCount += 1
                         } else {
-                            AppLog.warning("  ❌ Failed to create UIImage from data - invalid image format", category: .image)
+                            AppLog.warning("  ❌ Failed to create PlatformImage from data - invalid image format", category: .image)
                             failureCount += 1
                         }
                     } catch {
@@ -1243,6 +1246,28 @@ struct DocumentPickerView: UIViewControllerRepresentable {
         }
     }
 }
+#else
+/// macOS fallback: presents an `NSOpenPanel` to import image files, matching the
+/// iOS `UIDocumentPickerViewController` wrapper's binding-based initializer.
+struct DocumentPickerView: View {
+    @Binding var selectedImages: [PlatformImage]
+    @Binding var isLoadingImages: Bool
+    @Binding var loadingProgress: LoadingProgress
+    @Environment(\.dismiss) private var dismiss
+
+    var body: some View {
+        Color.clear
+            .frame(width: 0, height: 0)
+            .onAppear {
+                isLoadingImages = true
+                let images = MacFilePicker.pickImages(allowsMultiple: true)
+                selectedImages.append(contentsOf: images)
+                isLoadingImages = false
+                dismiss()
+            }
+    }
+}
+#endif
 
 // MARK: - Loading Progress Model
 
@@ -1268,7 +1293,7 @@ struct LoadingProgress {
 // MARK: - Selected Image Thumbnail (for Files/iCloud Drive images)
 
 struct SelectedImageThumbnail: View {
-    let image: UIImage
+    let image: PlatformImage
     let index: Int
     let onRemove: () -> Void
     
@@ -1279,7 +1304,7 @@ struct SelectedImageThumbnail: View {
             Button {
                 showingImageViewer = true
             } label: {
-                Image(uiImage: image)
+                Image(platformImage: image)
                     .resizable()
                     .aspectRatio(contentMode: .fill)
                     .frame(width: 150, height: 150)
@@ -1295,7 +1320,7 @@ struct SelectedImageThumbnail: View {
             } label: {
                 Image(systemName: "xmark.circle.fill")
                     .font(.title3)
-                    .foregroundColor(.red)
+                    .foregroundStyle(Color.appCritical)
                     .background(
                         Circle()
                             .fill(Color.white)
@@ -1316,7 +1341,7 @@ struct SelectedImageThumbnail: View {
                             .font(.caption)
                             .fontWeight(.bold)
                     }
-                    .foregroundColor(.white)
+                    .foregroundStyle(Color.onTint)
                     .padding(6)
                     .background(Color.purple.opacity(0.85))
                     .cornerRadius(6)
@@ -1326,7 +1351,7 @@ struct SelectedImageThumbnail: View {
             .padding(6)
             .allowsHitTesting(false)
         }
-        .fullScreenCover(isPresented: $showingImageViewer) {
+        .platformFullScreenCover(isPresented: $showingImageViewer) {
             ExpandableImageViewer(image: image)
         }
     }
@@ -1340,8 +1365,8 @@ struct SelectedAssetThumbnail: View {
     let photoManager: PhotoLibraryManager
     let onRemove: () -> Void
     
-    @State private var thumbnail: UIImage?
-    @State private var fullImage: UIImage?
+    @State private var thumbnail: PlatformImage?
+    @State private var fullImage: PlatformImage?
     @State private var showingImageViewer = false
     
     var body: some View {
@@ -1350,7 +1375,7 @@ struct SelectedAssetThumbnail: View {
                 Button {
                     loadFullImageAndShow()
                 } label: {
-                    Image(uiImage: thumbnail)
+                    Image(platformImage: thumbnail)
                         .resizable()
                         .aspectRatio(contentMode: .fill)
                         .frame(width: 150, height: 150)
@@ -1373,7 +1398,7 @@ struct SelectedAssetThumbnail: View {
             } label: {
                 Image(systemName: "xmark.circle.fill")
                     .font(.title3)
-                    .foregroundColor(.red)
+                    .foregroundStyle(Color.appCritical)
                     .background(
                         Circle()
                             .fill(Color.white)
@@ -1394,7 +1419,7 @@ struct SelectedAssetThumbnail: View {
                             .font(.caption)
                             .fontWeight(.bold)
                     }
-                    .foregroundColor(.white)
+                    .foregroundStyle(Color.onTint)
                     .padding(6)
                     .background(Color.blue.opacity(0.85))
                     .cornerRadius(6)
@@ -1407,7 +1432,7 @@ struct SelectedAssetThumbnail: View {
         .task {
             thumbnail = await photoManager.loadThumbnail(for: asset)
         }
-        .fullScreenCover(isPresented: $showingImageViewer) {
+        .platformFullScreenCover(isPresented: $showingImageViewer) {
             if let fullImage = fullImage {
                 ExpandableImageViewer(image: fullImage)
             }
@@ -1429,12 +1454,12 @@ struct QueuedAssetThumbnail: View {
     let index: Int
     let photoManager: PhotoLibraryManager
     
-    @State private var thumbnail: UIImage?
+    @State private var thumbnail: PlatformImage?
     
     var body: some View {
         VStack(spacing: 4) {
             if let thumbnail = thumbnail {
-                Image(uiImage: thumbnail)
+                Image(platformImage: thumbnail)
                     .resizable()
                     .aspectRatio(contentMode: .fill)
                     .frame(width: 80, height: 80)
@@ -1459,12 +1484,12 @@ struct QueuedAssetThumbnail: View {
 }
 
 struct QueuedUIImageThumbnail: View {
-    let image: UIImage
+    let image: PlatformImage
     let index: Int
     
     var body: some View {
         VStack(spacing: 4) {
-            Image(uiImage: image)
+            Image(platformImage: image)
                 .resizable()
                 .aspectRatio(contentMode: .fill)
                 .frame(width: 80, height: 80)
@@ -1511,7 +1536,7 @@ struct PhotosPickerSheet: View {
                 }
             }
             .navigationTitle("Select Photos")
-            .navigationBarTitleDisplayMode(.inline)
+            .platformNavigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
@@ -1551,13 +1576,13 @@ struct PhotoAssetCell: View {
     let photoManager: PhotoLibraryManager
     let onTap: () -> Void
     
-    @State private var thumbnail: UIImage?
+    @State private var thumbnail: PlatformImage?
     
     var body: some View {
         Button(action: onTap) {
             ZStack(alignment: .topTrailing) {
                 if let thumbnail = thumbnail {
-                    Image(uiImage: thumbnail)
+                    Image(platformImage: thumbnail)
                         .resizable()
                         .aspectRatio(contentMode: .fill)
                         .frame(width: 120, height: 120)
@@ -1576,7 +1601,7 @@ struct PhotoAssetCell: View {
                             .frame(width: 28, height: 28)
                         
                         Image(systemName: "checkmark")
-                            .foregroundColor(.white)
+                            .foregroundStyle(Color.onTint)
                             .font(.system(size: 12, weight: .bold))
                     }
                     .padding(8)
@@ -1597,7 +1622,7 @@ struct PhotoAssetCell: View {
 // MARK: - Current Image Preview with Tap to Expand
 
 struct CurrentImagePreview: View {
-    let image: UIImage
+    let image: PlatformImage
     @State private var showingImageViewer = false
     
     var body: some View {
@@ -1605,7 +1630,7 @@ struct CurrentImagePreview: View {
             showingImageViewer = true
         } label: {
             VStack(spacing: 8) {
-                Image(uiImage: image)
+                Image(platformImage: image)
                     .resizable()
                     .scaledToFit()
                     .frame(maxHeight: 400)
@@ -1618,12 +1643,12 @@ struct CurrentImagePreview: View {
                     Text("Tap to expand and zoom")
                         .font(.caption)
                 }
-                .foregroundColor(.blue)
+                .foregroundStyle(Color.appInfo)
                 .padding(.top, 4)
             }
         }
         .buttonStyle(.plain)
-        .fullScreenCover(isPresented: $showingImageViewer) {
+        .platformFullScreenCover(isPresented: $showingImageViewer) {
             ExpandableImageViewer(image: image)
         }
     }

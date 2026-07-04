@@ -41,9 +41,9 @@ struct RecipeValidationView: View {
                 .padding()
             }
             .navigationTitle("Validate Recipe")
-            .navigationBarTitleDisplayMode(.inline)
+            .platformNavigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .platformNavBarTrailing) {
                     Button("Cancel") {
                         dismiss()
                     }
@@ -78,7 +78,7 @@ struct RecipeValidationView: View {
         }
         .frame(maxWidth: .infinity)
         .padding()
-        .background(Color(.systemBackground))
+        .background(Color.appSystemBackground)
         .cornerRadius(16)
         .shadow(radius: 2)
     }
@@ -91,7 +91,7 @@ struct RecipeValidationView: View {
             ForEach(Array(validationResult.suggestions.enumerated()), id: \.offset) { index, suggestion in
                 HStack(alignment: .top, spacing: 12) {
                     Image(systemName: "\(index + 1).circle.fill")
-                        .foregroundColor(.blue)
+                        .foregroundStyle(Color.appInfo)
                         .font(.title3)
                     
                     Text(suggestion)
@@ -161,12 +161,12 @@ struct RecipeValidationView: View {
                     Image(systemName: showingDetails ? "chevron.up" : "chevron.down")
                 }
                 .font(.caption)
-                .foregroundColor(.blue)
+                .foregroundStyle(Color.appInfo)
             }
             .buttonStyle(.plain)
         }
         .padding()
-        .background(Color.orange.opacity(0.1))
+        .adaptiveToneBackground(.warning, baseOpacity: 0.1)
         .cornerRadius(12)
     }
     
@@ -183,7 +183,7 @@ struct RecipeValidationView: View {
                         .foregroundColor(.secondary)
                     Text(original.isEmpty ? "(empty)" : original)
                         .font(.caption)
-                        .foregroundColor(.red)
+                        .foregroundStyle(Color.appCritical)
                         .strikethrough()
                 }
                 
@@ -197,7 +197,7 @@ struct RecipeValidationView: View {
                         .foregroundColor(.secondary)
                     Text(corrected)
                         .font(.caption)
-                        .foregroundColor(.green)
+                        .foregroundStyle(Color.appSuccess)
                         .fontWeight(.medium)
                 }
             }
@@ -251,8 +251,8 @@ struct RecipeValidationView: View {
                 }
                 .frame(maxWidth: .infinity)
                 .padding()
-                .background(Color.blue)
-                .foregroundColor(.white)
+                .background(AdaptiveToneSolidFill(tone: .info))
+                .foregroundStyle(Color.onTint)
                 .cornerRadius(12)
             }
             .buttonStyle(.plain)

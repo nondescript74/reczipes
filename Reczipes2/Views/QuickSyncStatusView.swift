@@ -62,7 +62,7 @@ struct QuickSyncStatusView: View {
                 .frame(maxWidth: .infinity)
                 .padding()
                 .background(Color.accentColor)
-                .foregroundColor(.white)
+                .foregroundStyle(Color.onTint)
                 .cornerRadius(12)
             }
             .disabled(isLoading)
@@ -79,7 +79,7 @@ struct QuickSyncStatusView: View {
                 TipItem(text: "Stay connected to Wi-Fi")
             }
             .padding()
-            .background(Color(.secondarySystemBackground))
+            .background(Color.appSecondaryBackground)
             .cornerRadius(12)
             .padding(.horizontal)
             
@@ -87,7 +87,7 @@ struct QuickSyncStatusView: View {
         }
         .padding(.top, 40)
         .navigationTitle("Quick Sync Check")
-        .navigationBarTitleDisplayMode(.inline)
+        .platformNavigationBarTitleDisplayMode(.inline)
         .task {
             await refresh()
         }
@@ -153,7 +153,7 @@ struct InfoCard: View {
             Spacer()
         }
         .padding()
-        .background(Color(.secondarySystemBackground))
+        .background(Color.appSecondaryBackground)
         .cornerRadius(10)
     }
 }
@@ -164,7 +164,7 @@ struct TipItem: View {
     var body: some View {
         HStack(spacing: 8) {
             Image(systemName: "checkmark.circle.fill")
-                .foregroundColor(.green)
+                .foregroundStyle(Color.appSuccess)
                 .font(.caption)
             
             Text(text)

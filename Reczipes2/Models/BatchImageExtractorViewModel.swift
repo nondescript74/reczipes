@@ -9,6 +9,11 @@ import SwiftUI
 import SwiftData
 import Photos
 import Combine
+#if canImport(UIKit)
+import UIKit
+#elseif canImport(AppKit)
+import AppKit
+#endif
 
 /// ViewModel managing batch extraction workflow from Photos library images
 @MainActor
@@ -24,17 +29,17 @@ class BatchImageExtractorViewModel: ObservableObject {
     @Published var successCount = 0
     @Published var failureCount = 0
     
-    @Published var currentImage: UIImage?
+    @Published var currentImage: PlatformImage?
     @Published var currentRecipe: RecipeX?
     @Published var currentStatus = "Ready"
     
     @Published var remainingAssets: [PHAsset] = []
-    @Published var remainingImages: [UIImage] = []   // mirrors remainingAssets but for UIImage queues
+    @Published var remainingImages: [PlatformImage] = []   // mirrors remainingAssets but for PlatformImage queues
     @Published var errorLog: [(imageIndex: Int, error: String)] = []
     
     // Crop integration properties
     @Published var showingCropForBatch = false
-    @Published var imageToCropInBatch: UIImage?
+    @Published var imageToCropInBatch: PlatformImage?
     
     // MARK: - Private Properties
     
@@ -46,11 +51,11 @@ class BatchImageExtractorViewModel: ObservableObject {
     private var allAssets: [PHAsset] = []
     private var processedAssets: Set<String> = []
     private var shouldCrop = false
-    private var currentBatch: [UIImage] = []
+    private var currentBatch: [PlatformImage] = []
     private var extractionTask: Task<Void, Never>?
     
     private var cropContinuation: CheckedContinuation<Bool, Never>?
-    private var cropImageContinuation: CheckedContinuation<UIImage?, Never>?
+    private var cropImageContinuation: CheckedContinuation<PlatformImage?, Never>?
     
     // Background extraction support
     private let batchManager = BatchExtractionManager.shared
@@ -112,12 +117,12 @@ class BatchImageExtractorViewModel: ObservableObject {
     }
     
     func startBatchExtractionFromImages(
-        images: [UIImage],
+        images: [PlatformImage],
         shouldCrop: Bool
     ) {
         guard !images.isEmpty else { return }
         
-        AppLog.info("Starting batch image extraction from \(images.count) UIImages (Files/iCloud Drive), shouldCrop: \(shouldCrop)", category: .batch)
+        AppLog.info("Starting batch image extraction from \(images.count) PlatformImages (Files/iCloud Drive), shouldCrop: \(shouldCrop)", category: .batch)
         
         self.currentBatch = images
         self.shouldCrop = shouldCrop
@@ -181,7 +186,7 @@ class BatchImageExtractorViewModel: ObservableObject {
         isWaitingForCrop = false
     }
     
-    func handleCroppedImage(_ image: UIImage?) {
+    func handleCroppedImage(_ image: PlatformImage?) {
         cropImageContinuation?.resume(returning: image)
         cropImageContinuation = nil
         imageToCropInBatch = nil
@@ -208,7 +213,7 @@ class BatchImageExtractorViewModel: ObservableObject {
     
     // MARK: - Private Methods
     
-    private func requestCrop(for image: UIImage) async -> UIImage? {
+    private func requestCrop(for image: PlatformImage) async -> PlatformImage? {
         await withCheckedContinuation { continuation in
             self.cropImageContinuation = continuation
             self.imageToCropInBatch = image
@@ -300,7 +305,7 @@ class BatchImageExtractorViewModel: ObservableObject {
         }
     }
     
-    private func extractRecipeFromImage(_ image: UIImage, imageIndex: Int) async {
+    private func extractRecipeFromImage(_ image: PlatformImage, imageIndex: Int) async {
         do {
             currentStatus = "Extracting recipe from image \(imageIndex + 1)..."
             
@@ -344,7 +349,7 @@ class BatchImageExtractorViewModel: ObservableObject {
     }
     
     private func processImageBatch() async {
-        AppLog.info("Processing batch of \(currentBatch.count) UIImages from Files/iCloud Drive", category: .batch)
+        AppLog.info("Processing batch of \(currentBatch.count) PlatformImages from Files/iCloud Drive", category: .batch)
         
         for (index, image) in currentBatch.enumerated() {
             // Check if stopped
@@ -359,7 +364,7 @@ class BatchImageExtractorViewModel: ObservableObject {
             }
             
             currentStatus = "Processing image \(index + 1) of \(totalToExtract)..."
-            AppLog.info("Processing UIImage \(index + 1) of \(totalToExtract)", category: .batch)
+            AppLog.info("Processing PlatformImage \(index + 1) of \(totalToExtract)", category: .batch)
             
             currentImage = image
             
@@ -398,10 +403,10 @@ class BatchImageExtractorViewModel: ObservableObject {
         currentStatus = "Complete! Extracted \(successCount) recipes."
         isExtracting = false
         currentBatch = []
-        AppLog.info("Batch extraction from UIImages complete: \(successCount) success, \(failureCount) failures", category: .batch)
+        AppLog.info("Batch extraction from PlatformImages complete: \(successCount) success, \(failureCount) failures", category: .batch)
     }
     
-    private func saveRecipe(_ recipeX: RecipeX, withImage image: UIImage) async {
+    private func saveRecipe(_ recipeX: RecipeX, withImage image: PlatformImage) async {
         AppLog.info("Saving recipe: \(String(describing: recipeX.title))", category: .batch)
 //
 //        // Convert to SwiftData RecipeX (NEW unified model)
@@ -419,7 +424,7 @@ class BatchImageExtractorViewModel: ObservableObject {
         recipeX.extractionSource = "batch"
         
         // Set device identifier
-        recipeX.lastModifiedDeviceID = UIDevice.current.identifierForVendor?.uuidString
+        recipeX.lastModifiedDeviceID = PlatformDevice.identifier
         
         // Save image directly to SwiftData (CloudKit-synced)
         recipeX.setImage(image, isMainImage: true)
@@ -444,12 +449,12 @@ class BatchImageExtractorViewModel: ObservableObject {
     
     // MARK: - Background Extraction Methods
     
-    private func startBackgroundExtractionFromImages(images: [UIImage]) {
+    private func startBackgroundExtractionFromImages(images: [PlatformImage]) {
         AppLog.info("Starting background extraction from \(images.count) images", category: .batch)
         
         // Start a task to process images and feed them to the background manager
         extractionTask = Task {
-            var processedImages: [(image: UIImage, index: Int)] = []
+            var processedImages: [(image: PlatformImage, index: Int)] = []
             
             for (index, image) in images.enumerated() {
                 processedImages.append((image: image, index: index))
@@ -465,7 +470,7 @@ class BatchImageExtractorViewModel: ObservableObject {
         
         // Start a task to load images from assets and feed them to the background manager
         extractionTask = Task {
-            var processedImages: [(image: UIImage, index: Int)] = []
+            var processedImages: [(image: PlatformImage, index: Int)] = []
             
             for (index, asset) in assets.enumerated() {
                 if let image = await photoManager.loadImage(for: asset, targetSize: PHImageManagerMaximumSize) {
@@ -480,7 +485,7 @@ class BatchImageExtractorViewModel: ObservableObject {
         }
     }
     
-    private func startBackgroundExtractionWithProcessedImages(_ processedImages: [(image: UIImage, index: Int)]) async {
+    private func startBackgroundExtractionWithProcessedImages(_ processedImages: [(image: PlatformImage, index: Int)]) async {
         AppLog.info("Handing off \(processedImages.count) images to background extraction", category: .batch)
         
         // Start background task to allow continuation when app is backgrounded

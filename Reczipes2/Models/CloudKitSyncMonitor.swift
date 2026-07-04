@@ -289,7 +289,7 @@ struct CloudKitSyncStatusView: View {
                 Button {
                     // Open Settings app
                     if let url = URL(string: "App-prefs:root=CASTLE") {
-                        UIApplication.shared.open(url)
+                        PlatformURLOpener.open(url)
                     }
                 } label: {
                     HStack {
@@ -318,7 +318,7 @@ struct CloudKitSyncStatusView: View {
             .padding(.top, 4)
         }
         .padding()
-        .background(Color(.secondarySystemBackground))
+        .background(Color.appSecondaryBackground)
         .cornerRadius(12)
         .task {
             await monitor.checkAccountStatus()

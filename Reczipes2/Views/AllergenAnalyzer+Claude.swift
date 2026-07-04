@@ -325,7 +325,7 @@ struct EnhancedAllergenDetailView: View {
                                         .padding(.horizontal, 8)
                                         .padding(.vertical, 4)
                                         .background(.orange.opacity(0.2))
-                                        .foregroundStyle(.orange)
+                                        .foregroundStyle(Color.appWarning)
                                         .clipShape(Capsule())
                                 }
                                 
@@ -336,7 +336,7 @@ struct EnhancedAllergenDetailView: View {
                                 if !allergen.substitutions.isEmpty {
                                     Text("Substitutions: \(allergen.substitutions.joined(separator: ", "))")
                                         .font(.caption)
-                                        .foregroundStyle(.blue)
+                                        .foregroundStyle(Color.appInfo)
                                 }
                             }
                             .padding(.vertical, 4)
@@ -356,7 +356,7 @@ struct EnhancedAllergenDetailView: View {
                                         HStack {
                                             Image(systemName: "arrow.right")
                                                 .font(.caption)
-                                                .foregroundStyle(.green)
+                                                .foregroundStyle(Color.appSuccess)
                                             Text(sub)
                                                 .font(.subheadline)
                                         }
@@ -374,7 +374,7 @@ struct EnhancedAllergenDetailView: View {
                 }
             }
             .navigationTitle("Enhanced Analysis")
-            .navigationBarTitleDisplayMode(.inline)
+            .platformNavigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") { dismiss() }

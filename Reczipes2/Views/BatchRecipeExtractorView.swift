@@ -54,7 +54,7 @@ struct BatchRecipeExtractorView: View {
                 }
             }
             .navigationTitle("Batch Extract")
-            .navigationBarTitleDisplayMode(.large)
+            .platformNavigationBarTitleDisplayMode(.large)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Close") {
@@ -128,8 +128,8 @@ struct BatchRecipeExtractorView: View {
                     .font(.headline)
                     .frame(maxWidth: .infinity)
                     .padding()
-                    .background(Color.blue)
-                    .foregroundColor(.white)
+                    .background(AdaptiveToneSolidFill(tone: .info))
+                    .foregroundStyle(Color.onTint)
                     .cornerRadius(12)
             }
             .buttonStyle(.plain)
@@ -224,7 +224,7 @@ struct BatchRecipeExtractorView: View {
             }
         }
         .padding()
-        .background(Color(.systemBackground))
+        .background(Color.appSystemBackground)
         .cornerRadius(16)
         .shadow(radius: 2)
     }
@@ -250,7 +250,7 @@ struct BatchRecipeExtractorView: View {
                 HStack(alignment: .top, spacing: 12) {
                     Image(systemName: "arrow.down.circle.fill")
                         .font(.title2)
-                        .foregroundColor(.blue)
+                        .foregroundStyle(Color.appInfo)
                     
                     VStack(alignment: .leading, spacing: 4) {
                         Text("Extracting...")
@@ -289,7 +289,7 @@ struct BatchRecipeExtractorView: View {
                 VStack(alignment: .leading, spacing: 8) {
                     HStack {
                         Image(systemName: "checkmark.circle.fill")
-                            .foregroundColor(.green)
+                            .foregroundStyle(Color.appSuccess)
                         Text("Extracted: \(String(describing: recipe.title))")
                             .font(.subheadline)
                             .fontWeight(.semibold)
@@ -331,7 +331,7 @@ struct BatchRecipeExtractorView: View {
             .frame(maxWidth: .infinity)
             .padding()
             .background(Color.purple)
-            .foregroundColor(.white)
+            .foregroundStyle(Color.onTint)
             .cornerRadius(12)
         }
         .buttonStyle(.plain)
@@ -356,7 +356,7 @@ struct BatchRecipeExtractorView: View {
                 .frame(maxWidth: .infinity)
                 .padding()
                 .background(viewModel.isPaused ? Color.green : Color.orange)
-                .foregroundColor(.white)
+                .foregroundStyle(Color.onTint)
                 .cornerRadius(12)
             }
             .buttonStyle(.plain)
@@ -372,8 +372,8 @@ struct BatchRecipeExtractorView: View {
                 .font(.headline)
                 .frame(maxWidth: .infinity)
                 .padding()
-                .background(Color.red)
-                .foregroundColor(.white)
+                .background(AdaptiveToneSolidFill(tone: .critical))
+                .foregroundStyle(Color.onTint)
                 .cornerRadius(12)
             }
             .buttonStyle(.plain)
@@ -410,7 +410,7 @@ struct BatchRecipeExtractorView: View {
             }
         }
         .padding()
-        .background(Color(.systemBackground))
+        .background(Color.appSystemBackground)
         .cornerRadius(12)
         .shadow(radius: 1)
     }
@@ -418,7 +418,7 @@ struct BatchRecipeExtractorView: View {
     private func linkPreviewRow(link: SavedLink) -> some View {
         HStack(spacing: 12) {
             Image(systemName: "link.circle.fill")
-                .foregroundColor(.blue)
+                .foregroundStyle(Color.appInfo)
             
             VStack(alignment: .leading, spacing: 2) {
                 Text(link.title)
@@ -451,7 +451,7 @@ struct BatchRecipeExtractorView: View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
                 Image(systemName: "exclamationmark.triangle.fill")
-                    .foregroundColor(.red)
+                    .foregroundStyle(Color.appCritical)
                 Text("Errors (\(viewModel.errorLog.count))")
                     .font(.headline)
             }
@@ -471,13 +471,13 @@ struct BatchRecipeExtractorView: View {
                     }
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(8)
-                    .background(Color.red.opacity(0.1))
+                    .adaptiveToneBackground(.critical, baseOpacity: 0.1)
                     .cornerRadius(8)
                 }
             }
         }
         .padding()
-        .background(Color(.systemBackground))
+        .background(Color.appSystemBackground)
         .cornerRadius(12)
         .shadow(radius: 1)
     }

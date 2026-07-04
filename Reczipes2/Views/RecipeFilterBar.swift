@@ -58,7 +58,7 @@ struct RecipeFilterBar: View {
                 .padding(.bottom, 8)
             }
         }
-        .background(Color(.systemGray6))
+        .background(Color.appGray6)
     }
     
     // MARK: - Filter Badge
@@ -74,7 +74,7 @@ struct RecipeFilterBar: View {
                 .frame(width: 32, height: 32)
                 .background(
                     Circle()
-                        .fill(filterMode == mode ? badgeColor(for: mode) : Color(.systemBackground))
+                        .fill(filterMode == mode ? badgeColor(for: mode) : Color.appSystemBackground)
                 )
                 .overlay(
                     Circle()
@@ -133,7 +133,7 @@ struct RecipeFilterBar: View {
             .padding(.vertical, 4)
             .background(
                 Capsule()
-                    .fill(Color(.systemBackground))
+                    .fill(Color.appSystemBackground)
             )
         }
         .buttonStyle(.plain)
@@ -176,7 +176,7 @@ struct RecipeFilterBar: View {
             .padding(.vertical, 4)
             .background(
                 Capsule()
-                    .fill(Color(.systemBackground))
+                    .fill(Color.appSystemBackground)
             )
         }
         .buttonStyle(.plain)
@@ -196,7 +196,7 @@ struct RecipeFilterBar: View {
                     if profile.hasNutritionalGoals {
                         Image(systemName: "checkmark.circle.fill")
                             .font(.caption2)
-                            .foregroundStyle(.green)
+                            .foregroundStyle(Color.appSuccess)
                         Text(profile.name ?? "Profile")
                             .font(.caption2)
                             .foregroundStyle(.primary)
@@ -220,7 +220,7 @@ struct RecipeFilterBar: View {
             .padding(.vertical, 4)
             .background(
                 Capsule()
-                    .fill(Color(.systemBackground))
+                    .fill(Color.appSystemBackground)
             )
         }
         .buttonStyle(.plain)

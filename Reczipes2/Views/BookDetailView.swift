@@ -54,7 +54,7 @@ struct BookDetailView: View {
                 }
             }
             .navigationTitle(book.displayName)
-            .navigationBarTitleDisplayMode(.inline)
+            .platformNavigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Done") {
@@ -189,7 +189,7 @@ struct BookDetailView: View {
                 }
             }
             .padding()
-            .background(Color(.systemBackground))
+            .background(Color.appSystemBackground)
             
             // Page turning view
             TabView(selection: $currentPage) {
@@ -203,8 +203,8 @@ struct BookDetailView: View {
                     .tag(index)
                 }
             }
-            .tabViewStyle(.page(indexDisplayMode: .never))
-            .indexViewStyle(.page(backgroundDisplayMode: .never))
+            .platformPageTabViewStyle(indexDisplayMode: .never)
+            .platformPageIndexViewStyle(backgroundDisplayMode: .never)
         }
     }
     
@@ -389,7 +389,7 @@ struct BookRecipePageView: View {
                                             Text("\(index + 1)")
                                                 .font(.body)
                                                 .fontWeight(.bold)
-                                                .foregroundStyle(.white)
+                                                .foregroundStyle(Color.onTint)
                                                 .frame(width: 28, height: 28)
                                                 .background(bookColor, in: Circle())
                                             
@@ -443,7 +443,7 @@ struct BookRecipePageView: View {
                 }
             }
         }
-        .fullScreenCover(isPresented: $showingFullDetail) {
+        .platformFullScreenCover(isPresented: $showingFullDetail) {
             if let recipeXEntity = recipeX {
                 NavigationStack {
                     RecipeDetailView(recipe: recipeXEntity)
@@ -492,6 +492,7 @@ struct BookRecipePageView: View {
 import UIKit
 #endif
 
+#if os(iOS)
 struct ShareSheet_BDV: UIViewControllerRepresentable {
     let activityItems: [Any]
     
@@ -507,5 +508,11 @@ struct ShareSheet_BDV: UIViewControllerRepresentable {
         // No updates needed
     }
 }
+#else
+struct ShareSheet_BDV: View {
+    let activityItems: [Any]
+    var body: some View { MacShareView(items: activityItems) }
+}
+#endif
 
 

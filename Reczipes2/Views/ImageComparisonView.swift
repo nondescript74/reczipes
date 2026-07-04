@@ -8,8 +8,8 @@
 import SwiftUI
 
 struct ImageComparisonView: View {
-    let original: UIImage
-    let processed: UIImage
+    let original: PlatformImage
+    let processed: PlatformImage
     @Environment(\.dismiss) private var dismiss
     
     var body: some View {
@@ -19,7 +19,7 @@ struct ImageComparisonView: View {
                     VStack(alignment: .leading) {
                         Text("Original")
                             .font(.headline)
-                        Image(uiImage: original)
+                        Image(platformImage: original)
                             .resizable()
                             .scaledToFit()
                             .cornerRadius(8)
@@ -28,7 +28,7 @@ struct ImageComparisonView: View {
                     VStack(alignment: .leading) {
                         Text("Processed (Enhanced)")
                             .font(.headline)
-                        Image(uiImage: processed)
+                        Image(platformImage: processed)
                             .resizable()
                             .scaledToFit()
                             .cornerRadius(8)
@@ -37,9 +37,9 @@ struct ImageComparisonView: View {
                 .padding()
             }
             .navigationTitle("Image Comparison")
-            .navigationBarTitleDisplayMode(.inline)
+            .platformNavigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .platformNavBarTrailing) {
                     Button("Done") {
                         dismiss()
                     }

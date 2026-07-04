@@ -31,11 +31,11 @@ struct VersionDebugView: View {
                         Spacer()
                         if let version = bundleVersion {
                             Text(version)
-                                .foregroundColor(.green)
+                                .foregroundStyle(Color.appSuccess)
                                 .bold()
                         } else {
                             Text("❌ NOT FOUND")
-                                .foregroundColor(.red)
+                                .foregroundStyle(Color.appCritical)
                         }
                     }
                     
@@ -45,11 +45,11 @@ struct VersionDebugView: View {
                         Spacer()
                         if let build = bundleBuild {
                             Text(build)
-                                .foregroundColor(.green)
+                                .foregroundStyle(Color.appSuccess)
                                 .bold()
                         } else {
                             Text("❌ NOT FOUND")
-                                .foregroundColor(.red)
+                                .foregroundStyle(Color.appCritical)
                         }
                     }
                 }
@@ -59,7 +59,7 @@ struct VersionDebugView: View {
                         Text("Detected Version")
                         Spacer()
                         Text(VersionHistoryService.shared.currentVersion)
-                            .foregroundColor(.blue)
+                            .foregroundStyle(Color.appInfo)
                             .bold()
                     }
                     
@@ -67,7 +67,7 @@ struct VersionDebugView: View {
                         Text("Detected Build")
                         Spacer()
                         Text(VersionHistoryService.shared.currentBuildNumber)
-                            .foregroundColor(.blue)
+                            .foregroundStyle(Color.appInfo)
                             .bold()
                     }
                     
@@ -84,7 +84,7 @@ struct VersionDebugView: View {
                     if let entry = currentEntry {
                         HStack {
                             Image(systemName: "checkmark.circle.fill")
-                                .foregroundColor(.green)
+                                .foregroundStyle(Color.appSuccess)
                             VStack(alignment: .leading) {
                                 Text("Match Found!")
                                     .font(.headline)
@@ -113,7 +113,7 @@ struct VersionDebugView: View {
                     } else {
                         HStack {
                             Image(systemName: "xmark.circle.fill")
-                                .foregroundColor(.red)
+                                .foregroundStyle(Color.appCritical)
                             Text("No Match Found!")
                                 .font(.headline)
                         }
@@ -140,7 +140,7 @@ struct VersionDebugView: View {
                                         .padding(.horizontal, 6)
                                         .padding(.vertical, 2)
                                         .background(Color.green)
-                                        .foregroundColor(.white)
+                                        .foregroundStyle(Color.onTint)
                                         .cornerRadius(4)
                                 }
                             }
@@ -165,7 +165,7 @@ struct VersionDebugView: View {
                         }
                     } else {
                         Text("Unable to fetch what's new")
-                            .foregroundColor(.red)
+                            .foregroundStyle(Color.appCritical)
                     }
                 }
                 
@@ -198,7 +198,7 @@ struct VersionDebugView: View {
                 }
             }
             .navigationTitle("Version Debug")
-            .navigationBarTitleDisplayMode(.inline)
+            .platformNavigationBarTitleDisplayMode(.inline)
             .task {
                 await loadData()
             }

@@ -120,7 +120,7 @@ struct RecipeBookEditorView: View {
                                         Circle()
                                             .strokeBorder(.white, lineWidth: 3)
                                         Image(systemName: "checkmark")
-                                            .foregroundStyle(.white)
+                                            .foregroundStyle(Color.onTint)
                                             .fontWeight(.bold)
                                     }
                                 }
@@ -155,7 +155,7 @@ struct RecipeBookEditorView: View {
                 }
             }
             .navigationTitle(book == nil ? "New Book" : "Edit Book")
-            .navigationBarTitleDisplayMode(.inline)
+            .platformNavigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
@@ -198,7 +198,7 @@ struct RecipeBookEditorView: View {
         
         do {
             guard let data = try await photoItem.loadTransferable(type: Data.self),
-                  let uiImage = UIImage(data: data) else {
+                  let uiImage = PlatformImage(data: data) else {
                 AppLog.error("Failed to load image data", category: .recipe)
                 return
             }

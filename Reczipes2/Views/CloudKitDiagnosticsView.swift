@@ -32,7 +32,7 @@ struct CloudKitDiagnosticsView: View {
                 if let error = monitor.lastSyncError {
                     Text(error)
                         .font(.caption)
-                        .foregroundColor(.red)
+                        .foregroundStyle(Color.appCritical)
                 }
                 
                 Button("Refresh Account Status") {
@@ -105,7 +105,7 @@ struct CloudKitDiagnosticsView: View {
                 
                 Button("Open CloudKit Dashboard") {
                     if let url = URL(string: "https://icloud.developer.apple.com/dashboard/") {
-                        UIApplication.shared.open(url)
+                        PlatformURLOpener.open(url)
                     }
                 }
                 
@@ -243,7 +243,7 @@ struct CloudKitDiagnosticsView: View {
             text += "   \(result.message)\n"
         }
         
-        UIPasteboard.general.string = text
+        PlatformPasteboard.copy(text)
         print("📋 Diagnostics copied to clipboard")
     }
 }

@@ -11,8 +11,8 @@ struct CreateRecipeView: View {
     @State private var recipeYield: String = ""
     @State private var reference: String = ""
     
-    // Image (store as UIImage for now; conversion happens on save)
-    @State private var pickedImage: UIImage?
+    // Image (store as PlatformImage for now; conversion happens on save)
+    @State private var pickedImage: PlatformImage?
     @State private var showingPhotoPicker = false
     
     // Ingredients (sectioned)
@@ -173,7 +173,7 @@ struct CreateRecipeView: View {
                 notesSection
             }
             .navigationTitle("New Recipe")
-            .navigationBarTitleDisplayMode(.inline)
+            .platformNavigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") { dismiss() }
@@ -202,7 +202,7 @@ struct CreateRecipeView: View {
     private var detailsSection: some View {
         Section("Details") {
             TextField("Title", text: $title)
-                .textInputAutocapitalization(.words)
+                .platformTextInputAutocapitalization(.words)
             TextField("Header notes (optional)", text: $headerNotes, axis: .vertical)
             TextField("Yield (e.g. 4 servings)", text: $recipeYield)
             TextField("Reference (optional)", text: $reference)
@@ -224,7 +224,7 @@ struct CreateRecipeView: View {
     @ViewBuilder
     private var imagePreview: some View {
         if let pickedImage {
-            Image(uiImage: pickedImage)
+            Image(platformImage: pickedImage)
                 .resizable()
                 .scaledToFill()
         } else {
@@ -299,7 +299,7 @@ struct CreateRecipeView: View {
                     ingredientSections[sectionIndex].ingredients.removeAll(where: { $0.id == ingredient.id })
                 } label: {
                     Image(systemName: "trash")
-                        .foregroundStyle(.red)
+                        .foregroundStyle(Color.appCritical)
                 }
                 .disabled(
                     ingredientSections.first(where: { $0.id == sectionID })?.ingredients.count ?? 0 <= 1
@@ -313,7 +313,7 @@ struct CreateRecipeView: View {
         }
         .padding(.vertical, 4)
         .padding(.horizontal, 8)
-        .background(Color(.systemGray6).opacity(0.5))
+        .background(Color.appGray6.opacity(0.5))
         .clipShape(RoundedRectangle(cornerRadius: 8))
     }
     
@@ -372,7 +372,7 @@ struct CreateRecipeView: View {
                 renumberSteps(in: sectionID)
             } label: {
                 Image(systemName: "trash")
-                    .foregroundStyle(.red)
+                    .foregroundStyle(Color.appCritical)
             }
             .disabled(
                 instructionSections.first(where: { $0.id == sectionID })?.steps.count ?? 0 <= 1
@@ -466,7 +466,7 @@ struct CreateRecipeView: View {
         
         // Image
         if let pickedImage, let jpeg = pickedImage.jpegData(compressionQuality: 0.85) {
-            recipe.setImage(UIImage(data: jpeg) ?? pickedImage, isMainImage: true)
+            recipe.setImage(PlatformImage(data: jpeg) ?? pickedImage, isMainImage: true)
         }
         
         modelContext.insert(recipe)

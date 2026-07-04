@@ -32,7 +32,7 @@ struct CloudKitRecipeBookManagerView: View {
     var body: some View {
         contentView
             .navigationTitle("My CloudKit Recipe Books")
-            .navigationBarTitleDisplayMode(.inline)
+            .platformNavigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .primaryAction) {
                     Button {
@@ -100,7 +100,7 @@ struct CloudKitRecipeBookManagerView: View {
                 Spacer()
                 ProgressView()
                     .padding()
-                    .background(Color(.systemBackground))
+                    .background(Color.appSystemBackground)
                     .cornerRadius(8)
                     .shadow(radius: 4)
                 Spacer()
@@ -164,21 +164,21 @@ struct CloudKitRecipeBookManagerView: View {
                 if let data = managerData {
                     HStack {
                         Image(systemName: "checkmark.circle.fill")
-                            .foregroundColor(.green)
+                            .foregroundStyle(Color.appSuccess)
                         Text("\(data.trackedCount) tracked recipe books")
                     }
                     
                     if data.orphanedCount > 0 {
                         HStack {
                             Image(systemName: "exclamationmark.triangle.fill")
-                                .foregroundColor(.orange)
+                                .foregroundStyle(Color.appWarning)
                             Text("\(data.orphanedCount) orphaned recipe books")
                         }
                     }
                     
                     HStack {
                         Image(systemName: "cloud.fill")
-                            .foregroundColor(.blue)
+                            .foregroundStyle(Color.appInfo)
                         Text("\(data.totalCount) total in CloudKit")
                     }
                 }
@@ -198,7 +198,7 @@ struct CloudKitRecipeBookManagerView: View {
                     }
                 } header: {
                     Label("Tracked Recipe Books", systemImage: "checkmark.circle.fill")
-                        .foregroundColor(.green)
+                        .foregroundStyle(Color.appSuccess)
                 }
             }
             
@@ -216,7 +216,7 @@ struct CloudKitRecipeBookManagerView: View {
                     }
                 } header: {
                     Label("Orphaned Recipe Books", systemImage: "exclamationmark.triangle.fill")
-                        .foregroundColor(.orange)
+                        .foregroundStyle(Color.appWarning)
                 } footer: {
                     Text("These recipe books exist in CloudKit but aren't tracked locally. They may be from a previous device or installation.")
                 }

@@ -31,10 +31,10 @@ struct ImageSelectionCard: View {
                             .overlay(
                                 VStack {
                                     Image(systemName: "exclamationmark.triangle")
-                                        .foregroundColor(.red)
+                                        .foregroundStyle(Color.appCritical)
                                     Text("Failed to load")
                                         .font(.caption2)
-                                        .foregroundColor(.red)
+                                        .foregroundStyle(Color.appCritical)
                                 }
                             )
                     case .empty:
@@ -60,15 +60,15 @@ struct ImageSelectionCard: View {
                         
                         if let index = selectionIndex, index == 0 {
                             Image(systemName: "star.fill")
-                                .foregroundColor(.white)
+                                .foregroundStyle(Color.onTint)
                                 .font(.system(size: 14))
                         } else if let index = selectionIndex {
                             Text("\(index + 1)")
-                                .foregroundColor(.white)
+                                .foregroundStyle(Color.onTint)
                                 .font(.system(size: 14, weight: .bold))
                         } else {
                             Image(systemName: "checkmark")
-                                .foregroundColor(.white)
+                                .foregroundStyle(Color.onTint)
                                 .font(.system(size: 14, weight: .bold))
                         }
                     }

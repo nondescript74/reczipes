@@ -69,14 +69,14 @@ struct FODMAPQuickReferenceView: View {
                                     .font(.caption)
                                     .padding(.horizontal, 10)
                                     .padding(.vertical, 6)
-                                    .background(Color.red.opacity(0.2))
-                                    .foregroundStyle(.red)
+                                    .adaptiveToneBackground(.critical, baseOpacity: 0.2)
+                                    .foregroundStyle(Color.appCritical)
                                     .clipShape(Capsule())
                             }
                         }
                     }
                     .padding()
-                    .background(Color(.secondarySystemBackground))
+                    .background(Color.appSecondaryBackground)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                     .padding(.horizontal)
                     
@@ -95,7 +95,7 @@ struct FODMAPQuickReferenceView: View {
                     VStack(alignment: .leading, spacing: 12) {
                         Label("Helpful Tips", systemImage: "lightbulb.fill")
                             .font(.headline)
-                            .foregroundStyle(.blue)
+                            .foregroundStyle(Color.appInfo)
                         
                         VStack(alignment: .leading, spacing: 8) {
                             TipRow(text: "Start with small portions when testing new foods")
@@ -114,9 +114,9 @@ struct FODMAPQuickReferenceView: View {
                 .padding(.vertical)
             }
             .navigationTitle("FODMAP Guide")
-            .navigationBarTitleDisplayMode(.inline)
+            .platformNavigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .platformNavBarTrailing) {
                     CloudKitSyncBadge()
                 }
                 
@@ -148,7 +148,7 @@ struct FODMAPSubstitutionCard: View {
             // Original ingredient
             HStack {
                 Image(systemName: "xmark.circle.fill")
-                    .foregroundStyle(.red)
+                    .foregroundStyle(Color.appCritical)
                 Text(substitution.originalIngredient.capitalized)
                     .font(.headline)
                     .fontWeight(.bold)
@@ -158,7 +158,7 @@ struct FODMAPSubstitutionCard: View {
             VStack(alignment: .leading, spacing: 6) {
                 HStack {
                     Image(systemName: "checkmark.circle.fill")
-                        .foregroundStyle(.green)
+                        .foregroundStyle(Color.appSuccess)
                         .font(.caption)
                     Text("Substitute with:")
                         .font(.subheadline)
@@ -191,7 +191,7 @@ struct FODMAPSubstitutionCard: View {
         }
         .padding()
         .frame(maxWidth: .infinity, alignment: .leading)
-        .background(Color(.systemBackground))
+        .background(Color.appSystemBackground)
         .clipShape(RoundedRectangle(cornerRadius: 10))
         .shadow(color: .black.opacity(0.05), radius: 2, x: 0, y: 1)
         .padding(.horizontal)
@@ -206,7 +206,7 @@ struct TipRow: View {
     var body: some View {
         HStack(alignment: .top, spacing: 8) {
             Image(systemName: "checkmark.circle.fill")
-                .foregroundStyle(.blue)
+                .foregroundStyle(Color.appInfo)
                 .font(.caption)
             Text(text)
                 .font(.caption)
@@ -317,7 +317,7 @@ struct FODMAPCheatSheet: View {
             }
         }
         .padding()
-        .background(Color(.secondarySystemBackground))
+        .background(Color.appSecondaryBackground)
         .clipShape(RoundedRectangle(cornerRadius: 12))
     }
 }
@@ -336,7 +336,7 @@ struct CheatSheetRow: View {
                 HStack(spacing: 4) {
                     Image(systemName: "xmark")
                         .font(.caption2)
-                        .foregroundStyle(.red)
+                        .foregroundStyle(Color.appCritical)
                     Text(avoid)
                         .font(.caption)
                         .fontWeight(.semibold)
@@ -345,7 +345,7 @@ struct CheatSheetRow: View {
                 HStack(spacing: 4) {
                     Image(systemName: "checkmark")
                         .font(.caption2)
-                        .foregroundStyle(.green)
+                        .foregroundStyle(Color.appSuccess)
                     Text(use)
                         .font(.caption)
                         .foregroundStyle(.secondary)

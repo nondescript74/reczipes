@@ -113,8 +113,8 @@ struct RecipeDetailView: View {
                         .font(.subheadline)
                         .padding(.horizontal, 12)
                         .padding(.vertical, 8)
-                        .background(Color.orange.opacity(0.1))
-                        .foregroundStyle(.orange)
+                        .adaptiveToneBackground(.warning, baseOpacity: 0.1)
+                        .foregroundStyle(Color.appWarning)
                         .clipShape(Capsule())
                     }
                 }
@@ -134,7 +134,7 @@ struct RecipeDetailView: View {
                     Label("FODMAP Friendly Options", systemImage: "leaf.circle.fill")
                         .font(.title2)
                         .fontWeight(.bold)
-                        .foregroundStyle(.orange)
+                        .foregroundStyle(Color.appWarning)
                     
                     Spacer()
                     
@@ -149,7 +149,7 @@ struct RecipeDetailView: View {
                             Image(systemName: showingFODMAPSubstitutions ? "chevron.up" : "chevron.down")
                                 .font(.caption)
                         }
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(Color.appInfo)
                     }
                 }
                 
@@ -185,7 +185,7 @@ struct RecipeDetailView: View {
             Label("Diabetic-Friendly Analysis", systemImage: "heart.text.square")
                 .font(.title2)
                 .fontWeight(.bold)
-                .foregroundStyle(.red)
+                .foregroundStyle(Color.appCritical)
             
             Spacer()
             
@@ -199,8 +199,8 @@ struct RecipeDetailView: View {
                 }
                 .padding(.horizontal, 8)
                 .padding(.vertical, 4)
-                .background(Color.red.opacity(0.1))
-                .foregroundStyle(.red)
+                .adaptiveToneBackground(.critical, baseOpacity: 0.1)
+                .foregroundStyle(Color.appCritical)
                 .clipShape(Capsule())
             }
         }
@@ -231,8 +231,8 @@ struct RecipeDetailView: View {
                 .font(.subheadline)
                 .frame(maxWidth: .infinity)
                 .padding(.vertical, 10)
-                .background(Color.red.opacity(0.1))
-                .foregroundStyle(.red)
+                .adaptiveToneBackground(.critical, baseOpacity: 0.1)
+                .foregroundStyle(Color.appCritical)
                 .clipShape(RoundedRectangle(cornerRadius: 10))
             }
             .disabled(isLoadingDiabeticInfo)
@@ -261,8 +261,8 @@ struct RecipeDetailView: View {
                 .font(.subheadline)
                 .frame(maxWidth: .infinity)
                 .padding()
-                .background(Color.red.opacity(0.1))
-                .foregroundStyle(.red)
+                .adaptiveToneBackground(.critical, baseOpacity: 0.1)
+                .foregroundStyle(Color.appCritical)
                 .clipShape(RoundedRectangle(cornerRadius: 12))
             }
         }
@@ -321,7 +321,7 @@ struct RecipeDetailView: View {
             if let title = section.title {
                 Text(title)
                     .font(.headline)
-                    .foregroundStyle(.blue)
+                    .foregroundStyle(Color.appInfo)
                     .padding(.top, 8)
             }
             
@@ -333,10 +333,10 @@ struct RecipeDetailView: View {
                 Text(transitionNote)
                     .font(.subheadline)
                     .italic()
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(Color.appWarning)
                     .padding(.vertical, 8)
                     .padding(.horizontal, 12)
-                    .background(Color.orange.opacity(0.1))
+                    .adaptiveToneBackground(.warning, baseOpacity: 0.1)
                     .clipShape(RoundedRectangle(cornerRadius: 8))
             }
         }
@@ -415,7 +415,7 @@ struct RecipeDetailView: View {
             if let title = section.title {
                 Text(title)
                     .font(.headline)
-                    .foregroundStyle(.green)
+                    .foregroundStyle(Color.appSuccess)
                     .padding(.top, 8)
             }
             
@@ -432,7 +432,7 @@ struct RecipeDetailView: View {
                 Text("\(step.stepNumber)")
                     .font(.title3)
                     .fontWeight(.bold)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Color.onTint)
                     .frame(width: 32, height: 32)
                     .background(Color.green)
                     .clipShape(Circle())
@@ -509,8 +509,8 @@ struct RecipeDetailView: View {
                             .fontWeight(.semibold)
                             .padding(.horizontal, 6)
                             .padding(.vertical, 2)
-                            .background(Color.orange.opacity(0.2))
-                            .foregroundStyle(.orange)
+                            .adaptiveToneBackground(.warning, baseOpacity: 0.2)
+                            .foregroundStyle(Color.appWarning)
                             .clipShape(Capsule())
                     }
                 } else {
@@ -561,7 +561,7 @@ struct RecipeDetailView: View {
             .frame(maxWidth: .infinity)
             .padding(.vertical, 12)
             .background(Color.blue.opacity(0.1))
-            .foregroundStyle(.blue)
+            .foregroundStyle(Color.appInfo)
             .clipShape(RoundedRectangle(cornerRadius: 12))
         }
     }
@@ -595,7 +595,7 @@ struct RecipeDetailView: View {
                 HStack {
                     Text(reference)
                         .font(.subheadline)
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(Color.appInfo)
                         .underline()
                         .lineLimit(2)
                         .multilineTextAlignment(.leading)
@@ -603,7 +603,7 @@ struct RecipeDetailView: View {
                     Spacer()
                     
                     Image(systemName: "safari")
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(Color.appInfo)
                 }
                 .padding()
                 .background(Color.blue.opacity(0.1))
@@ -634,7 +634,7 @@ struct RecipeDetailView: View {
                                 
                                 Image(systemName: "safari")
                                     .font(.caption)
-                                    .foregroundStyle(.blue)
+                                    .foregroundStyle(Color.appInfo)
                             }
                             .padding(8)
                             .background(Color.blue.opacity(0.05))
@@ -685,7 +685,7 @@ struct RecipeDetailView: View {
             TabView {
                 ForEach(0..<imageCount, id: \.self) { index in
                     if let image = recipe.getImage(at: index) {
-                        Image(uiImage: image)
+                        Image(platformImage: image)
                             .resizable()
                             .aspectRatio(contentMode: .fit)
                             .frame(maxWidth: .infinity)
@@ -696,9 +696,9 @@ struct RecipeDetailView: View {
                     }
                 }
             }
-            .tabViewStyle(.page(indexDisplayMode: .always))
+            .platformPageTabViewStyle(indexDisplayMode: .always)
             .frame(height: 220)
-            .indexViewStyle(.page(backgroundDisplayMode: .always))
+            .platformPageIndexViewStyle(backgroundDisplayMode: .always)
         } else if let imageName = recipe.imageName {
             // Show single image
             RecipeImageView(
@@ -771,7 +771,7 @@ struct RecipeDetailView: View {
             } else {
                 Label("Saved", systemImage: "checkmark.circle.fill")
                     .font(.headline)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Color.onTint)
                     .padding(.horizontal, 16)
                     .padding(.vertical, 8)
                     .background(Color.green)
@@ -792,7 +792,7 @@ struct RecipeDetailView: View {
                 )
                 .padding(.horizontal, 8)
                 .padding(.vertical, 6)
-                .background(Color(.systemBackground))
+                .background(Color.appSystemBackground)
                 .overlay(
                     RoundedRectangle(cornerRadius: 8)
                         .stroke(Color.gray.opacity(0.3), lineWidth: 1)
@@ -878,11 +878,11 @@ struct RecipeDetailView: View {
         }
         .navigationTitle(recipe.title ?? "Recipe")
 #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
+        .platformNavigationBarTitleDisplayMode(.inline)
 #endif
         .toolbar {
 //            // CloudKit Sync Badge
-//            ToolbarItem(placement: .navigationBarTrailing) {
+//            ToolbarItem(placement: .platformNavBarTrailing) {
 //                CloudKitSyncBadge()
 //            }
             
@@ -1005,7 +1005,7 @@ struct RecipeDetailView: View {
                     newTipText = ""
                 }
             )
-            .presentationDetents([.medium, .large])
+            .platformPresentationDetents([.medium, .large])
             .presentationDragIndicator(.visible)
         }
         .sheet(isPresented: $showingSafariView) {
@@ -1352,7 +1352,7 @@ struct AddTipSheet: View {
                     Label("Add a Tip", systemImage: "lightbulb.fill")
                         .font(.title2)
                         .fontWeight(.bold)
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(Color.appInfo)
                     
                     Text("Share your cooking tips, tricks, or modifications for this recipe.")
                         .font(.subheadline)
@@ -1373,7 +1373,7 @@ struct AddTipSheet: View {
                 TextEditor(text: $tipText)
                     .frame(minHeight: 150)
                     .padding(8)
-                    .background(Color(.systemGray6))
+                    .background(Color.appGray6)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                     .overlay(
                         RoundedRectangle(cornerRadius: 12)
@@ -1395,7 +1395,7 @@ struct AddTipSheet: View {
                     .frame(maxWidth: .infinity)
                     .padding()
                     .background(tipText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? Color.gray : Color.blue)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(Color.onTint)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
                 .disabled(tipText.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
@@ -1404,7 +1404,7 @@ struct AddTipSheet: View {
                 
                 Spacer()
             }
-            .navigationBarTitleDisplayMode(.inline)
+            .platformNavigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {

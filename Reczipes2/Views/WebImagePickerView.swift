@@ -42,16 +42,16 @@ struct WebImagePickerView: View {
                 }
             }
             .navigationTitle("Choose Image")
-            .navigationBarTitleDisplayMode(.inline)
+            .platformNavigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarLeading) {
+                ToolbarItem(placement: .platformNavBarLeading) {
                     Button("Skip") {
                         onSelect(nil)
                         dismiss()
                     }
                 }
                 
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .platformNavBarTrailing) {
                     Button("Done") {
                         onSelect(selectedURL)
                         dismiss()
@@ -84,7 +84,7 @@ struct WebImagePickerView: View {
                         VStack(spacing: 8) {
                             Image(systemName: "photo.badge.exclamationmark")
                                 .font(.title)
-                                .foregroundColor(.red)
+                                .foregroundStyle(Color.appCritical)
                             Text("Failed to load")
                                 .font(.caption)
                                 .foregroundColor(.secondary)
@@ -107,7 +107,7 @@ struct WebImagePickerView: View {
                             Spacer()
                             Image(systemName: "checkmark.circle.fill")
                                 .font(.title2)
-                                .foregroundColor(.blue)
+                                .foregroundStyle(Color.appInfo)
                                 .padding(8)
                         }
                         Spacer()

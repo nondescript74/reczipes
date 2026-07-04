@@ -102,7 +102,7 @@ struct RecipeEditorView: View {
                         if hasUnsavedChanges {
                             Label("You have unsaved changes", systemImage: "exclamationmark.circle.fill")
                                 .font(.caption)
-                                .foregroundColor(.orange)
+                                .foregroundStyle(Color.appWarning)
                         }
                     }
                     .padding(.vertical, 8)
@@ -220,10 +220,10 @@ struct RecipeEditorView: View {
             }
             .navigationTitle("Edit Recipe")
 #if os(iOS)
-            .navigationBarTitleDisplayMode(.inline)
+            .platformNavigationBarTitleDisplayMode(.inline)
 #endif
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .platformNavBarTrailing) {
                     CloudKitSyncBadge()
                 }
                 
@@ -391,7 +391,7 @@ struct EditorSectionRow: View {
             
             if isComplete {
                 Image(systemName: "checkmark.circle.fill")
-                    .foregroundColor(.green)
+                    .foregroundStyle(Color.appSuccess)
             }
         }
         .padding(.vertical, 4)
@@ -451,7 +451,7 @@ struct BasicInfoEditorView: View {
         }
         .navigationTitle("Basic Information")
 #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
+        .platformNavigationBarTitleDisplayMode(.inline)
 #endif
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
@@ -472,7 +472,9 @@ struct IngredientsEditorView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     
+    #if os(iOS)
     @State private var editMode: EditMode = .inactive
+    #endif
     @State private var selectedSection: EditableIngredientSection?
     
     var body: some View {
@@ -530,7 +532,7 @@ struct IngredientsEditorView: View {
         }
         .navigationTitle("Ingredients")
 #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
+        .platformNavigationBarTitleDisplayMode(.inline)
 #endif
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
@@ -543,8 +545,8 @@ struct IngredientsEditorView: View {
                 }
             }
             
-            ToolbarItem(placement: .navigationBarTrailing) {
-                EditButton()
+            ToolbarItem(placement: .platformNavBarTrailing) {
+                PlatformEditButton()
             }
             
             ToolbarItem(placement: .confirmationAction) {
@@ -553,7 +555,9 @@ struct IngredientsEditorView: View {
                 }
             }
         }
+        #if os(iOS)
         .environment(\.editMode, $editMode)
+        #endif
     }
     
     // Helper function to generate contextual section titles
@@ -579,7 +583,9 @@ struct IngredientSectionDetailView: View {
     @Binding var hasUnsavedChanges: Bool
     
     @Environment(\.dismiss) private var dismiss
+    #if os(iOS)
     @State private var editMode: EditMode = .inactive
+    #endif
     
     var body: some View {
         Form {
@@ -644,11 +650,11 @@ struct IngredientSectionDetailView: View {
         }
         .navigationTitle("Edit Section")
 #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
+        .platformNavigationBarTitleDisplayMode(.inline)
 #endif
         .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                EditButton()
+            ToolbarItem(placement: .platformNavBarTrailing) {
+                PlatformEditButton()
             }
             
             ToolbarItem(placement: .confirmationAction) {
@@ -657,7 +663,9 @@ struct IngredientSectionDetailView: View {
                 }
             }
         }
+        #if os(iOS)
         .environment(\.editMode, $editMode)
+        #endif
     }
 }
 
@@ -684,7 +692,7 @@ struct IngredientDetailView: View {
             Section {
                 HStack {
                     TextField("Amount", text: $ingredient.quantity)
-                        .keyboardType(.decimalPad)
+                        .platformKeyboardType(.decimalPad)
                         .onChange(of: ingredient.quantity) { hasUnsavedChanges = true }
                     
                     Divider()
@@ -711,7 +719,7 @@ struct IngredientDetailView: View {
             Section {
                 HStack {
                     TextField("Metric Amount", text: $ingredient.metricQuantity)
-                        .keyboardType(.decimalPad)
+                        .platformKeyboardType(.decimalPad)
                         .onChange(of: ingredient.metricQuantity) { hasUnsavedChanges = true }
                     
                     Divider()
@@ -727,7 +735,7 @@ struct IngredientDetailView: View {
         }
         .navigationTitle("Edit Ingredient")
 #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
+        .platformNavigationBarTitleDisplayMode(.inline)
 #endif
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
@@ -746,7 +754,9 @@ struct InstructionsEditorView: View {
     @Binding var hasUnsavedChanges: Bool
     
     @Environment(\.dismiss) private var dismiss
+    #if os(iOS)
     @State private var editMode: EditMode = .inactive
+    #endif
     
     var body: some View {
         List {
@@ -803,7 +813,7 @@ struct InstructionsEditorView: View {
         }
         .navigationTitle("Instructions")
 #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
+        .platformNavigationBarTitleDisplayMode(.inline)
 #endif
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
@@ -816,8 +826,8 @@ struct InstructionsEditorView: View {
                 }
             }
             
-            ToolbarItem(placement: .navigationBarTrailing) {
-                EditButton()
+            ToolbarItem(placement: .platformNavBarTrailing) {
+                PlatformEditButton()
             }
             
             ToolbarItem(placement: .confirmationAction) {
@@ -826,7 +836,9 @@ struct InstructionsEditorView: View {
                 }
             }
         }
+        #if os(iOS)
         .environment(\.editMode, $editMode)
+        #endif
     }
     
     // Helper function to generate contextual section titles
@@ -852,7 +864,9 @@ struct InstructionSectionDetailView: View {
     @Binding var hasUnsavedChanges: Bool
     
     @Environment(\.dismiss) private var dismiss
+    #if os(iOS)
     @State private var editMode: EditMode = .inactive
+    #endif
     
     var body: some View {
         Form {
@@ -878,7 +892,7 @@ struct InstructionSectionDetailView: View {
                             if !step.stepNumber.isEmpty {
                                 Text(step.stepNumber)
                                     .font(.headline)
-                                    .foregroundColor(.orange)
+                                    .foregroundStyle(Color.appWarning)
                                     .frame(width: 30, alignment: .leading)
                             }
                             
@@ -909,11 +923,11 @@ struct InstructionSectionDetailView: View {
         }
         .navigationTitle("Edit Section")
 #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
+        .platformNavigationBarTitleDisplayMode(.inline)
 #endif
         .toolbar {
-            ToolbarItem(placement: .navigationBarTrailing) {
-                EditButton()
+            ToolbarItem(placement: .platformNavBarTrailing) {
+                PlatformEditButton()
             }
             
             ToolbarItem(placement: .confirmationAction) {
@@ -922,7 +936,9 @@ struct InstructionSectionDetailView: View {
                 }
             }
         }
+        #if os(iOS)
         .environment(\.editMode, $editMode)
+        #endif
     }
 }
 
@@ -938,7 +954,7 @@ struct InstructionStepDetailView: View {
         Form {
             Section {
                 TextField("Step Number", text: $step.stepNumber)
-                    .keyboardType(.numberPad)
+                    .platformKeyboardType(.numberPad)
                     .onChange(of: step.stepNumber) { hasUnsavedChanges = true }
             } header: {
                 Text("Step Number")
@@ -958,7 +974,7 @@ struct InstructionStepDetailView: View {
         }
         .navigationTitle("Edit Step")
 #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
+        .platformNavigationBarTitleDisplayMode(.inline)
 #endif
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
@@ -977,7 +993,9 @@ struct NotesEditorView: View {
     @Binding var hasUnsavedChanges: Bool
     
     @Environment(\.dismiss) private var dismiss
+    #if os(iOS)
     @State private var editMode: EditMode = .inactive
+    #endif
     
     var body: some View {
         List {
@@ -1035,7 +1053,7 @@ struct NotesEditorView: View {
         }
         .navigationTitle("Notes & Tips")
 #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
+        .platformNavigationBarTitleDisplayMode(.inline)
 #endif
         .toolbar {
             ToolbarItem(placement: .primaryAction) {
@@ -1047,8 +1065,8 @@ struct NotesEditorView: View {
                 }
             }
             
-            ToolbarItem(placement: .navigationBarTrailing) {
-                EditButton()
+            ToolbarItem(placement: .platformNavBarTrailing) {
+                PlatformEditButton()
             }
             
             ToolbarItem(placement: .confirmationAction) {
@@ -1057,7 +1075,9 @@ struct NotesEditorView: View {
                 }
             }
         }
+        #if os(iOS)
         .environment(\.editMode, $editMode)
+        #endif
     }
 }
 
@@ -1096,7 +1116,7 @@ struct NoteDetailView: View {
         }
         .navigationTitle("Edit Note")
 #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
+        .platformNavigationBarTitleDisplayMode(.inline)
 #endif
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
@@ -1166,7 +1186,7 @@ struct RecipeImagesEditorView: View {
                                 showingDeleteConfirmation = true
                             } label: {
                                 Image(systemName: "trash")
-                                    .foregroundColor(.red)
+                                    .foregroundStyle(Color.appCritical)
                             }
                             .buttonStyle(.borderless)
                         }
@@ -1228,7 +1248,7 @@ struct RecipeImagesEditorView: View {
         }
         .navigationTitle("Images")
 #if os(iOS)
-        .navigationBarTitleDisplayMode(.inline)
+        .platformNavigationBarTitleDisplayMode(.inline)
 #endif
         .toolbar {
             ToolbarItem(placement: .confirmationAction) {
@@ -1264,7 +1284,7 @@ struct RecipeImagesEditorView: View {
         
         do {
             guard let data = try await photoItem.loadTransferable(type: Data.self),
-                  let uiImage = UIImage(data: data) else {
+                  let uiImage = PlatformImage(data: data) else {
                 print("❌ Failed to load image data")
                 return
             }

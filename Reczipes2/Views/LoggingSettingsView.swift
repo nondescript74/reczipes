@@ -44,7 +44,7 @@ struct LoggingSettingsView: View {
                         .tag(level)
                     }
                 }
-                .pickerStyle(.navigationLink)
+                .platformNavigationLinkPickerStyle()
                 
                 Toggle("Save Logs to File", isOn: $settings.enableFileLogging)
                 
@@ -163,7 +163,7 @@ struct LoggingSettingsView: View {
             }
         }
         .navigationTitle("Logging Settings")
-        .navigationBarTitleDisplayMode(.inline)
+        .platformNavigationBarTitleDisplayMode(.inline)
         .sheet(isPresented: $showLogViewer) {
             NavigationStack {
                 LogFileViewerView()
@@ -297,7 +297,7 @@ struct LogFileViewerView: View {
             }
         }
         .navigationTitle("Log File")
-        .navigationBarTitleDisplayMode(.inline)
+        .platformNavigationBarTitleDisplayMode(.inline)
         .toolbar {
             ToolbarItem(placement: .cancellationAction) {
                 Button("Done") {

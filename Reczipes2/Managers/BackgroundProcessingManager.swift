@@ -6,8 +6,15 @@
 //
 
 import Foundation
+#if canImport(BackgroundTasks) && os(iOS)
 import BackgroundTasks
+#endif
+#if canImport(UIKit)
 import UIKit
+#elseif canImport(AppKit)
+import AppKit
+#endif
+import UserNotifications
 import SwiftData
 import Combine
 
@@ -16,7 +23,7 @@ class BackgroundProcessingManager: ObservableObject {
     static let shared = BackgroundProcessingManager()
     
     // Background task identifier - must match Info.plist
-    private let backgroundTaskIdentifier = "com.yourapp.reczipes.backgroundExtraction"
+    private let backgroundTaskIdentifier = "com.reczipes.backgroundExtraction"
     
     // Processing state (main actor isolated for UI updates)
     @MainActor @Published var isBackgroundTaskActive = false
@@ -24,6 +31,7 @@ class BackgroundProcessingManager: ObservableObject {
     
     // Background task reference (accessed from multiple threads)
     private let backgroundTaskLock = NSLock()
+    #if os(iOS)
     private var _backgroundTask: UIBackgroundTaskIdentifier = .invalid
     private var backgroundTask: UIBackgroundTaskIdentifier {
         get {
@@ -37,6 +45,7 @@ class BackgroundProcessingManager: ObservableObject {
             _backgroundTask = newValue
         }
     }
+    #endif
     
     // Queue for pending extractions (thread-safe via actor)
     private let extractionQueue = ExtractionQueue()
@@ -49,6 +58,7 @@ class BackgroundProcessingManager: ObservableObject {
     
     /// Register background task handler - call from AppDelegate
     func registerBackgroundTasks() {
+        #if os(iOS)
         BGTaskScheduler.shared.register(
             forTaskWithIdentifier: backgroundTaskIdentifier,
             using: nil
@@ -80,6 +90,9 @@ class BackgroundProcessingManager: ObservableObject {
         }
 
         AppLog.info("Background task handler registered: \(backgroundTaskIdentifier)", category: .background)
+        #else
+        AppLog.info("Background task registration is a no-op on this platform", category: .background)
+        #endif
     }
 
     /// Configure with API key and model context
@@ -93,6 +106,7 @@ class BackgroundProcessingManager: ObservableObject {
 
     /// Schedule a background processing task
     func scheduleBackgroundExtraction() {
+        #if os(iOS)
         let request = BGProcessingTaskRequest(identifier: backgroundTaskIdentifier)
         request.requiresNetworkConnectivity = true
         request.requiresExternalPower = false // Allow on battery
@@ -104,17 +118,21 @@ class BackgroundProcessingManager: ObservableObject {
         } catch {
             AppLog.error("Failed to schedule background task: \(error)", category: .background)
         }
+        #endif
     }
 
     /// Cancel any scheduled background tasks
     func cancelBackgroundTasks() {
+        #if os(iOS)
         BGTaskScheduler.shared.cancel(taskRequestWithIdentifier: backgroundTaskIdentifier)
+        #endif
     }
 
     // MARK: - Foreground Background Task (for immediate backgrounding)
 
     /// Start a foreground background task that continues when app is backgrounded
     func beginBackgroundTask(name: String = "Recipe Extraction") {
+        #if os(iOS)
         endBackgroundTask() // End any existing task
 
         let newTask = UIApplication.shared.beginBackgroundTask(withName: name) { [weak self] in
@@ -132,10 +150,12 @@ class BackgroundProcessingManager: ObservableObject {
         } else {
             AppLog.error("Failed to start background task", category: .background)
         }
+        #endif
     }
 
     /// End the foreground background task
     func endBackgroundTask() {
+        #if os(iOS)
         let taskToEnd = backgroundTask
         guard taskToEnd != .invalid else { return }
 
@@ -145,10 +165,12 @@ class BackgroundProcessingManager: ObservableObject {
         Task { @MainActor in
             self.isBackgroundTaskActive = false
         }
+        #endif
     }
     
     // MARK: - Background Processing Handler
     
+    #if os(iOS)
     /// Handle background processing task (runs on background queue)
     private func handleBackgroundProcessing(
         task: BGProcessingTask,
@@ -233,6 +255,7 @@ class BackgroundProcessingManager: ObservableObject {
         // Schedule notification if needed
         await scheduleCompletionNotification(successCount: successCount, failureCount: failureCount)
     }
+    #endif
 
     // MARK: - Queue Management
 
@@ -268,9 +291,9 @@ class BackgroundProcessingManager: ObservableObject {
     // MARK: - Helper Methods
     
     private func saveRecipe(_ recipe: RecipeX, withImageData imageData: Data, modelContext: ModelContext) async {
-        
-        // Convert Data back to UIImage for saving
-        if let image = UIImage(data: imageData) {
+
+        // Convert Data back to PlatformImage for saving
+        if let image = PlatformImage(data: imageData) {
             recipe.setImage(image, isMainImage: true)
         }
         
@@ -352,9 +375,11 @@ extension BackgroundProcessingManager {
 
         // End any active background tasks immediately
         // This is safe and should be done synchronously
+        #if os(iOS)
         if backgroundTask != .invalid {
             endBackgroundTask()
         }
+        #endif
 
         // INTENTIONAL: `Task.detached` is load-bearing — see `handleAppDidEnterBackground`
         // above and Docs/STARTUP_BACKGROUND_CRASH_FIX.md. Do not convert to a plain

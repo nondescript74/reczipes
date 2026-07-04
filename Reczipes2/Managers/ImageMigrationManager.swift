@@ -8,7 +8,11 @@
 import Foundation
 import SwiftData
 import SwiftUI
+#if canImport(UIKit)
 import UIKit
+#elseif canImport(AppKit)
+import AppKit
+#endif
 import Combine
 
 /// Manages background recompression of existing images to optimize storage
@@ -142,7 +146,7 @@ class ImageMigrationManager: ObservableObject {
 
             // Only recompress if image is larger than target
             if originalSize > ImageCompressionUtility.targetMaxSize {
-                if let image = UIImage(data: imageData),
+                if let image = PlatformImage(data: imageData),
                    let compressedData = ImageCompressionUtility.compressImage(image) {
 
                     let newSize = compressedData.count
@@ -177,7 +181,7 @@ class ImageMigrationManager: ObservableObject {
 
                     // Only recompress if larger than target
                     if originalSize > ImageCompressionUtility.targetMaxSize,
-                       let image = UIImage(data: imageData),
+                       let image = PlatformImage(data: imageData),
                        let compressedData = ImageCompressionUtility.compressImage(image) {
 
                         let newSize = compressedData.count
@@ -239,7 +243,7 @@ class ImageMigrationManager: ObservableObject {
 
                     // Only recompress if larger than target
                     if originalSize > 150_000, // Book cover target
-                       let image = UIImage(data: imageData),
+                       let image = PlatformImage(data: imageData),
                        let compressedData = ImageCompressionUtility.compressForBookCover(image) {
 
                         let newSize = compressedData.count

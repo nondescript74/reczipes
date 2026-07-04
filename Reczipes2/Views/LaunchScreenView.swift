@@ -117,7 +117,7 @@ struct LaunchScreenView: View {
                     .blur(radius: 30)
                 
                 // Recipe image that fades in (optional)
-                if let _ = UIImage(named: "launch_recipe_image") {
+                if let _ = PlatformImage(named: "launch_recipe_image") {
                     Image("launch_recipe_image")
                         .resizable()
                         .aspectRatio(contentMode: .fit)
@@ -171,7 +171,7 @@ struct LaunchScreenView: View {
                         HStack {
                             Image(systemName: "sparkles")
                                 .font(.system(size: 16, weight: .bold))
-                                .foregroundColor(.orange)
+                                .foregroundStyle(Color.appWarning)
                             
                             Text("Enjoy!")
                                 .font(.system(size: 20, weight: .bold, design: .rounded))

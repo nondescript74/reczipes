@@ -30,7 +30,7 @@ struct EmptyRecipeCleanupView: View {
         Text("⚠️ This operation will:")
             .font(.subheadline)
             .fontWeight(.semibold)
-            .foregroundStyle(.orange)
+            .foregroundStyle(Color.appWarning)
     }
     
     private var operationList: some View {
@@ -102,14 +102,14 @@ struct EmptyRecipeCleanupView: View {
                                     if bookCount > 0 {
                                         Label("\(bookCount) book\(bookCount == 1 ? "" : "s")", systemImage: "book.fill")
                                             .font(.caption)
-                                            .foregroundStyle(.blue)
+                                            .foregroundStyle(Color.appInfo)
                                     }
                                     
                                     // Show sharing status
                                     if recipe.cloudRecordID != nil {
                                         Label("Shared", systemImage: "icloud.fill")
                                             .font(.caption)
-                                            .foregroundStyle(.green)
+                                            .foregroundStyle(Color.appSuccess)
                                     }
                                     
                                     // Show dates
@@ -159,7 +159,7 @@ struct EmptyRecipeCleanupView: View {
                 }
             }
             .navigationTitle("Empty Recipe Cleanup")
-            .navigationBarTitleDisplayMode(.inline)
+            .platformNavigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") {

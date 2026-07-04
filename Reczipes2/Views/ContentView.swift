@@ -592,7 +592,7 @@ struct ContentView: View {
             if contentFilter == .shared && !cachedSharedRecipes.isEmpty {
                 HStack {
                     Image(systemName: "person.3.fill")
-                        .foregroundStyle(.blue)
+                        .foregroundStyle(Color.appInfo)
                     Text("\(availableRecipes.count) Community \(availableRecipes.count == 1 ? "Recipe" : "Recipes")")
                         .font(.subheadline)
                         .fontWeight(.medium)
@@ -619,7 +619,7 @@ struct ContentView: View {
                 }
                 .padding(.vertical, 8)
                 .frame(maxWidth: .infinity)
-                .background(Color(.systemGray6))
+                .background(Color.appGray6)
             }
             
             List(selection: $selectedRecipeID) {
@@ -671,11 +671,11 @@ struct ContentView: View {
             .navigationTitle("Recipes")
             .toolbar {
 #if os(iOS)
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .platformNavBarTrailing) {
                     CloudKitSyncBadge()
                 }
                 
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .platformNavBarTrailing) {
                     Button {
                         appState.currentTab = .books
                     } label: {
@@ -683,7 +683,7 @@ struct ContentView: View {
                     }
                 }
                 
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .platformNavBarTrailing) {
                     Button {
                         showingSearch = true
                     } label: {
@@ -691,7 +691,7 @@ struct ContentView: View {
                     }
                 }
                 
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .platformNavBarTrailing) {
                     Menu {
                         Button {
                             showingCreateRecipe = true
@@ -828,7 +828,7 @@ struct ContentView: View {
                     HStack(spacing: 4) {
                         Image(systemName: "person.crop.circle.fill")
                             .font(.caption2)
-                            .foregroundStyle(.blue)
+                            .foregroundStyle(Color.appInfo)
                         Text("Shared by \(sharedBy)")
                             .font(.caption2)
                             .foregroundStyle(.secondary)
@@ -925,7 +925,7 @@ struct ContentView: View {
                             Spacer()
                             if (book.recipeIDs ?? []).contains(recipe.safeID) {
                                 Image(systemName: "checkmark")
-                                    .foregroundStyle(.blue)
+                                    .foregroundStyle(Color.appInfo)
                             }
                         }
                     }
@@ -976,7 +976,7 @@ struct ContentView: View {
         // Option to view in browser if it has a reference
         if let reference = recipe.reference, let url = URL(string: reference) {
             Button {
-                UIApplication.shared.open(url)
+                PlatformURLOpener.open(url)
             } label: {
                 Label("View Original", systemImage: "safari")
             }

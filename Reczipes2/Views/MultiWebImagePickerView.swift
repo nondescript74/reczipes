@@ -36,7 +36,7 @@ struct MultiWebImagePickerView: View {
                             
                             Text("The first image will be used as the main thumbnail")
                                 .font(.caption)
-                                .foregroundColor(.blue)
+                                .foregroundStyle(Color.appInfo)
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(.horizontal)
@@ -61,7 +61,7 @@ struct MultiWebImagePickerView: View {
                 }
             }
             .navigationTitle("Select Images")
-            .navigationBarTitleDisplayMode(.inline)
+            .platformNavigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {

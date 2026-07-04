@@ -128,9 +128,9 @@ struct RecipeAllergenDetailView: View {
                 }
             }
             .navigationTitle(recipe.title ?? "Untitled Recipe")
-            .navigationBarTitleDisplayMode(.inline)
+            .platformNavigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .platformNavBarTrailing) {
                     CloudKitSyncBadge()
                 }
                 

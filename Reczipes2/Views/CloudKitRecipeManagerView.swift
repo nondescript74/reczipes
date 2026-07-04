@@ -36,21 +36,21 @@ struct CloudKitRecipeManagerView: View {
                 if let data = managerData {
                     HStack {
                         Image(systemName: "checkmark.circle.fill")
-                            .foregroundColor(.green)
+                            .foregroundStyle(Color.appSuccess)
                         Text("\(data.trackedCount) tracked recipes")
                     }
                     
                     if data.orphanedCount > 0 {
                         HStack {
                             Image(systemName: "exclamationmark.triangle.fill")
-                                .foregroundColor(.orange)
+                                .foregroundStyle(Color.appWarning)
                             Text("\(data.orphanedCount) orphaned recipes")
                         }
                     }
                     
                     HStack {
                         Image(systemName: "cloud.fill")
-                            .foregroundColor(.blue)
+                            .foregroundStyle(Color.appInfo)
                         Text("\(data.totalCount) total in CloudKit")
                     }
                 }
@@ -70,7 +70,7 @@ struct CloudKitRecipeManagerView: View {
                     }
                 } header: {
                     Label("Tracked Recipes", systemImage: "checkmark.circle.fill")
-                        .foregroundColor(.green)
+                        .foregroundStyle(Color.appSuccess)
                 }
             }
             
@@ -88,7 +88,7 @@ struct CloudKitRecipeManagerView: View {
                     }
                 } header: {
                     Label("Orphaned Recipes", systemImage: "exclamationmark.triangle.fill")
-                        .foregroundColor(.orange)
+                        .foregroundStyle(Color.appWarning)
                 } footer: {
                     Text("These recipes exist in CloudKit but aren't tracked locally. They may be from a previous device or installation.")
                 }
@@ -113,7 +113,7 @@ struct CloudKitRecipeManagerView: View {
         }
         .searchable(text: $searchText, prompt: "Search recipes")
         .navigationTitle("My CloudKit Recipes")
-        .navigationBarTitleDisplayMode(.inline)
+        .platformNavigationBarTitleDisplayMode(.inline)
         .overlay {
             if isLoading {
                 ProgressView("Loading...")

@@ -59,7 +59,7 @@ struct RecipePickerSheet: View {
                 }
             }
             .navigationTitle("Choose Recipe")
-            .navigationBarTitleDisplayMode(.inline)
+            .platformNavigationBarTitleDisplayMode(.inline)
             .searchable(text: $searchText, prompt: "Search recipes")
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
@@ -142,15 +142,15 @@ struct RecipeRow: View {
         HStack(spacing: 12) {
             // Recipe thumbnail or placeholder
             if let imageData = recipe.imageData,
-               let uiImage = UIImage(data: imageData) {
-                Image(uiImage: uiImage)
+               let uiImage = PlatformImage(data: imageData) {
+                Image(platformImage: uiImage)
                     .resizable()
                     .aspectRatio(contentMode: .fill)
                     .frame(width: 60, height: 60)
                     .clipShape(RoundedRectangle(cornerRadius: 8))
             } else {
                 RoundedRectangle(cornerRadius: 8)
-                    .fill(Color(.systemGray5))
+                    .fill(Color.appGray5)
                     .frame(width: 60, height: 60)
                     .overlay {
                         Image(systemName: "fork.knife")

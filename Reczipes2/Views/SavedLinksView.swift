@@ -90,10 +90,10 @@ struct SavedLinksView: View {
                 }
             }
             .navigationTitle("Saved Recipe Links")
-            .navigationBarTitleDisplayMode(.inline)
+            .platformNavigationBarTitleDisplayMode(.inline)
             .searchable(text: $searchText, prompt: "Search links")
             .toolbar {
-                ToolbarItem(placement: .navigationBarTrailing) {
+                ToolbarItem(placement: .platformNavBarTrailing) {
                     CloudKitSyncBadge()
                 }
                 
@@ -249,7 +249,7 @@ struct SavedLinksView: View {
             }
         }
         .padding()
-        .background(Color(.systemGray6))
+        .background(Color.appGray6)
     }
     
     private var emptyStateView: some View {
@@ -307,14 +307,14 @@ struct SavedLinksView: View {
                         
                         Button {
                             if let url = URL(string: link.url) {
-                                UIApplication.shared.open(url)
+                                PlatformURLOpener.open(url)
                             }
                         } label: {
                             Label("Open in Browser", systemImage: "safari")
                         }
                         
                         Button {
-                            UIPasteboard.general.string = link.url
+                            PlatformPasteboard.copy(link.url)
                         } label: {
                             Label("Copy URL", systemImage: "doc.on.doc")
                         }
@@ -416,7 +416,7 @@ struct LinkRow: View {
             if let error = link.processingError {
                 Label(error, systemImage: "exclamationmark.triangle.fill")
                     .font(.caption2)
-                    .foregroundColor(.red)
+                    .foregroundStyle(Color.appCritical)
                     .lineLimit(2)
             }
         }
@@ -429,16 +429,16 @@ struct LinkRow: View {
             if link.extractedRecipeID != nil {
                 Label("Extracted", systemImage: "checkmark.circle.fill")
                     .font(.caption)
-                    .foregroundColor(.green)
+                    .foregroundStyle(Color.appSuccess)
             } else if link.processingError != nil {
                 Label("Failed", systemImage: "xmark.circle.fill")
                     .font(.caption)
-                    .foregroundColor(.red)
+                    .foregroundStyle(Color.appCritical)
             }
         } else {
             Label("To Extract", systemImage: "clock")
                 .font(.caption)
-                .foregroundColor(.orange)
+                .foregroundStyle(Color.appWarning)
         }
     }
 }
@@ -460,7 +460,7 @@ struct ImportLinksSheet: View {
                 VStack(spacing: 24) {
                     Image(systemName: "square.and.arrow.down.on.square")
                         .font(.system(size: 60))
-                        .foregroundColor(.blue)
+                        .foregroundStyle(Color.appInfo)
                     
                     VStack(spacing: 8) {
                         Text("Import Recipe Links")
@@ -482,9 +482,9 @@ struct ImportLinksSheet: View {
                     if let error = importError {
                         Label(error, systemImage: "exclamationmark.triangle.fill")
                             .font(.caption)
-                            .foregroundColor(.red)
+                            .foregroundStyle(Color.appCritical)
                             .padding()
-                            .background(Color.red.opacity(0.1))
+                            .adaptiveToneBackground(.critical, baseOpacity: 0.1)
                             .cornerRadius(8)
                     }
                     
@@ -536,7 +536,7 @@ struct ImportLinksSheet: View {
                 .padding()
             }
             .navigationTitle("Import Links")
-            .navigationBarTitleDisplayMode(.inline)
+            .platformNavigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
@@ -569,7 +569,7 @@ struct ImportLinksSheet: View {
                     Spacer()
                     Label("\(result.duplicateURLs.count) duplicate(s)", systemImage: "doc.on.doc")
                         .font(.caption)
-                        .foregroundColor(.blue)
+                        .foregroundStyle(Color.appInfo)
                 }
             }
             
@@ -579,7 +579,7 @@ struct ImportLinksSheet: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Label("\(result.warnings.count) Warning(s)", systemImage: "exclamationmark.triangle")
                         .font(.subheadline)
-                        .foregroundColor(.orange)
+                        .foregroundStyle(Color.appWarning)
                     
                     ForEach(result.warnings.prefix(3), id: \.self) { warning in
                         HStack(alignment: .top, spacing: 4) {
@@ -605,7 +605,7 @@ struct ImportLinksSheet: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Label("\(result.errors.count) Error(s)", systemImage: "xmark.octagon")
                         .font(.subheadline)
-                        .foregroundColor(.red)
+                        .foregroundStyle(Color.appCritical)
                     
                     ForEach(result.errors.prefix(3), id: \.self) { error in
                         HStack(alignment: .top, spacing: 4) {

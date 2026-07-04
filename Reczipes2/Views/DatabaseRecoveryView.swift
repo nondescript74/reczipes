@@ -33,7 +33,7 @@ struct DatabaseRecoveryView: View {
             }
             .padding()
             .navigationTitle("Database Recovery")
-            .navigationBarTitleDisplayMode(.inline)
+            .platformNavigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Close") {
@@ -79,7 +79,7 @@ struct DatabaseRecoveryView: View {
             // Icon
             Image(systemName: "externaldrive.badge.exclamationmark")
                 .font(.system(size: 60))
-                .foregroundStyle(.orange)
+                .foregroundStyle(Color.appWarning)
             
             // Title
             Text("Recipes Found!")
@@ -108,7 +108,7 @@ struct DatabaseRecoveryView: View {
                         }
                     } icon: {
                         Image(systemName: "externaldrive.fill")
-                            .foregroundStyle(.orange)
+                            .foregroundStyle(Color.appWarning)
                     }
                     
                     Label {
@@ -125,12 +125,12 @@ struct DatabaseRecoveryView: View {
                         }
                     } icon: {
                         Image(systemName: "internaldrive")
-                            .foregroundStyle(.blue)
+                            .foregroundStyle(Color.appInfo)
                     }
                 }
             }
             .padding()
-            .background(Color(.secondarySystemBackground))
+            .background(Color.appSecondaryBackground)
             .clipShape(RoundedRectangle(cornerRadius: 12))
             
             // Recovery button
@@ -149,7 +149,7 @@ struct DatabaseRecoveryView: View {
                     .frame(maxWidth: .infinity)
                     .padding()
                     .background(Color.accentColor)
-                    .foregroundColor(.white)
+                    .foregroundStyle(Color.onTint)
                     .clipShape(RoundedRectangle(cornerRadius: 12))
                 }
                 .disabled(isRecovering)
@@ -163,9 +163,9 @@ struct DatabaseRecoveryView: View {
             if let error = error {
                 Text("Error: \(error.localizedDescription)")
                     .font(.caption)
-                    .foregroundStyle(.red)
+                    .foregroundStyle(Color.appCritical)
                     .padding()
-                    .background(Color.red.opacity(0.1))
+                    .adaptiveToneBackground(.critical, baseOpacity: 0.1)
                     .clipShape(RoundedRectangle(cornerRadius: 8))
             }
         }
@@ -175,7 +175,7 @@ struct DatabaseRecoveryView: View {
         VStack(spacing: 24) {
             Image(systemName: "checkmark.circle.fill")
                 .font(.system(size: 60))
-                .foregroundStyle(.green)
+                .foregroundStyle(Color.appSuccess)
             
             Text("Recovery Complete!")
                 .font(.title)
@@ -212,20 +212,20 @@ struct DatabaseRecoveryView: View {
                 }
             }
             .padding()
-            .background(Color(.secondarySystemBackground))
+            .background(Color.appSecondaryBackground)
             .clipShape(RoundedRectangle(cornerRadius: 12))
             
             VStack(spacing: 8) {
                 Text("⚠️ Important")
                     .font(.headline)
-                    .foregroundStyle(.orange)
+                    .foregroundStyle(Color.appWarning)
                 
                 Text("Please restart the app to see your recovered recipes.")
                     .font(.subheadline)
                     .multilineTextAlignment(.center)
             }
             .padding()
-            .background(Color.orange.opacity(0.1))
+            .adaptiveToneBackground(.warning, baseOpacity: 0.1)
             .clipShape(RoundedRectangle(cornerRadius: 12))
             
             Button("Restart App Now") {
@@ -235,7 +235,7 @@ struct DatabaseRecoveryView: View {
             .frame(maxWidth: .infinity)
             .padding()
             .background(Color.green)
-            .foregroundColor(.white)
+            .foregroundStyle(Color.onTint)
             .clipShape(RoundedRectangle(cornerRadius: 12))
         }
     }
@@ -244,7 +244,7 @@ struct DatabaseRecoveryView: View {
         VStack(spacing: 24) {
             Image(systemName: "checkmark.circle")
                 .font(.system(size: 60))
-                .foregroundStyle(.green)
+                .foregroundStyle(Color.appSuccess)
             
             Text("All Good!")
                 .font(.title)
@@ -262,7 +262,7 @@ struct DatabaseRecoveryView: View {
             .frame(maxWidth: .infinity)
             .padding()
             .background(Color.accentColor)
-            .foregroundColor(.white)
+            .foregroundStyle(Color.onTint)
             .clipShape(RoundedRectangle(cornerRadius: 12))
         }
     }

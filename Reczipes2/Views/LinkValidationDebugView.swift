@@ -86,7 +86,7 @@ struct LinkValidationDebugView: View {
                         VStack(alignment: .leading, spacing: 8) {
                             HStack {
                                 Image(systemName: "checkmark.circle.fill")
-                                    .foregroundColor(.green)
+                                    .foregroundStyle(Color.appSuccess)
                                 Text("File cleaned successfully!")
                                     .font(.subheadline)
                             }
@@ -110,9 +110,9 @@ struct LinkValidationDebugView: View {
                     if let error = cleaningError {
                         Label(error, systemImage: "exclamationmark.triangle.fill")
                             .font(.caption)
-                            .foregroundColor(.red)
+                            .foregroundStyle(Color.appCritical)
                             .padding()
-                            .background(Color.red.opacity(0.1))
+                            .adaptiveToneBackground(.critical, baseOpacity: 0.1)
                             .cornerRadius(8)
                     }
                 } header: {
@@ -124,7 +124,7 @@ struct LinkValidationDebugView: View {
                     VStack(alignment: .leading, spacing: 8) {
                         Label("Developer Tool", systemImage: "hammer.fill")
                             .font(.subheadline)
-                            .foregroundColor(.blue)
+                            .foregroundStyle(Color.appInfo)
                         
                         Text("Use this tool to validate and clean your JSON link files before importing them into the app.")
                             .font(.caption)
@@ -140,7 +140,7 @@ struct LinkValidationDebugView: View {
                 }
             }
             .navigationTitle("Link Validation Tools")
-            .navigationBarTitleDisplayMode(.inline)
+            .platformNavigationBarTitleDisplayMode(.inline)
             .sheet(isPresented: $showingExportSheet) {
                 if let url = cleanedFileURL {
                     ShareSheet_LVD(items: [url])
@@ -274,7 +274,7 @@ struct ValidationResultDetailView: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Label("Errors", systemImage: "xmark.octagon")
                         .font(.subheadline)
-                        .foregroundColor(.red)
+                        .foregroundStyle(Color.appCritical)
                     
                     ForEach(result.errors, id: \.self) { error in
                         HStack(alignment: .top, spacing: 4) {
@@ -294,7 +294,7 @@ struct ValidationResultDetailView: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Label("Warnings", systemImage: "exclamationmark.triangle")
                         .font(.subheadline)
-                        .foregroundColor(.orange)
+                        .foregroundStyle(Color.appWarning)
                     
                     ForEach(result.warnings.prefix(5), id: \.self) { warning in
                         HStack(alignment: .top, spacing: 4) {
@@ -321,7 +321,7 @@ struct ValidationResultDetailView: View {
                 VStack(alignment: .leading, spacing: 6) {
                     Label("Duplicate URLs", systemImage: "doc.on.doc")
                         .font(.subheadline)
-                        .foregroundColor(.blue)
+                        .foregroundStyle(Color.appInfo)
                     
                     ForEach(result.duplicateURLs.prefix(3), id: \.self) { duplicate in
                         HStack(alignment: .top, spacing: 4) {
@@ -364,6 +364,7 @@ struct ValidationResultDetailView: View {
 
 // MARK: - Share Sheet Helper
 
+#if os(iOS)
 struct ShareSheet_LVD: UIViewControllerRepresentable {
     let items: [Any]
     
@@ -374,6 +375,12 @@ struct ShareSheet_LVD: UIViewControllerRepresentable {
     
     func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) {}
 }
+#else
+struct ShareSheet_LVD: View {
+    let items: [Any]
+    var body: some View { MacShareView(items: items) }
+}
+#endif
 
 // MARK: - Preview
 
