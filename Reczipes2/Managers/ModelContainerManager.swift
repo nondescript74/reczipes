@@ -182,6 +182,8 @@ class ModelContainerManager: ObservableObject {
                 CloudKitRecipePreview.self,
                 VersionHistoryRecord.self,
                 Meal.self,                      // Meals (groupings of recipes)
+                SharedMeal.self,                // Community meal sharing tracking
+                CachedSharedMeal.self,          // Community meal viewing cache
                 migrationPlan: Reczipes2MigrationPlan.self,
                 configurations: cloudKitConfiguration
             )
@@ -251,6 +253,8 @@ class ModelContainerManager: ObservableObject {
                             CloudKitRecipePreview.self,
                             VersionHistoryRecord.self,
                             Meal.self,                      // Meals (groupings of recipes)
+                SharedMeal.self,                // Community meal sharing tracking
+                CachedSharedMeal.self,          // Community meal viewing cache
                             migrationPlan: Reczipes2MigrationPlan.self,
                             configurations: cloudKitConfiguration
                         )
@@ -351,6 +355,8 @@ class ModelContainerManager: ObservableObject {
                             CloudKitRecipePreview.self,
                             VersionHistoryRecord.self,
                             Meal.self,                      // Meals (groupings of recipes)
+                SharedMeal.self,                // Community meal sharing tracking
+                CachedSharedMeal.self,          // Community meal viewing cache
                             migrationPlan: Reczipes2MigrationPlan.self,
                             configurations: cloudKitConfiguration
                         )
@@ -395,6 +401,8 @@ class ModelContainerManager: ObservableObject {
                 CloudKitRecipePreview.self,
                 VersionHistoryRecord.self,
                 Meal.self,                      // Meals (groupings of recipes)
+                SharedMeal.self,                // Community meal sharing tracking
+                CachedSharedMeal.self,          // Community meal viewing cache
                 migrationPlan: Reczipes2MigrationPlan.self,
                 configurations: localConfiguration
             )
@@ -466,6 +474,8 @@ class ModelContainerManager: ObservableObject {
                             CloudKitRecipePreview.self,
                             VersionHistoryRecord.self,
                             Meal.self,                      // Meals (groupings of recipes)
+                SharedMeal.self,                // Community meal sharing tracking
+                CachedSharedMeal.self,          // Community meal viewing cache
                             migrationPlan: Reczipes2MigrationPlan.self,
                             configurations: localConfiguration
                         )

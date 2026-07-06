@@ -47,7 +47,7 @@ struct MealImportView: View {
         }
         .fileImporter(
             isPresented: $showFilePicker,
-            allowedContentTypes: [.json],
+            allowedContentTypes: [.mealBackup, .json],
             allowsMultipleSelection: false
         ) { result in
             handlePickedFile(result)

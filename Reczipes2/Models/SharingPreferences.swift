@@ -20,6 +20,7 @@ final class SharingPreferences {
     var id: UUID = UUID()
     var shareAllRecipes: Bool = false
     var shareAllBooks: Bool = false
+    var shareAllMeals: Bool = false
     var allowOthersToSeeMyName: Bool = true
     var displayName: String?
     var dateModified: Date = Date()
@@ -32,11 +33,13 @@ final class SharingPreferences {
 
     init(shareAllRecipes: Bool = false,
          shareAllBooks: Bool = false,
+         shareAllMeals: Bool = false,
          allowOthersToSeeMyName: Bool = true,
          displayName: String? = nil,
          browseCommunity: Bool = true) {
         self.shareAllRecipes = shareAllRecipes
         self.shareAllBooks = shareAllBooks
+        self.shareAllMeals = shareAllMeals
         self.allowOthersToSeeMyName = allowOthersToSeeMyName
         self.displayName = displayName
         self.browseCommunity = browseCommunity

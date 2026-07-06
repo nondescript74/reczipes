@@ -137,7 +137,7 @@ enum MealExportManager {
     }
 
     private static func writeToTemporaryFile(data: Data) throws -> URL {
-        let filename = "meal_plans_\(filenameTimestamp()).json"
+        let filename = "meal_plans_\(filenameTimestamp()).\(MealBackupFileType.fileExtension)"
         let url = FileManager.default.temporaryDirectory.appendingPathComponent(filename)
         do {
             // Overwrite any prior export at the same path (same second).

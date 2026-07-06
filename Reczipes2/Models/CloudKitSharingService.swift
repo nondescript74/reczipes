@@ -1048,8 +1048,175 @@ class CloudKitSharingService: ObservableObject {
         AppLog.info("✅ Successfully unshared recipe book: \(cloudRecordID)", category: .sharing)
     }
     
+    // MARK: - Share Meal
+
+    func shareMeal(_ meal: Meal, modelContext: ModelContext) async throws -> String {
+        guard isCloudKitAvailable else { throw SharingError.cloudKitUnavailable() }
+        guard let userID = currentUserID else { throw SharingError.notAuthenticated }
+        guard let mealID = meal.id else { throw SharingError.invalidData }
+
+        // Return existing active share if CloudKit record still exists
+        let mealIDToFind = mealID
+        let existingDescriptor = FetchDescriptor<SharedMeal>(
+            predicate: #Predicate<SharedMeal> { $0.mealID == mealIDToFind && $0.isActive == true }
+        )
+        if let existing = try? modelContext.fetch(existingDescriptor).first,
+           let cloudRecordID = existing.cloudRecordID {
+            do {
+                let recordID = CKRecord.ID(recordName: cloudRecordID)
+                _ = try await publicDatabase.record(for: recordID)
+                AppLog.info("Meal '\(meal.displayName)' already shared", category: .sharing)
+                return cloudRecordID
+            } catch {
+                modelContext.delete(existing)
+                try? modelContext.save()
+            }
+        }
+
+        let cloudMeal = CloudKitMeal(
+            id: mealID,
+            name: meal.displayName,
+            mealDescription: meal.mealDescription,
+            courses: meal.courses,
+            notes: meal.notes,
+            sharedByUserID: userID,
+            sharedByUserName: currentUserName,
+            sharedDate: Date()
+        )
+
+        let record = CKRecord(recordType: CloudKitRecordType.sharedMeal)
+        let jsonData = try JSONEncoder().encode(cloudMeal)
+        record["mealData"] = String(data: jsonData, encoding: .utf8)
+        record["name"] = meal.displayName as CKRecordValue
+        record["sharedBy"] = userID as CKRecordValue
+        record["sharedByName"] = (currentUserName ?? "Anonymous") as CKRecordValue
+        record["sharedDate"] = Date() as CKRecordValue
+
+        let savedRecord = try await publicDatabase.save(record)
+
+        let sharedMeal = SharedMeal(
+            mealID: mealID,
+            cloudRecordID: savedRecord.recordID.recordName,
+            sharedByUserID: userID,
+            sharedByUserName: currentUserName,
+            mealName: meal.displayName,
+            courseCount: meal.courseCount
+        )
+        modelContext.insert(sharedMeal)
+        try modelContext.save()
+
+        AppLog.info("Shared meal: \(meal.displayName)", category: .sharing)
+        return savedRecord.recordID.recordName
+    }
+
+    func unshareMeal(cloudRecordID: String, modelContext: ModelContext) async throws {
+        guard isCloudKitAvailable else { throw SharingError.cloudKitUnavailable() }
+
+        let recordID = CKRecord.ID(recordName: cloudRecordID)
+        try await publicDatabase.deleteRecord(withID: recordID)
+
+        let recordIDToFind = cloudRecordID
+        let descriptor = FetchDescriptor<SharedMeal>(
+            predicate: #Predicate<SharedMeal> { $0.cloudRecordID == recordIDToFind }
+        )
+        if let tracked = try modelContext.fetch(descriptor).first {
+            modelContext.delete(tracked)
+            try modelContext.save()
+        }
+        AppLog.info("Unshared meal: \(cloudRecordID)", category: .sharing)
+    }
+
+    // MARK: - Fetch Shared Meals
+
+    func fetchSharedMeals(limit: Int = 400, excludeCurrentUser: Bool = true) async throws -> [CloudKitMeal] {
+        guard isCloudKitAvailable else { throw SharingError.cloudKitUnavailable() }
+
+        let predicate: NSPredicate
+        if excludeCurrentUser, let currentUserID = currentUserID {
+            predicate = NSPredicate(format: "sharedBy != %@", currentUserID)
+        } else {
+            predicate = NSPredicate(value: true)
+        }
+
+        let query = CKQuery(recordType: CloudKitRecordType.sharedMeal, predicate: predicate)
+        var allMeals: [CloudKitMeal] = []
+        var cursor: CKQueryOperation.Cursor? = nil
+        let batchSize = 100
+
+        repeat {
+            let results: (matchResults: [(CKRecord.ID, Result<CKRecord, Error>)], queryCursor: CKQueryOperation.Cursor?)
+            if let cursor = cursor {
+                results = try await publicDatabase.records(continuingMatchFrom: cursor, desiredKeys: nil, resultsLimit: batchSize)
+            } else {
+                results = try await publicDatabase.records(matching: query, desiredKeys: nil, resultsLimit: batchSize)
+            }
+            for (_, result) in results.matchResults {
+                if case .success(let record) = result,
+                   let mealData = record["mealData"] as? String,
+                   let jsonData = mealData.data(using: .utf8),
+                   let cloudMeal = try? JSONDecoder().decode(CloudKitMeal.self, from: jsonData) {
+                    allMeals.append(cloudMeal)
+                }
+            }
+            cursor = results.queryCursor
+            if allMeals.count >= limit || cursor == nil { break }
+        } while cursor != nil
+
+        allMeals.sort { $0.sharedDate > $1.sharedDate }
+        AppLog.info("Fetched \(allMeals.count) shared meals", category: .sharing)
+        return allMeals
+    }
+
+    // MARK: - Sync Community Meals
+
+    func syncCommunityMealsForViewing(modelContext: ModelContext, limit: Int = Int.max, includeSelf: Bool = true) async throws {
+        guard isCloudKitAvailable else { throw SharingError.cloudKitUnavailable() }
+
+        AppLog.info("🍽️ SYNC: Syncing community meals for viewing...", category: .sharing)
+
+        let cloudMeals = try await fetchSharedMeals(limit: limit, excludeCurrentUser: !includeSelf)
+        let mealsToCache = limit == Int.max ? cloudMeals : Array(cloudMeals.prefix(limit))
+
+        let existingCached = try modelContext.fetch(FetchDescriptor<CachedSharedMeal>())
+        var existingByID = [UUID: CachedSharedMeal]()
+        for cached in existingCached { existingByID[cached.id] = cached }
+
+        var currentCloudMealIDs = Set<UUID>()
+        var addedCount = 0
+        var updatedCount = 0
+
+        for cloudMeal in mealsToCache {
+            currentCloudMealIDs.insert(cloudMeal.id)
+            if let existing = existingByID[cloudMeal.id] {
+                existing.name = cloudMeal.name
+                existing.mealDescription = cloudMeal.mealDescription
+                existing.coursesData = try? JSONEncoder().encode(cloudMeal.courses)
+                existing.notes = cloudMeal.notes
+                existing.sharedByUserName = cloudMeal.sharedByUserName
+                existing.cachedDate = Date()
+                updatedCount += 1
+            } else {
+                let newCached = CachedSharedMeal(from: cloudMeal)
+                modelContext.insert(newCached)
+                addedCount += 1
+            }
+        }
+
+        var removedCount = 0
+        let thirtyDaysAgo = Calendar.current.date(byAdding: .day, value: -30, to: Date()) ?? Date()
+        for cached in existingCached {
+            if !currentCloudMealIDs.contains(cached.id) || cached.lastAccessedDate < thirtyDaysAgo {
+                modelContext.delete(cached)
+                removedCount += 1
+            }
+        }
+
+        try modelContext.save()
+        AppLog.info("✅ SYNC: Meals — added \(addedCount), updated \(updatedCount), removed \(removedCount)", category: .sharing)
+    }
+
     // MARK: - Image Handling
-    
+
     /// Upload an image as a CKAsset.
     /// Prefers the file on disk at `imageName`; falls back to writing `imageData` to a
     /// temporary file so a valid CKAsset can be created.  Does nothing if neither source
@@ -1687,9 +1854,12 @@ class CloudKitSharingService: ObservableObject {
         do {
             // Sync community recipes (limit to recent 100 to keep it fast)
             try await syncCommunityRecipesForViewing(modelContext: modelContext, limit: 100)
-            
+
             // Sync community books
             try await syncCommunityBooksToLocal(modelContext: modelContext)
+
+            // Sync community meals
+            try await syncCommunityMealsForViewing(modelContext: modelContext, limit: 100)
             
             lastSyncDate = Date()
             let duration = Date().timeIntervalSince(startTime)

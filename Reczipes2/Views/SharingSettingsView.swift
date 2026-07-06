@@ -14,9 +14,11 @@ struct SharingSettingsView: View {
     
     @Query private var sharingPreferences: [SharingPreferences]
     @Query private var sharedRecipes: [SharedRecipe]
+    @Query private var sharedMeals: [SharedMeal]
     @Query private var allBooks: [Book]
+    @Query private var allMeals: [Meal]
     @Query private var recipeXEntities: [RecipeX]
-    
+
     @State private var showingRecipeSelector = false
     @State private var showingBookSelector = false
     @State private var isSharing = false
@@ -27,6 +29,7 @@ struct SharingSettingsView: View {
     @State private var currentSharingError: SharingError?
     @State private var showingUnshareAllConfirmation = false
     @State private var showingUnshareAllBooksConfirmation = false
+    @State private var showingUnshareAllMealsConfirmation = false
     
     private var preferences: SharingPreferences {
         if let existing = sharingPreferences.first {
@@ -52,6 +55,12 @@ struct SharingSettingsView: View {
             return 0
         }
         return allBooks.filter { $0.isShared == true && $0.ownerUserID == currentUserID }.count
+    }
+
+    // Count of meals shared by the current user
+    private var mySharedMealsCount: Int {
+        guard let currentUserID = sharingService.currentUserID else { return 0 }
+        return sharedMeals.filter { $0.isActive && $0.sharedByUserID == currentUserID }.count
     }
     
     var body: some View {
@@ -185,6 +194,18 @@ struct SharingSettingsView: View {
             Button("Cancel", role: .cancel) {}
         } message: {
             Text("This will remove all \(mySharedBooksCount) books from public sharing. They will remain in your personal library. This action cannot be undone.")
+        }
+        .confirmationDialog(
+            "Unshare All Meals",
+            isPresented: $showingUnshareAllMealsConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Unshare \(mySharedMealsCount) Meals", role: .destructive) {
+                Task { await unshareAllMeals() }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This will remove all \(mySharedMealsCount) meals from public sharing. They will remain in your personal library.")
         }
         .task {
             await sharingService.checkCloudKitAvailability()
@@ -421,7 +442,7 @@ struct SharingSettingsView: View {
                     preferences.shareAllBooks = newValue
                     preferences.dateModified = Date()
                     try? modelContext.save()
-                    
+
                     if newValue {
                         Task {
                             await shareAllBooks()
@@ -434,7 +455,22 @@ struct SharingSettingsView: View {
                 }
             ))
             .disabled(!sharingService.isCloudKitAvailable)
-            
+
+            Toggle("Auto-Share New Meals", isOn: Binding(
+                get: { preferences.shareAllMeals },
+                set: { newValue in
+                    preferences.shareAllMeals = newValue
+                    preferences.dateModified = Date()
+                    try? modelContext.save()
+                    if newValue {
+                        Task { await shareAllMeals() }
+                    } else {
+                        Task { await unshareAllMeals() }
+                    }
+                }
+            ))
+            .disabled(!sharingService.isCloudKitAvailable)
+
             Toggle("Browse Community Library", isOn: Binding(
                 get: { preferences.browseCommunity },
                 set: { newValue in
@@ -952,8 +988,86 @@ struct SharingSettingsView: View {
         showingAlert = true
     }
     
+    // MARK: - Meal Sharing Actions
+
+    private func shareAllMeals() async {
+        guard !allMeals.isEmpty else { return }
+
+        isSharing = true
+        sharingStatus = "Sharing all meals..."
+
+        var successful = 0
+        var failed = 0
+
+        for meal in allMeals {
+            do {
+                _ = try await sharingService.shareMeal(meal, modelContext: modelContext)
+                successful += 1
+            } catch {
+                AppLog.error("Failed to share meal '\(meal.displayName)': \(error)", category: .sharing)
+                failed += 1
+            }
+        }
+
+        isSharing = false
+
+        if failed == 0 {
+            alertMessage = "Successfully shared all \(successful) meals"
+        } else {
+            alertMessage = "Shared \(successful) of \(allMeals.count) meals. \(failed) failed."
+        }
+        showingAlert = true
+    }
+
+    private func unshareAllMeals() async {
+        isSharing = true
+        sharingStatus = "Preparing to unshare meals..."
+
+        guard let currentUserID = sharingService.currentUserID else {
+            alertMessage = "Not signed in to iCloud"
+            showingAlert = true
+            isSharing = false
+            return
+        }
+
+        let activeSharedMeals = sharedMeals.filter { $0.isActive && $0.sharedByUserID == currentUserID }
+        let total = activeSharedMeals.count
+
+        guard total > 0 else {
+            alertMessage = "No shared meals found"
+            showingAlert = true
+            isSharing = false
+            return
+        }
+
+        var successful = 0
+        var failed = 0
+
+        for sharedMeal in activeSharedMeals {
+            guard let cloudRecordID = sharedMeal.cloudRecordID else {
+                sharedMeal.isActive = false
+                continue
+            }
+            do {
+                try await sharingService.unshareMeal(cloudRecordID: cloudRecordID, modelContext: modelContext)
+                successful += 1
+            } catch {
+                AppLog.error("Failed to unshare meal: \(error.localizedDescription)", category: .sharing)
+                failed += 1
+            }
+        }
+
+        try? modelContext.save()
+        isSharing = false
+
+        alertMessage = failed == 0
+            ? "Successfully unshared all \(successful) meals"
+            : "Unshared \(successful) meals. \(failed) failed."
+        showingAlert = true
+    }
+
     // MARK: - Cleanup & Sync Actions
-    
+
     private func cleanupGhostRecipes() async {
         isSharing = true
         sharingStatus = "Cleaning up ghost recipes..."

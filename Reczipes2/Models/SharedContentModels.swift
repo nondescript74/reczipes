@@ -16,6 +16,7 @@ enum CloudKitRecordType {
     static let sharedRecipe = "SharedRecipe"
     static let sharedRecipeBook = "SharedRecipeBook"
     static let sharedImage = "SharedImage"
+    static let sharedMeal = "SharedMeal"
 }
 
 // MARK: - Codable Representations for CloudKit
@@ -48,25 +49,6 @@ struct CloudKitRecipe: Codable, Identifiable {
         // imageData intentionally omitted
     }
 }
-
-///// CloudKit-friendly representation of a recipe for sharing
-//struct CloudKitRecipe: Codable, Identifiable {
-//    let id: UUID
-//    let title: String
-//    let headerNotes: String?
-//    let yield: String?
-//    let ingredientSections: [IngredientSection]
-//    let instructionSections: [InstructionSection]
-//    let notes: [RecipeNote]
-//    let reference: String?
-//    let imageName: String?
-//    let additionalImageNames: [String]?
-//    
-//    // Sharing metadata
-//    let sharedByUserID: String
-//    let sharedByUserName: String?
-//    let sharedDate: Date
-//}
 
 /// CloudKit-friendly representation of a recipe book for sharing
 struct CloudKitRecipeBook: Codable, Identifiable {
@@ -231,6 +213,43 @@ struct CloudKitRecipeBookStatus: Identifiable {
     var statusDescription: String {
         isTracked ? "Tracked" : "Orphaned (not tracked locally)"
     }
+}
+
+// MARK: - CloudKit Meal Types
+
+/// CloudKit-friendly representation of a meal for community sharing
+struct CloudKitMeal: Codable, Identifiable {
+    let id: UUID
+    let name: String
+    let mealDescription: String?
+    let courses: [MealCourse]
+    let notes: String?
+    let sharedByUserID: String?
+    let sharedByUserName: String?
+    let sharedDate: Date
+}
+
+/// Status of a meal in CloudKit
+struct CloudKitMealStatus: Identifiable {
+    let id = UUID()
+    let meal: CloudKitMeal
+    let cloudRecordID: String
+    let sharedDate: Date
+    let localTrackingRecord: SharedMeal?
+
+    var isTracked: Bool { localTrackingRecord != nil }
+    var isOrphaned: Bool { !isTracked }
+}
+
+/// Data for CloudKit Meal Manager View
+struct CloudKitMealManagerData {
+    let meals: [CloudKitMealStatus]
+
+    var trackedMeals: [CloudKitMealStatus] { meals.filter { $0.isTracked } }
+    var orphanedMeals: [CloudKitMealStatus] { meals.filter { $0.isOrphaned } }
+    var trackedCount: Int { trackedMeals.count }
+    var orphanedCount: Int { orphanedMeals.count }
+    var totalCount: Int { meals.count }
 }
 
 /// Data for CloudKit Recipe Book Manager View
