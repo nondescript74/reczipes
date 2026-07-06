@@ -15,6 +15,7 @@ struct SharingSettingsView: View {
     @Query private var sharingPreferences: [SharingPreferences]
     @Query private var sharedRecipes: [SharedRecipe]
     @Query private var sharedMeals: [SharedMeal]
+    @Query private var sharedRecipeBooks: [SharedRecipeBook]
     @Query private var allBooks: [Book]
     @Query private var allMeals: [Meal]
     @Query private var recipeXEntities: [RecipeX]
@@ -49,12 +50,10 @@ struct SharingSettingsView: View {
         return sharedRecipes.filter { $0.isActive && $0.sharedByUserID == currentUserID }.count
     }
     
-    // Count of books shared by the current user
+    // Count of books shared by the current user (tracked via SharedRecipeBook)
     private var mySharedBooksCount: Int {
-        guard let currentUserID = sharingService.currentUserID else {
-            return 0
-        }
-        return allBooks.filter { $0.isShared == true && $0.ownerUserID == currentUserID }.count
+        guard let currentUserID = sharingService.currentUserID else { return 0 }
+        return sharedRecipeBooks.filter { $0.isActive && $0.sharedByUserID == currentUserID }.count
     }
 
     // Count of meals shared by the current user
@@ -723,39 +722,30 @@ struct SharingSettingsView: View {
     
     private func shareAllBooks() async {
         guard !allBooks.isEmpty else { return }
-        
+
         isSharing = true
         sharingStatus = "Sharing all books..."
-        
+
         var successful = 0
         var failed = 0
-        
+
         for book in allBooks {
+            guard book.id != nil, book.name != nil, book.recipeIDs != nil else {
+                failed += 1
+                continue
+            }
             do {
-                // Book sync uses BookSyncService
-                let syncService = BookSyncService(modelContext: modelContext)
-                _ = try await syncService.syncBook(book)
-                
-                // Mark as shared
-                book.isShared = true
-                book.sharedDate = Date()
-                book.needsCloudSync = false
-                
+                _ = try await sharingService.shareRecipeBook(book, modelContext: modelContext)
                 successful += 1
             } catch {
                 AppLog.error("Failed to share book '\(book.displayName)': \(error)", category: .sharing)
                 failed += 1
             }
         }
-        
-        // Save changes to SwiftData
-        try? modelContext.save()
-        
+
         isSharing = false
-        
-        if allBooks.isEmpty {
-            alertMessage = "No books to share"
-        } else if failed == 0 {
+
+        if failed == 0 {
             alertMessage = "Successfully shared all \(successful) books"
         } else {
             alertMessage = "Shared \(successful) of \(allBooks.count) books. \(failed) failed."
@@ -788,33 +778,26 @@ struct SharingSettingsView: View {
     
     private func shareBooks(_ books: [Book]) async {
         isSharing = true
-        
+
         var successful = 0
         var failed = 0
-        
+
         for book in books {
+            guard book.id != nil, book.name != nil, book.recipeIDs != nil else {
+                failed += 1
+                continue
+            }
             do {
-                // Book sync uses BookSyncService
-                let syncService = BookSyncService(modelContext: modelContext)
-                _ = try await syncService.syncBook(book)
-                
-                // Mark as shared
-                book.isShared = true
-                book.sharedDate = Date()
-                book.needsCloudSync = false
-                
+                _ = try await sharingService.shareRecipeBook(book, modelContext: modelContext)
                 successful += 1
             } catch {
                 AppLog.error("Failed to share book '\(book.displayName)': \(error)", category: .sharing)
                 failed += 1
             }
         }
-        
-        // Save changes to SwiftData
-        try? modelContext.save()
-        
+
         isSharing = false
-        
+
         if books.isEmpty {
             alertMessage = "No books to share"
         } else if failed == 0 {
@@ -916,75 +899,49 @@ struct SharingSettingsView: View {
     private func unshareAllBooks() async {
         isSharing = true
         sharingStatus = "Preparing to unshare books..."
-        
-        // Get all shared books for current user
+
         guard let currentUserID = sharingService.currentUserID else {
             alertMessage = "Not signed in to iCloud"
             showingAlert = true
             isSharing = false
             return
         }
-        
-        let sharedBooks = allBooks.filter { 
-            $0.isShared == true && $0.ownerUserID == currentUserID 
-        }
-        
-        let total = sharedBooks.count
+
+        let activeSharedBooks = sharedRecipeBooks.filter { $0.isActive && $0.sharedByUserID == currentUserID }
+        let total = activeSharedBooks.count
+
         guard total > 0 else {
             alertMessage = "No shared books found"
             showingAlert = true
             isSharing = false
             return
         }
-        
-        AppLog.info("Starting bulk unshare: \(total) books", category: .sharing)
-        
+
         var successful = 0
         var failed = 0
-        
-        // Process in batches for better performance and progress updates
-        let batchSize = 5 // Books are larger, use smaller batches
-        let batches = stride(from: 0, to: total, by: batchSize).map { start in
-            Array(sharedBooks[start..<min(start + batchSize, total)])
-        }
-        
-        for (batchIndex, batch) in batches.enumerated() {
-            // Update progress
-            let progress = Int((Double(batchIndex) / Double(batches.count)) * 100)
-            sharingStatus = "Unsharing books: \(successful + failed)/\(total) (\(progress)%)"
-            
-            // Process batch sequentially (CloudKit operations must be sequential)
-            for book in batch {
-                do {
-                    if book.cloudRecordID != nil {
-                        let syncService = BookSyncService(modelContext: modelContext)
-                        try await syncService.deleteBookFromCloud(book)
-                    } else {
-                        book.isShared = false
-                        book.cloudRecordID = nil
-                        book.lastSyncedToCloud = nil
-                    }
-                    successful += 1
-                } catch {
-                    AppLog.error("Failed to unshare: \(error.localizedDescription)", category: .sharing)
-                    failed += 1
-                }
+
+        for (index, sharedBook) in activeSharedBooks.enumerated() {
+            sharingStatus = "Unsharing books: \(index + 1)/\(total)"
+            guard let cloudRecordID = sharedBook.cloudRecordID else {
+                sharedBook.isActive = false
+                successful += 1
+                continue
             }
-            
-            // Save periodically after each batch
-            try? modelContext.save()
+            do {
+                try await sharingService.unshareRecipeBook(cloudRecordID: cloudRecordID, modelContext: modelContext)
+                successful += 1
+            } catch {
+                AppLog.error("Failed to unshare book: \(error.localizedDescription)", category: .sharing)
+                failed += 1
+            }
         }
-        
+
+        try? modelContext.save()
         isSharing = false
-        
-        // Build result message
-        if failed == 0 {
-            alertMessage = "Successfully unshared all \(successful) books"
-        } else {
-            alertMessage = "Unshared \(successful) of \(sharedBooks.count) books. \(failed) failed."
-        }
-        
-        AppLog.info("📊 Unshare result: \(alertMessage)", category: .sharing)
+
+        alertMessage = failed == 0
+            ? "Successfully unshared all \(successful) books"
+            : "Unshared \(successful) of \(total) books. \(failed) failed."
         showingAlert = true
     }
     
