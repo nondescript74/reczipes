@@ -490,7 +490,7 @@ struct ContentView: View {
     private func selectedRecipeDetailView(_ recipe: any RecipeDisplayProtocol) -> some View {
         if let recipeX = recipe as? RecipeX {
             RecipeDetailView(recipe: recipeX, autoRepair: triggerRepairForRecipe?.id == recipeX.id)
-                .id("\(String(describing: recipeX.id))-\(recipeX.imageName ?? "no-image")-\(triggerRepairForRecipe?.id == recipeX.id ? "repair" : "")")
+                .id("\(String(describing: recipeX.id))-\(recipeX.imageName ?? "no-image")-\(recipeX.imageCount)-\(triggerRepairForRecipe?.id == recipeX.id ? "repair" : "")")
                 .onDisappear {
                     if triggerRepairForRecipe?.id == recipeX.id {
                         triggerRepairForRecipe = nil
@@ -719,8 +719,9 @@ struct ContentView: View {
                     } label: {
                         Label("Search Recipes", systemImage: "magnifyingglass")
                     }
+                    .help("Search your recipe collection")
                 }
-                
+
                 ToolbarItem(placement: .primaryAction) {
                     Menu {
                         Button {
@@ -728,7 +729,7 @@ struct ContentView: View {
                         } label: {
                             Label("Create Recipe", systemImage: "doc.badge.plus")
                         }
-                        
+
                         Button {
                             showingRecipeExtractor = true
                         } label: {
@@ -737,6 +738,7 @@ struct ContentView: View {
                     } label: {
                         Label("Add Recipe", systemImage: "plus")
                     }
+                    .help("Add a new recipe to your collection")
                 }
 #endif
             }
@@ -757,6 +759,7 @@ struct ContentView: View {
                     recipes: .constant(availableRecipes),
                     selectedRecipe: $selectedRecipe
                 )
+                .macOSSheetFrame()
             }
         }
     }

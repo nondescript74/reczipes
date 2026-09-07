@@ -25,14 +25,17 @@ struct RecipeSearchView: View {
     @State private var useCookingTimeFilter = false
     
     private var searchResults: [RecipeX] {
+        // Use live @Query data so search always sees the current recipe store,
+        // falling back to the passed-in binding only when the query is empty.
+        let source = recipeXEntities.isEmpty ? recipes : recipeXEntities
         let criteria = RecipeSearchService.SearchCriteria(
             searchText: searchText,
             dishTypes: selectedDishTypes,
             maxCookingTime: useCookingTimeFilter ? Int(maxCookingTime ?? 120) : nil,
             author: authorFilter.isEmpty ? nil : authorFilter
         )
-        
-        return searchService.searchRecipes(recipes: recipes, criteria: criteria)
+
+        return searchService.searchRecipes(recipes: source, criteria: criteria)
     }
     
     var body: some View {

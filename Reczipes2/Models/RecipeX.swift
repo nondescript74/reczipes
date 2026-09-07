@@ -303,10 +303,10 @@ extension RecipeX {
         return images
     }
     
-    /// Total image count
+    /// Total image count (includes legacy imageName file references)
     var imageCount: Int {
         var count = 0
-        if imageData != nil { count += 1 }
+        if imageData != nil || imageName != nil { count += 1 }
         if let additionalData = additionalImagesData,
            let decoded = try? JSONDecoder().decode([[String: Data]].self, from: additionalData) {
             count += decoded.count
@@ -448,10 +448,18 @@ extension RecipeX {
 
 extension RecipeX {
     
-    /// Get main image as PlatformImage
+    /// Get main image as PlatformImage (modern blob first, then legacy file)
     func getMainImage() -> PlatformImage? {
-        guard let imageData = imageData else { return nil }
-        return PlatformImage(data: imageData)
+        if let imageData = imageData {
+            return PlatformImage(data: imageData)
+        }
+        if let imageName = imageName {
+            let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+            if let data = try? Data(contentsOf: documentsURL.appendingPathComponent(imageName)) {
+                return PlatformImage(data: data)
+            }
+        }
+        return nil
     }
 
     /// Get all additional images
@@ -528,6 +536,68 @@ extension RecipeX {
         }
     }
     
+    /// Migrate legacy additionalImageNames (file paths) → additionalImagesData (blobs).
+    /// Safe to call repeatedly — skips names already present in the blob store.
+    /// Returns true if any images were migrated and the context needs saving.
+    @MainActor
+    func migrateAdditionalImagesToBlob() -> Bool {
+        guard let legacyNames = additionalImageNames, !legacyNames.isEmpty else {
+            print("🖼️ Migration: no legacy additionalImageNames on '\(safeTitle)'")
+            return false
+        }
+
+        print("🖼️ Migration: '\(safeTitle)' has \(legacyNames.count) legacy name(s): \(legacyNames)")
+
+        var existingEntries: [[String: Data]] = []
+        if let existingData = additionalImagesData,
+           let decoded = try? JSONDecoder().decode([[String: Data]].self, from: existingData) {
+            existingEntries = decoded
+            print("🖼️ Migration: \(decoded.count) image(s) already in blob store")
+        } else {
+            print("🖼️ Migration: blob store is empty")
+        }
+
+        let existingNames = Set(existingEntries.compactMap { dict -> String? in
+            guard let nameData = dict["name"] else { return nil }
+            return String(data: nameData, encoding: .utf8)
+        })
+
+        let documentsURL = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
+        var migrated = false
+
+        for imageName in legacyNames {
+            if existingNames.contains(imageName) {
+                print("🖼️ Migration: skipping '\(imageName)' — already in blob store")
+                continue
+            }
+
+            let fileURL = documentsURL.appendingPathComponent(imageName)
+            guard let data = try? Data(contentsOf: fileURL) else {
+                print("🖼️ Migration: ❌ file not found: \(imageName)")
+                continue
+            }
+            guard let image = PlatformImage(data: data) else {
+                print("🖼️ Migration: ❌ could not decode image: \(imageName)")
+                continue
+            }
+
+            let compressed = ImageCompressionUtility.compressImage(image) ?? data
+            existingEntries.append(["data": compressed, "name": Data(imageName.utf8)])
+            print("🖼️ Migration: ✅ migrated '\(imageName)' (\(compressed.count) bytes)")
+            migrated = true
+        }
+
+        if migrated, let encoded = try? JSONEncoder().encode(existingEntries) {
+            additionalImagesData = encoded
+            markAsModified()
+            print("🖼️ Migration: saved \(existingEntries.count) total image(s) to blob store")
+        } else if !migrated {
+            print("🖼️ Migration: nothing to migrate")
+        }
+
+        return migrated
+    }
+
     /// Add additional image
     @MainActor
     private func addAdditionalImage(_ imageData: Data) {

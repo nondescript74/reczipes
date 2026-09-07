@@ -1139,22 +1139,22 @@ struct RecipeImagesEditorView: View {
     @State private var selectedPhotoItem: PhotosPickerItem?
     @State private var isProcessingImage = false
     @State private var showingDeleteConfirmation = false
-    @State private var imageToDelete: String?
+    @State private var imageIndexToDelete: Int?
     
     var body: some View {
         List {
             // Main Image Section
-            if let mainImage = recipe.imageName {
+            if recipe.imageName != nil || recipe.imageData != nil {
                 Section {
                     VStack(spacing: 16) {
                         RecipeImageView(
-                            imageName: mainImage,
+                            imageName: recipe.imageName,
                             imageData: recipe.imageData,
                             size: CGSize(width: 300, height: 300),
                             cornerRadius: 12
                         )
                         .frame(maxWidth: .infinity, alignment: .center)
-                        
+
                         Text("Main recipe image")
                             .font(.caption)
                             .foregroundColor(.secondary)
@@ -1169,20 +1169,20 @@ struct RecipeImagesEditorView: View {
             
             // Additional Images Section
             Section {
-                if let additionalImages = recipe.additionalImageNames, !additionalImages.isEmpty {
-                    ForEach(additionalImages, id: \.self) { imageName in
+                let additionalImages = recipe.getAdditionalImages()
+                if !additionalImages.isEmpty {
+                    ForEach(Array(additionalImages.enumerated()), id: \.offset) { index, image in
                         HStack {
-                            RecipeImageView(
-                                imageName: imageName,
-                                imageData: nil,
-                                size: CGSize(width: 80, height: 80),
-                                cornerRadius: 8
-                            )
-                            
+                            Image(platformImage: image)
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
+                                .frame(width: 80, height: 80)
+                                .clipShape(RoundedRectangle(cornerRadius: 8))
+
                             Spacer()
-                            
+
                             Button(role: .destructive) {
-                                imageToDelete = imageName
+                                imageIndexToDelete = index
                                 showingDeleteConfirmation = true
                             } label: {
                                 Image(systemName: "trash")
@@ -1265,101 +1265,64 @@ struct RecipeImagesEditorView: View {
         .alert("Delete Image", isPresented: $showingDeleteConfirmation) {
             Button("Cancel", role: .cancel) {}
             Button("Delete", role: .destructive) {
-                if let imageToDelete = imageToDelete {
-                    deleteImage(imageToDelete)
+                if let index = imageIndexToDelete {
+                    deleteImage(at: index)
                 }
             }
         } message: {
             Text("Are you sure you want to delete this image? This action cannot be undone.")
         }
     }
-    
+
     // MARK: - Image Loading
-    
+
     private func loadImage(from photoItem: PhotosPickerItem?) async {
         guard let photoItem = photoItem else { return }
-        
+
         isProcessingImage = true
         defer { isProcessingImage = false }
-        
+
         do {
             guard let data = try await photoItem.loadTransferable(type: Data.self),
                   let uiImage = PlatformImage(data: data) else {
                 print("❌ Failed to load image data")
                 return
             }
-            
-            // Use centralized compression utility to keep images under 100KB
-            guard let jpegData = ImageCompressionUtility.compressImage(uiImage) else {
-                print("❌ Failed to compress image")
-                return
-            }
 
-            // Save the image
-            let recipeID = recipe.id ?? UUID()
-            let imageName = "recipe_\(recipeID.uuidString)_\(UUID().uuidString).jpg"
-            let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-            let fileURL = documentsPath.appendingPathComponent(imageName)
+            await MainActor.run {
+                let hasMainImage = recipe.imageData != nil || recipe.imageName != nil
+                // setImage handles compression, sets imageData/additionalImagesData correctly
+                recipe.setImage(uiImage, isMainImage: !hasMainImage)
 
-            // Write compressed data
-            do {
-                try jpegData.write(to: fileURL)
-
-                await MainActor.run {
-                    let hasMainImage = recipe.imageData != nil || recipe.imageName != nil
-                    if hasMainImage {
-                        // Append as an additional image
-                        if recipe.additionalImageNames == nil {
-                            recipe.additionalImageNames = []
-                        }
-                        recipe.additionalImageNames?.append(imageName)
-                    } else {
-                        // No main image yet — promote this one to main
-                        recipe.imageName = imageName
-                        recipe.imageData = jpegData
-                    }
-
-                    // Save context
-                    do {
-                        try modelContext.save()
-                        print("✅ Added image: \(imageName) - Size: \(ImageCompressionUtility.formatSize(jpegData.count))")
-                    } catch {
-                        print("❌ Failed to save context: \(error)")
-                    }
+                do {
+                    try modelContext.save()
+                    print("✅ Saved image as \(hasMainImage ? "additional" : "main") image")
+                } catch {
+                    print("❌ Failed to save context: \(error)")
                 }
-            } catch {
-                print("❌ Error writing image: \(error)")
             }
         } catch {
             print("❌ Error loading image: \(error)")
         }
-        
-        // Clear the selection for next time
+
         await MainActor.run {
             selectedPhotoItem = nil
         }
     }
-    
+
     // MARK: - Image Deletion
-    
-    private func deleteImage(_ imageName: String) {
-        // Remove from recipe's additional images
-        recipe.additionalImageNames?.removeAll { $0 == imageName }
-        
-        // Delete the file
-        let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-        let fileURL = documentsPath.appendingPathComponent(imageName)
-        try? FileManager.default.removeItem(at: fileURL)
-        
-        // Save context
+
+    private func deleteImage(at index: Int) {
+        recipe.removeAdditionalImage(at: index)
+
         do {
             try modelContext.save()
-            print("✅ Deleted image: \(imageName)")
+            print("✅ Deleted additional image at index \(index)")
         } catch {
             print("❌ Failed to save context: \(error)")
         }
-        
-        imageToDelete = nil
+
+        imageIndexToDelete = nil
     }
 }
 

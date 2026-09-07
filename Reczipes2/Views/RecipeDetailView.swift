@@ -682,29 +682,30 @@ struct RecipeDetailView: View {
         let imageCount = recipe.imageCount
 
         if imageCount > 1 {
-            // Show scrollable gallery for multiple images using actual image data
-            TabView {
-                ForEach(0..<imageCount, id: \.self) { index in
-                    if let image = recipe.getImage(at: index) {
-                        Button {
-                            expandedImage = image
-                        } label: {
-                            Image(platformImage: image)
-                                .resizable()
-                                .aspectRatio(contentMode: .fit)
-                                .frame(maxWidth: .infinity)
-                                .frame(maxHeight: 200)
-                                .clipShape(RoundedRectangle(cornerRadius: 16))
-                                .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
-                                .padding(.horizontal)
+            // Show horizontally scrollable gallery (works on iOS and macOS)
+            ScrollView(.horizontal, showsIndicators: false) {
+                LazyHStack(spacing: 12) {
+                    ForEach(0..<imageCount, id: \.self) { index in
+                        if let image = recipe.getImage(at: index) {
+                            Button {
+                                expandedImage = image
+                            } label: {
+                                Image(platformImage: image)
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                                    .frame(width: 260, height: 200)
+                                    .clipShape(RoundedRectangle(cornerRadius: 16))
+                                    .shadow(color: .black.opacity(0.1), radius: 8, x: 0, y: 4)
+                            }
+                            .buttonStyle(.plain)
                         }
-                        .buttonStyle(.plain)
                     }
                 }
+                .scrollTargetLayout()
+                .padding(.horizontal)
             }
-            .platformPageTabViewStyle(indexDisplayMode: .always)
+            .scrollTargetBehavior(.viewAligned)
             .frame(height: 220)
-            .platformPageIndexViewStyle(backgroundDisplayMode: .always)
         } else if let imageName = recipe.imageName {
             // Show single image
             Button {
@@ -909,8 +910,9 @@ struct RecipeDetailView: View {
                 } label: {
                     Label("Cooking Mode", systemImage: "frying.pan")
                 }
+                .help("Open step-by-step cooking mode for this recipe")
             }
-            
+
             // Recipe Mashup button
             ToolbarItem(placement: .primaryAction) {
                 Button {
@@ -918,6 +920,7 @@ struct RecipeDetailView: View {
                 } label: {
                     Label("Recipe Mashup", systemImage: "arrow.triangle.merge")
                 }
+                .help("Blend this recipe with another to create a mashup")
             }
 //            
 //            // Share button (for email, text, etc.)
@@ -953,8 +956,9 @@ struct RecipeDetailView: View {
                     }
                 }
                 .disabled(isExportingToReminders)
+                .help("Export ingredient list to Apple Reminders")
             }
-            
+
             // FODMAP Guide button
             ToolbarItem(placement: .secondaryAction) {
                 Button {
@@ -962,8 +966,9 @@ struct RecipeDetailView: View {
                 } label: {
                     Label("FODMAP Guide", systemImage: "book.circle")
                 }
+                .help("View the FODMAP substitution guide")
             }
-            
+
             // Data Inspector button (for debugging)
             ToolbarItem(placement: .secondaryAction) {
                 Button {
@@ -971,8 +976,9 @@ struct RecipeDetailView: View {
                 } label: {
                     Label("Inspect Recipe Data", systemImage: "magnifyingglass.circle")
                 }
+                .help("Inspect raw recipe data for debugging")
             }
-            
+
             // Edit button (only for saved recipes)
             if isSaved {
                 ToolbarItem(placement: .secondaryAction) {
@@ -981,6 +987,7 @@ struct RecipeDetailView: View {
                     } label: {
                         Label("Edit Recipe", systemImage: "pencil")
                     }
+                    .help("Edit this recipe")
                 }
             }
         }
@@ -1061,6 +1068,13 @@ struct RecipeDetailView: View {
 //        }
         .onAppear {
             checkForPendingAnalysis()
+
+            // Migrate any legacy file-based additional images to blob storage (deferred to avoid view-update warning)
+            Task {
+                if recipe.migrateAdditionalImagesToBlob() {
+                    try? modelContext.save()
+                }
+            }
 
             // Auto-load diabetic analysis if profile has diabetes concern
             if let profile = activeProfile, profile.hasDiabetesConcern, diabeticInfo == nil, !isLoadingDiabeticInfo {
