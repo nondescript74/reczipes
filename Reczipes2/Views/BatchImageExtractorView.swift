@@ -892,7 +892,7 @@ struct BatchImageExtractorView: View {
                         }
                         
                         // Show PlatformImage thumbnails (if no PHAssets, or to fill remaining)
-                        ForEach(0..<min(10 - viewModel.remainingAssets.count, viewModel.remainingImages.count), id: \.self) { index in
+                        ForEach(0..<min(max(0, 10 - viewModel.remainingAssets.count), viewModel.remainingImages.count), id: \.self) { index in
                             if index < viewModel.remainingImages.count {
                                 QueuedUIImageThumbnail(
                                     image: viewModel.remainingImages[index],
