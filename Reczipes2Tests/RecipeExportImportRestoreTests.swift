@@ -193,10 +193,8 @@ struct RecipeExportImportRestoreTests {
     
     @Test("Importing corrupted backup file throws decoding error")
     func testImportCorruptedBackupFile() async throws {
-        // Create a corrupted backup file
-        let backupDir = getBackupDirectory()
-        try FileManager.default.createDirectory(at: backupDir, withIntermediateDirectories: true)
-        
+        // Use the manager's own directory resolution (guaranteed writable)
+        let backupDir = RecipeBackupManager.shared.getBackupDirectoryShared()
         let corruptedURL = backupDir.appendingPathComponent("TEST_Corrupted.reczipes")
         let corruptedData = "This is not valid JSON {{{".data(using: .utf8)!
         try corruptedData.write(to: corruptedURL)
@@ -227,9 +225,8 @@ struct RecipeExportImportRestoreTests {
     
     @Test("Importing empty backup file throws error")
     func testImportEmptyBackupFile() async throws {
-        let backupDir = getBackupDirectory()
-        try FileManager.default.createDirectory(at: backupDir, withIntermediateDirectories: true)
-        
+        // Use the manager's own directory resolution (guaranteed writable)
+        let backupDir = RecipeBackupManager.shared.getBackupDirectoryShared()
         let emptyURL = backupDir.appendingPathComponent("TEST_Empty.reczipes")
         let emptyData = Data()
         try emptyData.write(to: emptyURL)

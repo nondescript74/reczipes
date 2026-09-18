@@ -576,7 +576,7 @@ extension BookSyncService {
         notificationInfo.shouldSendContentAvailable = true
         subscription.notificationInfo = notificationInfo
         
-        try await publicDatabase.save(subscription)
+        _ = try await publicDatabase.save(subscription)  // added the underscore to capture the unused result which was causing a warning in CI/CD
         logger.info("Subscribed to book changes")
     }
     

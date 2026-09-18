@@ -533,33 +533,43 @@ struct Reczipes2App: App {
                 technicalDetails: "No database files found in app support directory"
             )
         } else if foundDatabases.count > 1 {
-            logWarning("🚨 CRITICAL: Multiple database files detected!", category: "storage")
-            logWarning("   This may explain missing recipes after update", category: "storage")
-            
             if let largest = foundDatabases.max(by: { $0.size < $1.size }) {
                 let sizeString = ByteCountFormatter.string(fromByteCount: largest.size, countStyle: .file)
                 logInfo("   Largest file (active): \(largest.name) - \(sizeString)", category: "storage")
-                
-                // Log user-facing diagnostic about multiple databases
-                logUserDiagnostic(
-                    .warning,
-                    category: .storage,
-                    title: "Multiple Database Files Detected",
-                    message: "Found \(foundDatabases.count) database files. Using: \(largest.name)",
-                    technicalDetails: "Files: \(foundDatabases.map { $0.name }.joined(separator: ", "))",
-                    suggestedActions: [
-                        DiagnosticAction(
-                            title: "Check Data",
-                            description: "Verify all your recipes are showing correctly",
-                            actionType: .retryOperation
-                        ),
-                        DiagnosticAction(
-                            title: "Database Maintenance",
-                            description: "Go to Settings > Developer Tools > Database Maintenance",
-                            actionType: .openSettings(.general)
-                        )
-                    ]
-                )
+
+                // Only flag CRITICAL if a non-primary database has meaningful data (> 1 MB).
+                // Small files (< 1 MB) are empty leftover artifacts from earlier schema
+                // migrations and don't affect data integrity.
+                let secondaryTotalSize = foundDatabases
+                    .filter { $0.name != largest.name }
+                    .reduce(0) { $0 + $1.size }
+                let oneMB: Int64 = 1_048_576
+
+                if secondaryTotalSize > oneMB {
+                    logWarning("🚨 CRITICAL: Multiple database files detected!", category: "storage")
+                    logWarning("   This may explain missing recipes after update", category: "storage")
+                    logUserDiagnostic(
+                        .warning,
+                        category: .storage,
+                        title: "Multiple Database Files Detected",
+                        message: "Found \(foundDatabases.count) database files. Using: \(largest.name)",
+                        technicalDetails: "Files: \(foundDatabases.map { $0.name }.joined(separator: ", "))",
+                        suggestedActions: [
+                            DiagnosticAction(
+                                title: "Check Data",
+                                description: "Verify all your recipes are showing correctly",
+                                actionType: .retryOperation
+                            ),
+                            DiagnosticAction(
+                                title: "Database Maintenance",
+                                description: "Go to Settings > Developer Tools > Database Maintenance",
+                                actionType: .openSettings(.general)
+                            )
+                        ]
+                    )
+                } else {
+                    logInfo("   Extra database files are empty artifacts (< 1 MB each) – no action needed.", category: "storage")
+                }
             }
         } else {
             // Single database found - this is normal

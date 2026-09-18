@@ -308,7 +308,7 @@ struct MealExportRoundTripTests {
         #expect(result.mealCount == 1)
         #expect(result.courseCount == 1)
         #expect(result.url.lastPathComponent.hasPrefix("meal_plans_"))
-        #expect(result.url.pathExtension == "json")
+        #expect(result.url.pathExtension == "mealbackup")
 
         let data = try Data(contentsOf: result.url)
         let decoded = try JSONDecoder().decode(MealImportPackage.self, from: data)

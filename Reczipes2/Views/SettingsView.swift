@@ -96,6 +96,7 @@ struct SettingsView: View {
             .navigationTitle("Settings")
             .sheet(item: $activeCategory) { category in
                 SettingsCategorySheet(category: category)
+                    .macOSSheetFrame()
             }
             .onAppear {
                 isAPIKeyConfigured = APIKeyHelper.isConfigured
@@ -214,6 +215,7 @@ private struct SettingsCategorySheet: View {
             }
             .sheet(item: $activeDestination) { destination in
                 SettingsDetailSheet(destination: destination)
+                    .macOSSheetFrame()
             }
             .platformFullScreenCover(isPresented: $showAPIKeyManager, onDismiss: {
                 isAPIKeyConfigured = APIKeyHelper.isConfigured
@@ -224,18 +226,23 @@ private struct SettingsCategorySheet: View {
                 isRecipeAPIConfigured = APIKeyHelper.isRecipeAPIConfigured
             }) {
                 RecipeAPIIntegrationView()
+                    .macOSSheetFrame()
             }
             .sheet(isPresented: $showLicenseAgreement) {
                 LicenseDisplayView()
+                    .macOSSheetFrame()
             }
             .sheet(isPresented: $showHelpBrowser) {
                 HelpBrowserView()
+                    .macOSSheetFrame()
             }
             .sheet(isPresented: $showDiagnosticLog) {
                 DiagnosticLogView()
+                    .macOSSheetFrame()
             }
             .sheet(isPresented: $showOnboarding) {
                 CloudKitOnboardingView()
+                    .macOSSheetFrame()
             }
         }
     }

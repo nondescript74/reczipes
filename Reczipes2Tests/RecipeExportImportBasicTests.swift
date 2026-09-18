@@ -283,8 +283,8 @@ struct RecipeExportImportBasicTests {
         #expect(model.allImageNames.contains("main.jpg"))
         #expect(model.allImageNames.contains("photo1.jpg"))
         
-        // Test imageCount computed property (should be 0 since we only have filenames, not imageData)
-        #expect(model.imageCount == 0)
+        // Test imageCount computed property — imageName is set, so count is 1
+        #expect(model.imageCount == 1)
         
         // Test currentVersion computed property
         #expect(model.currentVersion >= 1)

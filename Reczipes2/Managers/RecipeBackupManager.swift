@@ -573,24 +573,27 @@ class RecipeBackupManager {
         return getBackupDirectoryShared()
     }
     
-    /// Shared method to get the backup directory (accessible to BookBackupManager)
+    /// Shared method to get the backup directory (accessible to BookBackupManager).
+    /// Verifies write access by attempting directory creation; falls back to tmp/Reczipes2
+    /// when Documents exists but is not writable (common in test environments).
     func getBackupDirectoryShared() -> URL {
-        // First, try to verify Documents directory exists and is accessible
         let documentsDirectory = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-        
-        // Verify we can actually access the documents directory
         var isDir: ObjCBool = false
         let docsExists = FileManager.default.fileExists(atPath: documentsDirectory.path, isDirectory: &isDir)
-        
+
         if docsExists && isDir.boolValue {
-            // Documents exists, use it
-            return documentsDirectory.appendingPathComponent("Reczipes2")
-        } else {
-            // Documents doesn't exist or isn't accessible - use temporary directory
-            // This is common in test environments with in-memory containers
-            let tmpDirectory = FileManager.default.temporaryDirectory
-            return tmpDirectory.appendingPathComponent("Reczipes2")
+            let reczipesDir = documentsDirectory.appendingPathComponent("Reczipes2")
+            do {
+                try FileManager.default.createDirectory(at: reczipesDir, withIntermediateDirectories: true)
+                return reczipesDir
+            } catch {
+                AppLog.warning("Cannot create Documents/Reczipes2 (\(error.localizedDescription)), falling back to tmp", category: .backup)
+            }
         }
+
+        let tmpDir = FileManager.default.temporaryDirectory.appendingPathComponent("Reczipes2")
+        try? FileManager.default.createDirectory(at: tmpDir, withIntermediateDirectories: true)
+        return tmpDir
     }
     
     /// Saves backup data to a file with the given prefix and extension

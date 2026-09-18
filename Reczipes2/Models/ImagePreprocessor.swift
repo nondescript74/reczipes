@@ -28,6 +28,15 @@ import CoreImage.CIFilterBuiltins
 
 class ImagePreprocessor {
 
+    // Nested alias so this file compiles in targets (App Clip, tests) that
+    // don't include PlatformCompat.swift. Shadows the module-level typealias
+    // within this class without causing a redeclaration conflict.
+    #if canImport(UIKit)
+    typealias PlatformImage = UIImage
+    #elseif canImport(AppKit)
+    typealias PlatformImage = NSImage
+    #endif
+
     private let context = CIContext()
 
     // MARK: - Self-contained platform helpers (no PlatformCompat dependency)

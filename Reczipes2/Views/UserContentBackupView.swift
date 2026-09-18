@@ -92,9 +92,9 @@ struct UserContentBackupView: View {
             }
         }
         .alert("Export Successful", isPresented: $showExportSuccess) {
-            Button("Share") {
-                showShareSheet = true
-            }
+            #if os(iOS)
+            Button("Share") { showShareSheet = true }
+            #endif
             Button("Done", role: .cancel) { }
         } message: {
             Text(exportSuccessMessage)
@@ -466,6 +466,44 @@ struct UserContentBackupView: View {
     
     // MARK: - Actions
     
+    // MARK: - Platform Export
+
+    /// On macOS: shows NSSavePanel (runModal) so the user can pick any folder (e.g. Desktop).
+    /// On iOS: shows the success alert so the user can share/save via the system sheet.
+    @MainActor
+    private func presentExport(url: URL, isRecipes: Bool) {
+#if os(macOS)
+        let panel = NSSavePanel()
+        panel.nameFieldStringValue = url.lastPathComponent
+        panel.canCreateDirectories = true
+        panel.allowsOtherFileTypes = false
+        panel.directoryURL = FileManager.default.urls(
+            for: .desktopDirectory, in: .userDomainMask).first
+
+        // runModal() spins the AppKit event loop — same pattern as MacFilePicker.pickImages().
+        // It does not require a parent window and works from within a SwiftUI sheet.
+        let response = panel.runModal()
+        guard response == .OK, let destination = panel.url else {
+            isExporting = false
+            return
+        }
+
+        do {
+            if FileManager.default.fileExists(atPath: destination.path) {
+                try FileManager.default.removeItem(at: destination)
+            }
+            try FileManager.default.copyItem(at: url, to: destination)
+            exportResult = "Saved to: \(destination.lastPathComponent)"
+            showExportSuccess = true
+        } catch {
+            errorMessage = "Failed to save file: \(error.localizedDescription)"
+        }
+        isExporting = false
+#else
+        showExportSuccess = true
+#endif
+    }
+
     private func loadAvailableBackups() {
         // Load recipe backups
         do {
@@ -501,10 +539,10 @@ struct UserContentBackupView: View {
             
             let url = try await RecipeBackupManager.shared.createBackupX(from: recipes)
             exportResult = "Backup created with \(recipes.count) RecipeX recipes with CloudKit sync data"
-            
+
             await MainActor.run {
                 exportedURL = url
-                showExportSuccess = true
+                presentExport(url: url, isRecipes: true)
             }
         } catch {
             await MainActor.run {
@@ -595,11 +633,11 @@ struct UserContentBackupView: View {
             
             let url = try await BookBackupManager.shared.createBackup(from: books)
             let resultMessage = "Successfully exported \(books.count) Books with CloudKit sync data"
-            
+
             await MainActor.run {
                 exportedURL = url
                 exportResult = resultMessage
-                showExportSuccess = true
+                presentExport(url: url, isRecipes: false)
             }
             
         } catch {
@@ -625,7 +663,7 @@ struct UserContentBackupView: View {
             await MainActor.run {
                 exportedURL = url
                 exportResult = "Book '\(book.name ?? "Untitled")' exported successfully with \(book.recipeIDs?.count ?? 0) recipes."
-                showExportSuccess = true
+                presentExport(url: url, isRecipes: false)
             }
             
         } catch {
