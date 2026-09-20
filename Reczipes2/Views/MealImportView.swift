@@ -102,16 +102,30 @@ struct MealImportView: View {
                     Text(pendingExport.summary)
                         .font(.caption)
                         .foregroundStyle(.secondary)
-                    ShareLink(
-                        item: pendingExport.url,
-                        preview: SharePreview(
-                            pendingExport.url.lastPathComponent,
-                            image: Image(systemName: "fork.knife")
-                        )
-                    ) {
-                        Label("Share or Save File", systemImage: "square.and.arrow.up")
+                    HStack(spacing: 8) {
+#if os(macOS)
+                        Button {
+                            saveExportToFile(pendingExport)
+                        } label: {
+                            Label("Save to File", systemImage: "square.and.arrow.down")
+                        }
+                        .buttonStyle(.bordered)
+#endif
+                        ShareLink(
+                            item: pendingExport.url,
+                            preview: SharePreview(
+                                pendingExport.url.lastPathComponent,
+                                image: Image(systemName: "fork.knife")
+                            )
+                        ) {
+#if os(macOS)
+                            Label("Share", systemImage: "square.and.arrow.up")
+#else
+                            Label("Share or Save File", systemImage: "square.and.arrow.up")
+#endif
+                        }
+                        .buttonStyle(.bordered)
                     }
-                    .buttonStyle(.bordered)
                 }
             } else {
                 Button {
@@ -231,6 +245,29 @@ struct MealImportView: View {
             errorMessage = error.localizedDescription
         }
     }
+
+#if os(macOS)
+    @MainActor
+    private func saveExportToFile(_ export: MealExportResult) {
+        let panel = NSSavePanel()
+        panel.nameFieldStringValue = export.url.lastPathComponent
+        panel.canCreateDirectories = true
+        panel.allowsOtherFileTypes = false
+        panel.directoryURL = FileManager.default.urls(for: .desktopDirectory, in: .userDomainMask).first
+
+        guard panel.runModal() == .OK, let destination = panel.url else { return }
+
+        do {
+            if FileManager.default.fileExists(atPath: destination.path) {
+                try FileManager.default.removeItem(at: destination)
+            }
+            try FileManager.default.copyItem(at: export.url, to: destination)
+            resultMessage = "Saved to: \(destination.lastPathComponent)"
+        } catch {
+            errorMessage = "Failed to save file: \(error.localizedDescription)"
+        }
+    }
+#endif
 
     private func importBundled() async {
         isImporting = true

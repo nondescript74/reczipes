@@ -508,4 +508,140 @@ struct MealPersistenceTests {
         #expect(presets.count == 2)
         #expect(Set(presets.compactMap { $0.presetIdentifier }) == ["a", "b"])
     }
+
+    @Test("Name, notes, and description updates persist through save and fetch")
+    func fieldUpdatesPersist() async throws {
+        let container = makeMealContainer()
+        let context = container.mainContext
+
+        let meal = Meal(name: "Old Name", notes: "Old notes")
+        context.insert(meal)
+        try context.save()
+
+        meal.name = "New Name"
+        meal.notes = "Updated notes"
+        meal.mealDescription = "Added description"
+        try context.save()
+
+        let stored = try #require(try context.fetch(FetchDescriptor<Meal>()).first)
+        #expect(stored.name == "New Name")
+        #expect(stored.notes == "Updated notes")
+        #expect(stored.mealDescription == "Added description")
+    }
+
+    @Test("Multiple meals insert and are all retrievable")
+    func multipleMealsInsertAndFetch() async throws {
+        let container = makeMealContainer()
+        let context = container.mainContext
+
+        let names = ["Sunday Roast", "Taco Tuesday", "Pizza Night"]
+        for name in names {
+            context.insert(Meal(name: name, courses: [MealCourse(name: "Main")]))
+        }
+        try context.save()
+
+        let stored = try context.fetch(FetchDescriptor<Meal>())
+        #expect(stored.count == 3)
+        #expect(Set(stored.compactMap { $0.name }) == Set(names))
+    }
+
+    @Test("Fetch sorted by name returns meals in alphabetical order")
+    func fetchSortedByName() async throws {
+        let container = makeMealContainer()
+        let context = container.mainContext
+
+        context.insert(Meal(name: "Tacos"))
+        context.insert(Meal(name: "Burgers"))
+        context.insert(Meal(name: "Pasta"))
+        try context.save()
+
+        let descriptor = FetchDescriptor<Meal>(
+            sortBy: [SortDescriptor(\.name)]
+        )
+        let sorted = try context.fetch(descriptor)
+        #expect(sorted.compactMap { $0.name } == ["Burgers", "Pasta", "Tacos"])
+    }
+
+    @Test("Fetch with exact-name predicate returns only the matching meal")
+    func fetchByNamePredicate() async throws {
+        let container = makeMealContainer()
+        let context = container.mainContext
+
+        context.insert(Meal(name: "Chicken Curry"))
+        context.insert(Meal(name: "Chicken Stir Fry"))
+        context.insert(Meal(name: "Beef Tacos"))
+        try context.save()
+
+        let descriptor = FetchDescriptor<Meal>(
+            predicate: #Predicate<Meal> { $0.name == "Beef Tacos" }
+        )
+        let fetched = try context.fetch(descriptor)
+        #expect(fetched.count == 1)
+        #expect(fetched.first?.name == "Beef Tacos")
+    }
+
+    @Test("Deleting multiple meals removes all of them, leaving others intact")
+    func deleteMultipleMeals() async throws {
+        let container = makeMealContainer()
+        let context = container.mainContext
+
+        let keeper = Meal(name: "Keeper")
+        let first = Meal(name: "Delete Me 1")
+        let second = Meal(name: "Delete Me 2")
+        context.insert(keeper)
+        context.insert(first)
+        context.insert(second)
+        try context.save()
+
+        context.delete(first)
+        context.delete(second)
+        try context.save()
+
+        let remaining = try context.fetch(FetchDescriptor<Meal>())
+        #expect(remaining.count == 1)
+        #expect(remaining.first?.name == "Keeper")
+    }
+
+    @Test("Preset-flagged meal can be deleted like any other meal")
+    func presetMealDeletion() async throws {
+        let container = makeMealContainer()
+        let context = container.mainContext
+
+        let preset = Meal(name: "Family Dinner", isPreset: true, presetIdentifier: "family-dinner")
+        context.insert(preset)
+        try context.save()
+
+        context.delete(preset)
+        try context.save()
+
+        #expect(try context.fetch(FetchDescriptor<Meal>()).isEmpty)
+    }
+
+    @Test("Meal with no courses stores and retrieves with empty course list")
+    func mealWithNoCoursesRoundTrip() async throws {
+        let container = makeMealContainer()
+        let context = container.mainContext
+
+        context.insert(Meal(name: "Empty Meal"))
+        try context.save()
+
+        let stored = try #require(try context.fetch(FetchDescriptor<Meal>()).first)
+        #expect(stored.courses.isEmpty)
+        #expect(stored.courseCount == 0)
+        #expect(stored.linkedRecipeCount == 0)
+    }
+
+    @Test("dateCreated is preserved unchanged through save and fetch")
+    func dateCreatedPreservedAfterSave() async throws {
+        let container = makeMealContainer()
+        let context = container.mainContext
+
+        let fixedDate = Date(timeIntervalSince1970: 1_700_000_000)
+        let meal = Meal(name: "Date Test", dateCreated: fixedDate)
+        context.insert(meal)
+        try context.save()
+
+        let stored = try #require(try context.fetch(FetchDescriptor<Meal>()).first)
+        #expect(stored.dateCreated == fixedDate)
+    }
 }

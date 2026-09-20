@@ -17,6 +17,16 @@ struct UserContentBackupView: View {
     // CloudKit-compatible models
     @Query private var recipes: [RecipeX]
     @Query private var books: [Book]
+
+    /// Books deduplicated by ID — CloudKit sync can leave duplicate Book
+    /// records in the store (same approach as RecipeBooksView).
+    private var uniqueBooks: [Book] {
+        var seenIDs = Set<UUID>()
+        return books.filter { book in
+            guard let bookID = book.id else { return false }
+            return seenIDs.insert(bookID).inserted
+        }
+    }
     @Query private var meals: [Meal]
     
     @State private var selectedTab: ContentType = .recipes
@@ -46,7 +56,7 @@ struct UserContentBackupView: View {
             // Tab picker
             Picker("Content Type", selection: $selectedTab) {
                 Text("Recipes (\(recipes.count))").tag(ContentType.recipes)
-                Text("Books (\(books.count))").tag(ContentType.books)
+                Text("Books (\(uniqueBooks.count))").tag(ContentType.books)
                 Text("Meals (\(meals.count))").tag(ContentType.meals)
             }
             .pickerStyle(.segmented)
@@ -261,11 +271,11 @@ struct UserContentBackupView: View {
                         .foregroundStyle(Color.appInfo)
                     Text("Total Books")
                     Spacer()
-                    Text("\(books.count)")
+                    Text("\(uniqueBooks.count)")
                         .bold()
                 }
                 
-                if books.count > 0 {
+                if uniqueBooks.count > 0 {
                     HStack {
                         Image(systemName: "book.pages.fill")
                             .foregroundStyle(Color.appWarning)
@@ -278,7 +288,7 @@ struct UserContentBackupView: View {
             }
             
             // Export All Section
-            if books.count > 0 {
+            if uniqueBooks.count > 0 {
                 Section {
                     Button {
                         Task {
@@ -298,17 +308,17 @@ struct UserContentBackupView: View {
                 } header: {
                     Text("Export All Books")
                 } footer: {
-                    Text("Creates a backup of \(books.count) Books with CloudKit sync data.")
+                    Text("Creates a backup of \(uniqueBooks.count) Books with CloudKit sync data.")
                 }
             }
             
             // Export Individual Section
             Section {
-                if books.count == 0 {
+                if uniqueBooks.count == 0 {
                     Text("No books to export")
                         .foregroundColor(.secondary)
                 } else {
-                    ForEach(books) { book in
+                    ForEach(uniqueBooks) { book in
                         Button {
                             Task {
                                 await exportBook(book)
@@ -627,12 +637,12 @@ struct UserContentBackupView: View {
         exportResult = nil
         
         do {
-            guard books.count > 0 else {
+            guard uniqueBooks.count > 0 else {
                 throw RecipeBackupError.noRecipesToBackup
             }
             
-            let url = try await BookBackupManager.shared.createBackup(from: books)
-            let resultMessage = "Successfully exported \(books.count) Books with CloudKit sync data"
+            let url = try await BookBackupManager.shared.createBackup(from: uniqueBooks)
+            let resultMessage = "Successfully exported \(uniqueBooks.count) Books with CloudKit sync data"
 
             await MainActor.run {
                 exportedURL = url

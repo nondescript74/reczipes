@@ -42,6 +42,7 @@ struct RecipeAPIIntegrationView: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
                         SecureField("Enter recipe-api.com key", text: $recipeAPIKey)
+                            .textContentType(.password)
                             .labelsHidden()
                             .platformTextInputAutocapitalization(.never)
                             .autocorrectionDisabled()

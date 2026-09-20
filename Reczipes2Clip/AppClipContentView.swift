@@ -555,6 +555,7 @@ struct APIKeyEntryView: View {
                     Text("Claude API Key")
                         .font(.subheadline.weight(.medium))
                     SecureField("sk-ant-…", text: $apiKey)
+                        .textContentType(.password)
                         .textFieldStyle(.roundedBorder)
                         .autocapitalization(.none)
                         .autocorrectionDisabled()

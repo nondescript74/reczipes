@@ -326,3 +326,108 @@ struct MealExportRoundTripTests {
         }
     }
 }
+
+// MARK: - MealExportResult
+
+@Suite("MealExportResult Tests")
+@MainActor
+struct MealExportResultTests {
+
+    @Test("summary contains meal count, course count, and linked count")
+    func summaryContainsAllCounts() {
+        let result = MealExportResult(
+            url: URL(fileURLWithPath: "/tmp/test.mealbackup"),
+            mealCount: 3,
+            courseCount: 7,
+            linkedCourseCount: 4
+        )
+        let summary = result.summary
+        #expect(summary.contains("3"))
+        #expect(summary.contains("7"))
+        #expect(summary.contains("4"))
+    }
+
+    @Test("summary uses singular 'meal' for mealCount == 1")
+    func summarySingularMeal() {
+        let result = MealExportResult(
+            url: URL(fileURLWithPath: "/tmp/test.mealbackup"),
+            mealCount: 1,
+            courseCount: 2,
+            linkedCourseCount: 1
+        )
+        #expect(result.summary.contains("1 meal"))
+        #expect(!result.summary.contains("1 meals"))
+    }
+
+    @Test("summary uses plural 'meals' for mealCount > 1")
+    func summaryPluralMeals() {
+        let result = MealExportResult(
+            url: URL(fileURLWithPath: "/tmp/test.mealbackup"),
+            mealCount: 5,
+            courseCount: 10,
+            linkedCourseCount: 3
+        )
+        #expect(result.summary.contains("5 meals"))
+    }
+
+    @Test("writeExport reports correct linked and total course counts")
+    func writeExportCourseCountsAccurate() async throws {
+        let container = makeMealExportContainer()
+        let context = container.mainContext
+
+        let recipe = RecipeX(title: "Margherita Pizza")
+        context.insert(recipe)
+        try context.save()
+        let recipeID = try #require(recipe.id)
+
+        let meal = Meal(
+            name: "Friday Night",
+            courses: [
+                MealCourse(name: "Main", recipeID: recipeID, recipeTitle: "Margherita Pizza"),
+                MealCourse(name: "Salad"),
+                MealCourse(name: "Dessert")
+            ]
+        )
+        context.insert(meal)
+        try context.save()
+
+        let meals = try context.fetch(FetchDescriptor<Meal>())
+        let result = try MealExportManager.writeExport(for: meals)
+
+        #expect(result.mealCount == 1)
+        #expect(result.courseCount == 3)
+        #expect(result.linkedCourseCount == 1)
+
+        try? FileManager.default.removeItem(at: result.url)
+    }
+
+    @Test("writeExport with all courses linked reports full linked count")
+    func writeExportAllLinked() async throws {
+        let container = makeMealExportContainer()
+        let context = container.mainContext
+
+        let recipe1 = RecipeX(title: "Pizza")
+        let recipe2 = RecipeX(title: "Caesar Salad")
+        context.insert(recipe1)
+        context.insert(recipe2)
+        try context.save()
+
+        let meal = Meal(
+            name: "Dinner",
+            courses: [
+                MealCourse(name: "Main", recipeID: recipe1.id, recipeTitle: "Pizza"),
+                MealCourse(name: "Side", recipeID: recipe2.id, recipeTitle: "Caesar Salad")
+            ]
+        )
+        context.insert(meal)
+        try context.save()
+
+        let meals = try context.fetch(FetchDescriptor<Meal>())
+        let result = try MealExportManager.writeExport(for: meals)
+
+        #expect(result.courseCount == 2)
+        #expect(result.linkedCourseCount == 2)
+
+        try? FileManager.default.removeItem(at: result.url)
+    }
+}

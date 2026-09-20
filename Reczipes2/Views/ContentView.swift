@@ -880,9 +880,20 @@ struct ContentView: View {
     
     // MARK: - Book Helper Methods
     
+    /// Books deduplicated by ID — CloudKit sync can leave duplicate Book
+    /// records in the store, so filter them out for display (same approach
+    /// as RecipeBooksView).
+    private var uniqueBooks: [Book] {
+        var seenIDs = Set<UUID>()
+        return books.filter { book in
+            guard let bookID = book.id else { return false }
+            return seenIDs.insert(bookID).inserted
+        }
+    }
+
     /// Returns all books that contain the given recipe
     private func booksContaining(_ recipe: RecipeX) -> [Book] {
-        books.filter { ($0.recipeIDs ?? []).contains(recipe.safeID) }
+        uniqueBooks.filter { ($0.recipeIDs ?? []).contains(recipe.safeID) }
     }
     
     /// Returns a formatted string describing which books contain this recipe
@@ -911,7 +922,7 @@ struct ContentView: View {
     private func ownedRecipeContextMenu(recipe: RecipeX) -> some View {
         // Add to Book submenu
         Menu {
-            if books.isEmpty {
+            if uniqueBooks.isEmpty {
                 Button {
                     // Switch to books tab to create a book
                     appState.currentTab = .books
@@ -919,7 +930,7 @@ struct ContentView: View {
                     Label("Create First Book", systemImage: "plus.circle")
                 }
             } else {
-                ForEach(books) { book in
+                ForEach(uniqueBooks) { book in
                     Button {
                         toggleRecipeInBook(recipe, book: book)
                     } label: {

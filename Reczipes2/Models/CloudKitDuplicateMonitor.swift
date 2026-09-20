@@ -261,6 +261,10 @@ class CloudKitDuplicateMonitor: ObservableObject {
             return
         }
 
+        // Books are few, so this scan is cheap — run it on every check,
+        // outside the recipe-count throttle below.
+        mergeDuplicateBooks(in: context)
+
         do {
             // Quick count check to see if a scan is even needed
             let countDescriptor = FetchDescriptor<RecipeX>()
@@ -315,6 +319,63 @@ class CloudKitDuplicateMonitor: ObservableObject {
 
         } catch {
             AppLog.error("❌ Error checking for duplicates: \(error)", category: .cloudKit)
+        }
+    }
+
+    // MARK: - Book Duplicate Cleanup
+
+    /// Merge duplicate Book records that share the same book ID.
+    ///
+    /// CloudKit sync resets can re-import books, leaving multiple rows with
+    /// the same UUID. Keep one canonical record per ID, union the recipeIDs
+    /// from the extras so no assignments are lost, backfill content the
+    /// canonical record is missing, then delete the extras.
+    private func mergeDuplicateBooks(in context: ModelContext) {
+        do {
+            let allBooks = try context.fetch(FetchDescriptor<Book>())
+
+            var byID: [UUID: [Book]] = [:]
+            for book in allBooks {
+                guard let bookID = book.id else { continue }
+                byID[bookID, default: []].append(book)
+            }
+
+            var deletedCount = 0
+            for (bookID, copies) in byID where copies.count > 1 {
+                // Keep the oldest record; it's the one other devices reference
+                let sorted = copies.sorted {
+                    ($0.dateCreated ?? .distantFuture) < ($1.dateCreated ?? .distantFuture)
+                }
+                let canonical = sorted[0]
+                var mergedRecipeIDs = canonical.recipeIDs ?? []
+
+                for extra in sorted.dropFirst() {
+                    for recipeID in extra.recipeIDs ?? [] where !mergedRecipeIDs.contains(recipeID) {
+                        mergedRecipeIDs.append(recipeID)
+                    }
+                    if canonical.bookDescription == nil { canonical.bookDescription = extra.bookDescription }
+                    if canonical.coverImageData == nil { canonical.coverImageData = extra.coverImageData }
+                    if canonical.color == nil { canonical.color = extra.color }
+                    if canonical.cloudRecordID == nil { canonical.cloudRecordID = extra.cloudRecordID }
+
+                    context.delete(extra)
+                    deletedCount += 1
+                }
+
+                if mergedRecipeIDs != (canonical.recipeIDs ?? []) {
+                    canonical.recipeIDs = mergedRecipeIDs
+                    canonical.markModified()
+                }
+
+                AppLog.info("🧹 Merged \(copies.count) copies of book '\(canonical.displayName)' (ID: \(bookID))", category: .cloudKit)
+            }
+
+            if deletedCount > 0 {
+                try context.save()
+                AppLog.info("✅ Removed \(deletedCount) duplicate book record(s)", category: .cloudKit)
+            }
+        } catch {
+            AppLog.error("❌ Error merging duplicate books: \(error)", category: .cloudKit)
         }
     }
 

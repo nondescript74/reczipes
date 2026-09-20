@@ -52,6 +52,7 @@ struct APIKeySetupView: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
                         SecureField("Enter API Key", text: $apiKey)
+                            .textContentType(.password)
                             .labelsHidden()
                             .platformTextInputAutocapitalization(.never)
                             .autocorrectionDisabled()

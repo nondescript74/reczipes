@@ -71,6 +71,73 @@ private enum SettingsCategory: String, CaseIterable, Identifiable {
         case .helpAbout:   return "Help, legal & app information"
         }
     }
+
+    var summaryGroups: [SettingsSummaryGroup] {
+        switch self {
+        case .extraction:
+            return [
+                SettingsSummaryGroup(title: "API Keys", items: [
+                    "Claude API Key", "Recipe API Key", "Setup & Diagnostics"
+                ]),
+                SettingsSummaryGroup(title: "Behavior", items: [
+                    "Auto-Extract on Image Selection", "Image Preprocessing"
+                ])
+            ]
+        case .sync:
+            return [
+                SettingsSummaryGroup(title: "iCloud", items: [
+                    "System Health", "Quick Sync Check", "Sync Monitor", "iCloud Sync Settings"
+                ]),
+                SettingsSummaryGroup(title: "Import / Export", items: [
+                    "User Content Import/Export"
+                ]),
+                SettingsSummaryGroup(title: "Advanced", items: [
+                    "Advanced Diagnostics", "Container Details", "Validate CloudKit Container"
+                ])
+            ]
+        case .community:
+            return [
+                SettingsSummaryGroup(title: nil, items: [
+                    "Browse Community Recipes", "Browse Community Books",
+                    "Public Sharing Settings", "Fix Sharing Issues"
+                ])
+            ]
+        case .dietary:
+            return [
+                SettingsSummaryGroup(title: nil, items: [
+                    "FODMAP Settings", "Diabetic-Friendly Analysis"
+                ])
+            ]
+        case .maintenance:
+            return [
+                SettingsSummaryGroup(title: "Diagnostics", items: [
+                    "Database Diagnostics", "Logging Settings", "Export Diagnostic Logs"
+                ]),
+                SettingsSummaryGroup(title: "Developer Tools", items: [
+                    "Recipe Data Diagnostics", "Delete Empty Recipes", "Database Maintenance",
+                    "Duplicate Detection & Cleanup", "Database Recovery"
+                ])
+            ]
+        case .helpAbout:
+            return [
+                SettingsSummaryGroup(title: "Help", items: [
+                    "Browse Help Topics", "Diagnostic Log"
+                ]),
+                SettingsSummaryGroup(title: "Resources", items: [
+                    "Monash FODMAP Research", "American Diabetes Association", "Get Claude API Key"
+                ]),
+                SettingsSummaryGroup(title: "Legal & About", items: [
+                    "License Agreement", "Version History"
+                ])
+            ]
+        }
+    }
+}
+
+private struct SettingsSummaryGroup: Identifiable {
+    let title: String?
+    let items: [String]
+    var id: String { title ?? items.first ?? "" }
 }
 
 struct SettingsView: View {
@@ -78,6 +145,18 @@ struct SettingsView: View {
     @StateObject private var onboarding = CloudKitOnboardingService.shared
     @State private var isAPIKeyConfigured = APIKeyHelper.isConfigured
     @State private var isRecipeAPIConfigured = APIKeyHelper.isRecipeAPIConfigured
+#if os(iOS)
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+#endif
+
+    /// Roomy layouts (Mac, iPad) get cards with content summaries; compact iPhone keeps simple square cards.
+    private var showsExpandedCards: Bool {
+#if os(iOS)
+        return horizontalSizeClass == .regular
+#else
+        return true
+#endif
+    }
 
     private var versionString: String {
         let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Unknown"
@@ -89,10 +168,16 @@ struct SettingsView: View {
         VStack(spacing: 0) {
             BatchExtractionStatusBar(manager: BatchExtractionManager.shared)
 
-            Form {
-                statusSection
-                categoriesSection
+            ScrollView {
+                VStack(spacing: 28) {
+                    statusHeader
+                    categoryGrid
+                }
+                .frame(maxWidth: showsExpandedCards ? 1060 : 720)
+                .frame(maxWidth: .infinity)
+                .padding(24)
             }
+            .background(Color.appGroupedBackground)
             .navigationTitle("Settings")
             .sheet(item: $activeCategory) { category in
                 SettingsCategorySheet(category: category)
@@ -107,81 +192,176 @@ struct SettingsView: View {
 
     // MARK: - Sections
 
-    private var statusSection: some View {
-        Section("Status") {
-            HStack {
-                Label("Claude API Key", systemImage: "key.fill")
-                Spacer()
-                if isAPIKeyConfigured {
-                    Image(systemName: "checkmark.circle.fill").foregroundStyle(Color.appSuccess)
-                } else {
-                    Image(systemName: "xmark.circle.fill").foregroundStyle(Color.appCritical)
+    private var statusHeader: some View {
+        VStack(spacing: 14) {
+            Text("Status")
+                .font(.title3.weight(.semibold))
+
+            ViewThatFits {
+                HStack(spacing: 12) {
+                    statusPills
+                }
+                VStack(spacing: 8) {
+                    statusPills
                 }
             }
 
-            HStack {
-                Label("Recipe API Key", systemImage: "key")
-                Spacer()
-                if isRecipeAPIConfigured {
-                    Image(systemName: "checkmark.circle.fill").foregroundStyle(Color.appSuccess)
-                } else {
-                    Image(systemName: "xmark.circle.fill").foregroundStyle(Color.appCritical)
-                }
-            }
-
-            HStack {
-                Label("iCloud", systemImage: "icloud")
-                Spacer()
-                switch onboarding.onboardingState {
-                case .ready:
-                    Image(systemName: "checkmark.circle.fill").foregroundStyle(Color.appSuccess)
-                case .checking:
-                    ProgressView()
-                default:
-                    Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(Color.appWarning)
-                }
-            }
-
-            HStack {
-                Text("Version")
-                Spacer()
-                Text(versionString).foregroundStyle(.secondary).font(.callout)
-            }
+            Text("Version \(versionString)")
+                .font(.footnote)
+                .foregroundStyle(.secondary)
         }
+        .padding(.vertical, 20)
+        .padding(.horizontal, 28)
+        .background(Color.appSecondaryGroupedBackground, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Color.primary.opacity(0.08)))
+        .shadow(color: .black.opacity(0.06), radius: 4, y: 2)
     }
 
-    private var categoriesSection: some View {
-        Section("Settings") {
+    @ViewBuilder
+    private var statusPills: some View {
+        statusPill("Claude API Key", icon: "key.fill", isConfigured: isAPIKeyConfigured)
+        statusPill("Recipe API Key", icon: "key", isConfigured: isRecipeAPIConfigured)
+        iCloudStatusPill
+    }
+
+    private func statusPill(_ title: String, icon: String, isConfigured: Bool) -> some View {
+        HStack(spacing: 6) {
+            Image(systemName: icon)
+                .foregroundStyle(.secondary)
+            Text(title)
+                .font(.subheadline.weight(.medium))
+            if isConfigured {
+                Image(systemName: "checkmark.circle.fill").foregroundStyle(Color.appSuccess)
+            } else {
+                Image(systemName: "xmark.circle.fill").foregroundStyle(Color.appCritical)
+            }
+        }
+        .padding(.vertical, 8)
+        .padding(.horizontal, 14)
+        .background(Color.appGroupedBackground, in: Capsule())
+        .overlay(Capsule().strokeBorder(Color.primary.opacity(0.08)))
+    }
+
+    private var iCloudStatusPill: some View {
+        HStack(spacing: 6) {
+            Image(systemName: "icloud")
+                .foregroundStyle(.secondary)
+            Text("iCloud")
+                .font(.subheadline.weight(.medium))
+            switch onboarding.onboardingState {
+            case .ready:
+                Image(systemName: "checkmark.circle.fill").foregroundStyle(Color.appSuccess)
+            case .checking:
+                ProgressView()
+                    .controlSize(.small)
+            default:
+                Image(systemName: "exclamationmark.triangle.fill").foregroundStyle(Color.appWarning)
+            }
+        }
+        .padding(.vertical, 8)
+        .padding(.horizontal, 14)
+        .background(Color.appGroupedBackground, in: Capsule())
+        .overlay(Capsule().strokeBorder(Color.primary.opacity(0.08)))
+    }
+
+    private var categoryGrid: some View {
+        LazyVGrid(columns: [GridItem(.adaptive(minimum: showsExpandedCards ? 280 : 150,
+                                               maximum: showsExpandedCards ? 360 : 210),
+                                     spacing: 16, alignment: .top)],
+                  spacing: 16) {
             ForEach(SettingsCategory.allCases) { category in
                 Button {
                     activeCategory = category
                 } label: {
-                    HStack(spacing: 14) {
-                        ZStack {
-                            RoundedRectangle(cornerRadius: 8, style: .continuous)
-                                .fill(category.color)
-                                .frame(width: 32, height: 32)
-                            Image(systemName: category.icon)
-                                .font(.system(size: 15, weight: .medium))
-                                .foregroundStyle(.white)
-                        }
-                        VStack(alignment: .leading, spacing: 1) {
-                            Text(category.title)
-                                .font(.body)
-                                .foregroundStyle(.primary)
-                            Text(category.description)
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                        }
-                        Spacer()
-                        Image(systemName: "chevron.right")
-                            .font(.caption)
-                            .foregroundStyle(.secondary)
+                    if showsExpandedCards {
+                        expandedCategoryCard(category)
+                    } else {
+                        categoryCard(category)
                     }
-                    .padding(.vertical, 2)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
+    private func expandedCategoryCard(_ category: SettingsCategory) -> some View {
+        VStack(alignment: .leading, spacing: 12) {
+            HStack(spacing: 10) {
+                ZStack {
+                    RoundedRectangle(cornerRadius: 9, style: .continuous)
+                        .fill(category.color)
+                        .frame(width: 36, height: 36)
+                    Image(systemName: category.icon)
+                        .font(.system(size: 17, weight: .medium))
+                        .foregroundStyle(.white)
+                }
+                Text(category.title)
+                    .font(.headline)
+                    .foregroundStyle(.primary)
+                Spacer()
+                Image(systemName: "chevron.right")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+
+            Divider()
+
+            ForEach(category.summaryGroups) { group in
+                VStack(alignment: .leading, spacing: 5) {
+                    if let title = group.title {
+                        Text(title)
+                            .font(.caption.weight(.semibold))
+                            .foregroundStyle(.secondary)
+                            .textCase(.uppercase)
+                    }
+                    ForEach(group.items, id: \.self) { item in
+                        HStack(alignment: .firstTextBaseline, spacing: 7) {
+                            Image(systemName: "circle.fill")
+                                .font(.system(size: 5))
+                                .foregroundStyle(category.color)
+                            Text(item)
+                                .font(.footnote)
+                                .foregroundStyle(.primary)
+                                .multilineTextAlignment(.leading)
+                        }
+                    }
                 }
             }
         }
+        .padding(16)
+        .frame(maxWidth: .infinity, alignment: .topLeading)
+        .background(Color.appSecondaryGroupedBackground, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Color.primary.opacity(0.08)))
+        .shadow(color: .black.opacity(0.06), radius: 4, y: 2)
+        .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
+    }
+
+    private func categoryCard(_ category: SettingsCategory) -> some View {
+        VStack(spacing: 10) {
+            ZStack {
+                RoundedRectangle(cornerRadius: 12, style: .continuous)
+                    .fill(category.color)
+                    .frame(width: 52, height: 52)
+                Image(systemName: category.icon)
+                    .font(.system(size: 24, weight: .medium))
+                    .foregroundStyle(.white)
+            }
+            Text(category.title)
+                .font(.headline)
+                .foregroundStyle(.primary)
+            Text(category.description)
+                .font(.caption)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .lineLimit(2)
+        }
+        .padding(14)
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .aspectRatio(1, contentMode: .fit)
+        .background(Color.appSecondaryGroupedBackground, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Color.primary.opacity(0.08)))
+        .shadow(color: .black.opacity(0.06), radius: 4, y: 2)
+        .contentShape(RoundedRectangle(cornerRadius: 16, style: .continuous))
     }
 }
 
