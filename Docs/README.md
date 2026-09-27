@@ -12,6 +12,26 @@ Reczipes converts photos of recipes into structured, searchable data using Apple
 • Structured recipe data for storage and retrieval  
 • Modern SwiftUI architecture with CloudKit synchronization
 
+## GutSense — gut-health intelligence
+
+GutSense is the gut-health intelligence layer developed alongside Reczipes. Its source is kept in a separate private repository; this section describes what it does, not how.
+
+**What it does**
+
+- **Independent dual-model analysis.** Two language models analyze each food or meal independently. Their results are then reconciled on-device, and the disagreements between them are shown rather than hidden.
+- **Ingredient-level FODMAP assessment.** Each ingredient gets a low / moderate / high tier with estimated fructan, GOS, lactose, excess-fructose and polyol content.
+- **Serving-aware scoring.** Values are scaled to the amount actually eaten, not a standard serving.
+- **Personalized risk.** Results take the user's own profile into account: IBS subtype, elimination or reintroduction phase, known triggers and known safe foods.
+- **Evidence tiers and citations.** Findings are graded as peer-reviewed, clinical or anecdotal. Users can add their own sources, and anecdotal evidence widens the uncertainty band.
+- **Enzyme mitigation guidance.** Where relevant, it suggests enzyme options matched to the FODMAP groups involved.
+- **What-if simulation.** Users can edit a meal's ingredient list and re-run the analysis to see how substitutions change the risk.
+- **Recipe ingestion.** It can pull a recipe from a web page for analysis.
+- **Built-in safety rules.** It uses probabilistic language and never gives a diagnosis. It never advises changing prescribed medication, and it flags Crohn's disease as distinct from IBS.
+
+GutSense provides dietary information, not medical advice.
+
+Access to the GutSense code is available on request.
+
 ## Architecture
 
 Pipeline:
