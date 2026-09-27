@@ -346,17 +346,19 @@ let sampleRecipe = RecipeModel.sampleRecipe
 - ✅ Disable for high-quality photos
 - ✅ Adjust contrast/sharpness values
 
-## 🚀 What's Next?
+## 🚀 Built since the original extractor
 
-Extend the functionality:
+The app has grown well beyond the extraction module described above:
 
-1. **Core Data Integration** - Persist extracted recipes
-2. **Recipe Editing** - Allow users to correct extractions
-3. **Batch Processing** - Extract multiple recipes at once
-4. **Nutrition Info** - Add nutritional data extraction
-5. **Recipe Search** - Full-text search across extracted recipes
-6. **Collections** - Organize recipes into cookbooks
-7. **Export Options** - PDF, plain text, JSON
+1. **Persistence and sync**: SwiftData storage with CloudKit sync, backup and restore
+2. **Recipe editing**: correct and refine every part of an extracted recipe
+3. **Batch extraction**: extract many recipes at once from photos, iCloud Drive or saved web links, including in the background
+4. **Dietary intelligence**: allergen detection, FODMAP analysis and substitutions, diabetic-friendly analysis and nutritional goals
+5. **Search**: search across your recipe collection
+6. **Recipe books**: organize recipes into books, with export and import
+7. **Community sharing**: share recipes and books through CloudKit
+8. **Cooking mode**: a step-by-step cooking view that keeps the screen awake
+9. **App Clip**: lightweight extraction without installing the full app
 
 ## 📄 License
 
