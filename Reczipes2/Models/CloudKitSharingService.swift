@@ -578,6 +578,31 @@ class CloudKitSharingService: ObservableObject {
     
     // MARK: - Share Recipe Book
     
+    /// Bytes allowed for the encoded recipePreviews field, leaving headroom under the
+    /// ~1 MB CloudKit record limit for bookData (recipe ids) and the other fields.
+    static let previewsByteBudget = 700_000
+
+    static func fitPreviewsToRecordBudget(_ previews: [RecipePreviewData]) -> [RecipePreviewData] {
+        func size(_ p: [RecipePreviewData]) -> Int { (try? JSONEncoder().encode(p).count) ?? Int.max }
+        if size(previews) <= previewsByteBudget { return previews }
+
+        let noThumbs = previews.map {
+            RecipePreviewData(id: $0.id, title: $0.title, headerNotes: $0.headerNotes, imageName: $0.imageName,
+                              recipeYield: $0.recipeYield, cloudRecordID: $0.cloudRecordID, thumbnailBase64: nil)
+        }
+        if size(noThumbs) <= previewsByteBudget {
+            AppLog.warning("📚 Book previews over budget; dropped thumbnails (\(previews.count) recipes)", category: .sharing)
+            return noThumbs
+        }
+
+        let minimal = previews.map {
+            RecipePreviewData(id: $0.id, title: $0.title, headerNotes: nil, imageName: nil,
+                              recipeYield: $0.recipeYield, cloudRecordID: $0.cloudRecordID, thumbnailBase64: nil)
+        }
+        AppLog.warning("📚 Book previews over budget; dropped thumbnails and notes (\(previews.count) recipes)", category: .sharing)
+        return minimal
+    }
+
     func shareRecipeBook(_ book: Book, modelContext: ModelContext) async throws -> String {
         guard isCloudKitAvailable else {
             throw SharingError.cloudKitUnavailable()
@@ -685,6 +710,13 @@ class CloudKitSharingService: ObservableObject {
         }
         
         AppLog.info("📚 Created \(recipePreviews.count) recipe previews", category: .sharing)
+
+        // A CloudKit record is capped at ~1 MB of non-asset data. Base64 thumbnails are
+        // ~10-20 KB each, so a large book (the 403-recipe Shahsultan Premji book,
+        // 2026-10-15) blows the cap and the whole share fails. Shrink previews to fit:
+        // drop thumbnails first, then header notes. Recipes keep their own records and
+        // images; previews are only a convenience for browsing a book.
+        recipePreviews = Self.fitPreviewsToRecordBudget(recipePreviews)
         
         // Create CloudKit record
         let record = CKRecord(recordType: CloudKitRecordType.sharedRecipeBook)

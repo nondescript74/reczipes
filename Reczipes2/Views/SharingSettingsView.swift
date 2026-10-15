@@ -585,6 +585,15 @@ struct SharingSettingsView: View {
         return recipeXEntities.filter { !sharedIDs.contains($0.safeID) }
     }
 
+    /// Books with no active public-share tracking entry. Additive only, like unsharedRecipes.
+    private var unsharedBooks: [Book] {
+        let sharedIDs = Set(sharedRecipeBooks.filter { $0.isActive }.compactMap { $0.bookID })
+        return allBooks.filter { book in
+            guard let id = book.id else { return false }
+            return !sharedIDs.contains(id)
+        }
+    }
+
     private var quickActionsSection: some View {
         Section {
             Button {
@@ -594,6 +603,14 @@ struct SharingSettingsView: View {
                 Label("Share All Unshared Recipes (\(unsharedRecipes.count))", systemImage: "square.and.arrow.up.on.square.fill")
             }
             .disabled(!sharingService.isCloudKitAvailable || unsharedRecipes.isEmpty)
+
+            Button {
+                let pending = unsharedBooks
+                Task { await shareUnsharedBooks(pending) }
+            } label: {
+                Label("Share All Unshared Books (\(unsharedBooks.count))", systemImage: "books.vertical.fill")
+            }
+            .disabled(!sharingService.isCloudKitAvailable || unsharedBooks.isEmpty)
 
             Button {
                 showingRecipeSelector = true
@@ -790,6 +807,29 @@ struct SharingSettingsView: View {
         alertMessage = failed == 0
             ? "Shared \(successful) previously unshared recipes"
             : "Shared \(successful) of \(recipes.count) unshared recipes. \(failed) failed."
+        showingAlert = true
+    }
+
+    /// Shares every book with no active public share yet. Never unshares.
+    private func shareUnsharedBooks(_ books: [Book]) async {
+        guard !books.isEmpty else { return }
+        isSharing = true
+        var successful = 0
+        var failures: [String] = []
+        for (index, book) in books.enumerated() {
+            sharingStatus = "Sharing unshared books: \(index + 1)/\(books.count)"
+            do {
+                _ = try await sharingService.shareRecipeBook(book, modelContext: modelContext)
+                successful += 1
+            } catch {
+                AppLog.error("Failed to share book '\(book.displayName)': \(error)", category: .sharing)
+                failures.append("\(book.displayName): \(error.localizedDescription)")
+            }
+        }
+        isSharing = false
+        alertMessage = failures.isEmpty
+            ? "Shared \(successful) previously unshared books"
+            : "Shared \(successful) of \(books.count) books. Failed: \(failures.joined(separator: "; "))"
         showingAlert = true
     }
 
