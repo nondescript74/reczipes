@@ -391,7 +391,11 @@ struct BookCardView: View {
         self.bookID = book.id
         self.cachedCoverImageData = book.coverImageData
         self.cachedBookName = book.name ?? "Untitled"
-        self.cachedRecipeCount = book.recipeIDs?.count ?? 0
+        // Count only ids that resolve to a recipe in the library. A book can keep ids of
+        // recipes that were since deleted (e.g. the 2026-10-12 cleanup); counting those
+        // made "A Spicy Touch" show 7 while opening it showed "Empty Book".
+        let existingIDs = Set(savedRecipes.compactMap { $0.id })
+        self.cachedRecipeCount = (book.recipeIDs ?? []).filter { existingIDs.contains($0) }.count
         self.cachedBookDescription = book.bookDescription
         self.cachedBookColor = book.color
         self.cachedOwnerDisplayName = book.ownerDisplayName
