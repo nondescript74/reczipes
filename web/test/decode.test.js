@@ -128,3 +128,37 @@ test('first load failing with no prior data is an error, not sample data', async
   assert.equal(s.loaded, false);
   assert.equal(s.source, 'cloudkit');
 });
+
+import { collapseCopies, copySignature } from '../lib/decode.js';
+
+const mk = (id, title, names, extra = {}) => ({
+  id, title, imageURL: null, sharedDate: '2026-10-15T00:00:00.000Z',
+  ingredientSections: [{ title: null, ingredients: names.map((name) => ({ name })) }],
+  instructionSections: [], notes: [], ...extra,
+});
+
+test('copies with same title and ingredients collapse; same title with different ingredients stays', () => {
+  const a = mk('A', 'Fudge', ['Sugar', 'Butter']);
+  const b = mk('B', 'fudge ', ['butter', 'sugar'], { imageURL: 'https://x/y.jpg' });
+  const c = mk('C', 'Fudge', ['Chocolate', 'Cream']);
+  const { kept, alias } = collapseCopies([a, b, c]);
+  assert.equal(kept.length, 2);
+  assert.ok(kept.some((r) => r.id === 'B'), 'prefers the copy with a photo');
+  assert.equal(alias.get('A'), 'B');
+  assert.ok(kept.some((r) => r.id === 'C'));
+  assert.equal(copySignature(a), copySignature(b));
+});
+
+test('store resolves a collapsed copy id to the kept recipe', async () => {
+  const rec = (id, title, sharedMs) => ({
+    recordName: id, fields: {
+      recipeData: { value: JSON.stringify({ id, title, ingredientSections: [{ ingredients: [{ name: 'Salt' }] }], instructionSections: [], notes: [] }) },
+      sharedDate: { value: sharedMs },
+    },
+  });
+  const cloudkit = { async queryAll(t) { return t === 'SharedRecipe' ? [rec('OLD', 'Dal', 1), rec('NEW', 'Dal', 2)] : []; } };
+  const store = createStore({ cloudkit, fixturesPath });
+  assert.equal((await store.listRecipes()).length, 1);
+  assert.equal((await store.getRecipe('old')).id, 'NEW');
+  assert.equal((await store.status()).collapsedCopies, 1);
+});

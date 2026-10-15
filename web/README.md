@@ -29,8 +29,11 @@ and serves a small JSON API to the page. The token never reaches the browser.
 **Consequence:** the web shows exactly what has been shared from the app — nothing private. To put a recipe on the web,
 share it from the app. A private-library view would need iCloud sign-in in the browser (a later phase; see `MVP.md`).
 
-**Read-only, never destructive.** If the same recipe was shared more than once, the page shows the newest copy;
-it never deletes anything (Lane 37 rule 1).
+**Read-only, never destructive.** If the same recipe was shared more than once, the page shows the newest copy.
+Copies under *different* ids (e.g. from merging a Mac and an iPhone library) are shown once when their title **and**
+ingredient names match; same-title recipes with different ingredients stay separate (Lane 37 rule 1: a title match
+is not identity). Old links to a folded copy open the kept one. `/api/status` reports `collapsedCopies`. Nothing is
+ever deleted.
 
 ## Data source is always named
 

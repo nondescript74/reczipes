@@ -176,3 +176,43 @@ export function newestPerId(items) {
   }
   return [...byId.values()];
 }
+
+// Library merges (e.g. a Mac library joining an iPhone library) can leave the same
+// recipe in the catalogue under two different ids. Collapse copies whose title AND
+// ingredient names match; same-title recipes with different ingredients stay apart
+// (Lane 37 rule: a title match is not identity). Read-side view only; nothing is
+// deleted. Keeps the newest copy, preferring one with a photo.
+const normText = (s) =>
+  String(s ?? '')
+    .toLowerCase()
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, ' ')
+    .trim();
+
+export function copySignature(recipe) {
+  const names = recipe.ingredientSections.flatMap((s) => s.ingredients.map((i) => normText(i.name))).sort();
+  return normText(recipe.title) + '|' + names.join(',');
+}
+
+export function collapseCopies(recipes) {
+  const groups = new Map();
+  for (const r of recipes) {
+    const k = copySignature(r);
+    if (!groups.has(k)) groups.set(k, []);
+    groups.get(k).push(r);
+  }
+  const kept = [];
+  const alias = new Map(); // dropped id (upper-case) -> kept id
+  for (const group of groups.values()) {
+    group.sort(
+      (a, b) =>
+        Number(Boolean(b.imageURL)) - Number(Boolean(a.imageURL)) ||
+        (b.sharedDate ?? '').localeCompare(a.sharedDate ?? ''),
+    );
+    const [keep, ...rest] = group;
+    kept.push(keep);
+    for (const d of rest) alias.set(d.id.toUpperCase(), keep.id);
+  }
+  return { kept, alias };
+}
