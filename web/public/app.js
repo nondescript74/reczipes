@@ -316,12 +316,22 @@ async function showBook(id) {
   const list = h('ul', { class: 'grid' });
   const count = h('p', { class: 'muted' });
   const input = h('input', { type: 'search', placeholder: `Search ${book.name}`, 'aria-label': `Search ${book.name}`, autocomplete: 'off' });
+  // Long books show the first 10; search always covers the whole book.
+  const PREVIEW = 10;
+  let showAll = false;
+  const more = h('div', { class: 'more' });
   const apply = () => {
     const terms = input.value.toLowerCase().split(/\s+/).filter(Boolean);
     const hits = inBook.filter((r) => terms.every((t) => r.search.includes(t)));
-    list.replaceChildren(...hits.map(recipeCard));
+    const shown = terms.length || showAll ? hits : hits.slice(0, PREVIEW);
+    list.replaceChildren(...shown.map(recipeCard));
     count.textContent = terms.length ? `${hits.length} of ${plural(inBook.length, 'recipe')}` : plural(inBook.length, 'recipe');
     if (!hits.length) list.replaceChildren(h('li', { class: 'empty' }, terms.length ? 'No recipes in this book match that search.' : 'This book has no recipes on the web yet.'));
+    more.replaceChildren(
+      shown.length < hits.length
+        ? h('button', { class: 'btn', type: 'button', onclick: () => { showAll = true; apply(); } }, `Show all ${plural(hits.length, 'recipe')}`)
+        : '',
+    );
   };
   input.addEventListener('input', apply);
   render(
@@ -333,8 +343,9 @@ async function showBook(id) {
         book.description ? h('p', { class: 'header-notes' }, book.description) : null,
         book.sharedByName ? h('p', { class: 'muted' }, `Shared by ${book.sharedByName}`) : null,
         count)),
-    inBook.length > 8 ? h('div', { class: 'search' }, searchIcon(), input) : null,
+    inBook.length > PREVIEW ? h('div', { class: 'search' }, searchIcon(), input) : null,
     list,
+    more,
   );
   apply();
   window.scrollTo(0, 0);

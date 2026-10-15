@@ -135,6 +135,8 @@ li.done, li.done .qty, li.done .num { color: var(--done); text-decoration: line-
 }
 
 /* Books */
+.more { display: flex; justify-content: center; margin: -16px 0 40px; }
+.more:empty { display: none; }
 .card__desc { margin: 4px 0 0; color: var(--muted); font-size: 0.9375rem; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .book-head { display: grid; gap: 20px; margin: 16px 0 24px; align-items: center; }
 .book-head h1 { font-size: clamp(1.875rem, 5vw, 2.75rem); margin: 0 0 8px; }
