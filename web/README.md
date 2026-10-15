@@ -1,15 +1,17 @@
 # Reczipes web
 
 Reczipes in any browser — Safari, Chrome, Brave, Firefox, on any computer or phone, no Apple device needed.
-Lane 37 (Reczipes2), **Web workstream**. Status: **Phase 0 — read-only reader. Deployed on Railway** (project `reczipes-web`, https://reczipes-production.up.railway.app);
-connecting to iCloud — check `/api/status`.
+Lane 37 (Reczipes2), **Web workstream**. Status: **Phase 0 LIVE** at https://reczipes-production.up.railway.app (Railway project `reczipes-web`), reading the
+CloudKit **Production** public database. As of 2026-10-15 14:20 MT: 747 `SharedRecipe` records → 742 recipe ids → **588
+recipes shown** (154 merged-library copies folded), **12 books**. Live state: `GET /api/status`.
 
 ## What it does today
 
 - **Recipes:** every recipe shared to the public catalogue from the iOS/macOS app, searchable by title or ingredient.
 - **Recipe page:** ingredients (with metric toggle where the app stored metric), method, tips/substitutions/warnings,
   tap-to-tick ingredients and steps, *Keep screen on* while cooking (where the browser supports it), print layout.
-- **Books:** shared recipe books with their recipe lists; recipes that are in a book but not themselves shared are shown, not linked.
+- **Books:** compact cards (count = recipes actually on the web); each book opens its own page with the first 10 recipes,
+  "Show all N", and search across the whole book. The recipe page's back link returns to the book it came from.
 - Light and dark mode, phone to desktop, keyboard accessible. No account, no sign-in, read-only.
 
 ## How it gets recipes
