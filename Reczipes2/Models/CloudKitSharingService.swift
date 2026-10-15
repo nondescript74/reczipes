@@ -596,8 +596,24 @@ class CloudKitSharingService: ObservableObject {
         )
         
         if let existingShared = try? modelContext.fetch(existingDescriptor).first {
-            AppLog.info("Book '\(String(describing: book.name))' is already shared", category: .sharing)
-            return existingShared.cloudRecordID ?? "Already shared"
+            // Verify the public record still exists in THIS environment before trusting
+            // local tracking (mirrors shareRecipe). A share made from a build pointed at
+            // CloudKit Development leaves tracking that Production has never seen; without
+            // this check the book is skipped forever as "already shared".
+            if let cloudRecordID = existingShared.cloudRecordID {
+                do {
+                    _ = try await publicDatabase.record(for: CKRecord.ID(recordName: cloudRecordID))
+                    AppLog.info("Book '\(String(describing: book.name))' is already shared (verified in CloudKit)", category: .sharing)
+                    return cloudRecordID
+                } catch let error as CKError where error.code == .unknownItem {
+                    AppLog.warning("CloudKit record missing for tracked book share - will reshare", category: .sharing)
+                    modelContext.delete(existingShared)
+                    try? modelContext.save()
+                }
+            } else {
+                modelContext.delete(existingShared)
+                try? modelContext.save()
+            }
         }
         
         AppLog.info("📚 Sharing recipe book '\(String(describing: book.name))' with \(book.recipeIDs?.count ?? 0) recipes...", category: .sharing)
@@ -1015,10 +1031,16 @@ class CloudKitSharingService: ObservableObject {
         let sharedBook = try modelContext.fetch(sharedBookDescriptor).first
         let bookID = sharedBook?.bookID
         
-        // Delete from CloudKit first
+        // Delete from CloudKit first. A record that is already gone (e.g. tracked from a
+        // share made against another CloudKit environment) counts as unshared, so the
+        // stale tracking entry below is still removed.
         let recordID = CKRecord.ID(recordName: cloudRecordID)
-        try await publicDatabase.deleteRecord(withID: recordID)
-        AppLog.info("📚 Deleted CloudKit record: \(cloudRecordID)", category: .sharing)
+        do {
+            try await publicDatabase.deleteRecord(withID: recordID)
+            AppLog.info("📚 Deleted CloudKit record: \(cloudRecordID)", category: .sharing)
+        } catch let error as CKError where error.code == .unknownItem {
+            AppLog.warning("📚 CloudKit record already absent: \(cloudRecordID) - clearing tracking", category: .sharing)
+        }
         
         // Remove from local tracking
         if let sharedBook = sharedBook {
