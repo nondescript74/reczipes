@@ -130,12 +130,16 @@ struct DuplicateRecipeDetectorView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \RecipeX.title) private var allRecipes: [RecipeX]
     @Query private var recipeXEntities: [RecipeX]
+    @Query private var allBooks: [Book]
+    @Query private var sharedRecipes: [SharedRecipe]
     @StateObject private var monitor = CloudKitDuplicateMonitor.shared
 
     @State private var clusters: [DuplicateCluster] = []
     @State private var isAnalyzing = false
     @State private var showingConfirmation = false
     @State private var selectedRecipe: RecipeX?
+    @State private var isMerging = false
+    @State private var mergeMessage: String?
 
     var body: some View {
         List {
@@ -146,16 +150,24 @@ struct DuplicateRecipeDetectorView: View {
         .navigationTitle("Duplicate Detector")
         .platformNavigationBarTitleDisplayMode(.inline)
         .confirmationDialog(
-            "Delete All Duplicates?",
+            "Merge Exact Copies?",
             isPresented: $showingConfirmation,
             titleVisibility: .visible
         ) {
-            Button("Delete \(totalDuplicateCount) Duplicates", role: .destructive) {
-                deleteAllDuplicates()
+            Button("Merge \(exactExtraCount) Copies", role: .destructive) {
+                Task { await mergeAllExactCopies() }
             }
             Button("Cancel", role: .cancel) { }
         } message: {
-            Text("This will delete \(totalDuplicateCount) duplicate recipes, keeping the best copy of each. This action cannot be undone.")
+            Text("Removes \(exactExtraCount) extra copies that match exactly (same content or same source link), keeping the most complete copy of each. Books that held a removed copy get the kept copy instead, and the removed copy's public (website) copy is taken down. Same-title groups are NOT touched — review those one by one.")
+        }
+        .alert("Duplicates", isPresented: Binding(
+            get: { mergeMessage != nil },
+            set: { if !$0 { mergeMessage = nil } }
+        )) {
+            Button("OK") { mergeMessage = nil }
+        } message: {
+            Text(mergeMessage ?? "")
         }
         .onAppear {
             monitor.configure(with: modelContext)
@@ -205,7 +217,7 @@ struct DuplicateRecipeDetectorView: View {
             Text("Actions")
         } footer: {
             if !clusters.isEmpty {
-                Text("Keeps the most complete copy of each recipe (preferring the oldest when tied).")
+                Text("Merging keeps the most complete copy and moves its book memberships across. Groups marked only \"Similar Title\" may be different recipes (e.g. two fudges) — open them and remove a copy only if it really is the same recipe.")
                     .font(.caption)
             }
         }
@@ -233,12 +245,13 @@ struct DuplicateRecipeDetectorView: View {
             showingConfirmation = true
         } label: {
             HStack {
-                Image(systemName: "trash")
-                Text("Delete All Duplicates")
-                Text("(\(totalDuplicateCount))")
+                Image(systemName: "arrow.triangle.merge")
+                Text(isMerging ? "Merging…" : "Merge Exact Copies")
+                Text("(\(exactExtraCount))")
                     .foregroundStyle(.secondary)
             }
         }
+        .disabled(exactExtraCount == 0 || isMerging)
         .foregroundStyle(Color.appCritical)
     }
 
@@ -277,7 +290,8 @@ struct DuplicateRecipeDetectorView: View {
             ForEach(cluster.recipes.sorted(by: { r1, r2 in
                 (r1.dateAdded ?? Date.distantPast) < (r2.dateAdded ?? Date.distantPast)
             })) { recipe in
-                recipeRow(recipe, isCanonical: recipe.id == cluster.canonical.id)
+                recipeRow(recipe, isCanonical: recipe.id == cluster.canonical.id,
+                          keep: cluster.canonical, titleOnly: cluster.matchReasons == [.similarTitle])
             }
         } label: {
             HStack {
@@ -313,7 +327,7 @@ struct DuplicateRecipeDetectorView: View {
     // MARK: - Row Views
 
     @ViewBuilder
-    private func recipeRow(_ recipe: RecipeX, isCanonical: Bool) -> some View {
+    private func recipeRow(_ recipe: RecipeX, isCanonical: Bool, keep: RecipeX, titleOnly: Bool) -> some View {
         let recipeIDPreview: String = {
             if let id = recipe.id {
                 return String(id.uuidString.prefix(8))
@@ -333,12 +347,12 @@ struct DuplicateRecipeDetectorView: View {
                             .fontWeight(.bold)
                             .foregroundStyle(Color.appSuccess)
                     } else {
-                        Image(systemName: "trash.circle.fill")
-                            .foregroundStyle(Color.appCritical)
-                        Text("DELETE")
+                        Image(systemName: titleOnly ? "questionmark.circle.fill" : "trash.circle.fill")
+                            .foregroundStyle(titleOnly ? Color.appWarning : Color.appCritical)
+                        Text(titleOnly ? "SAME TITLE — CHECK" : "EXTRA COPY")
                             .font(.caption2)
                             .fontWeight(.bold)
-                            .foregroundStyle(Color.appCritical)
+                            .foregroundStyle(titleOnly ? Color.appWarning : Color.appCritical)
                     }
                 }
 
@@ -388,14 +402,14 @@ struct DuplicateRecipeDetectorView: View {
             get: { selectedRecipe == recipe },
             set: { if !$0 { selectedRecipe = nil } }
         )) {
-            Button("Delete", role: .destructive) {
-                deleteRecipe(recipe)
+            Button("Remove Copy", role: .destructive) {
+                Task { await mergeCopy(recipe, into: keep); findDuplicates() }
             }
             Button("Cancel", role: .cancel) {
                 selectedRecipe = nil
             }
         } message: {
-            Text("This will permanently delete this copy of '\(recipe.title ?? "Unknown Recipe")'")
+            Text("Removes this copy of '\(recipe.title ?? "Unknown Recipe")'. Its books get the kept copy instead; its website copy is taken down. Can't be undone.")
         }
     }
 
@@ -564,45 +578,73 @@ struct DuplicateRecipeDetectorView: View {
 
     // MARK: - Actions
 
-    private func deleteRecipe(_ recipe: RecipeX) {
-        modelContext.delete(recipe)
-
-        do {
-            try modelContext.save()
-            print("✅ Deleted recipe: \(String(describing: recipe.title)) (ID: \(String(describing: recipe.id)))")
-            findDuplicates()
-        } catch {
-            print("❌ Failed to delete recipe: \(error)")
+    /// Every book that lists `dupID` lists `keepID` instead (once). Used before a duplicate is
+    /// deleted, by the detector and by the launch auto-clean, so books never lose a recipe.
+    static func repointBooks(from dupID: UUID, to keepID: UUID, in books: [Book]) {
+        for book in books {
+            guard var ids = book.recipeIDs, let index = ids.firstIndex(of: dupID) else { continue }
+            if ids.contains(keepID) {
+                ids.remove(at: index)
+            } else {
+                ids[index] = keepID
+            }
+            book.recipeIDs = ids
+            book.recipeIDsHash = Book.calculateRecipeIDsHash(from: ids)
+            book.dateModified = Date()
         }
     }
 
-    private func deleteAllDuplicates() {
-        print("🧹 Starting bulk duplicate deletion...")
+    /// Clusters joined by exact content or same source URL only (never by title alone).
+    private var exactClusters: [DuplicateCluster] {
+        Self.buildDuplicateClusters(from: allRecipes, includeTitleMatches: false)
+    }
 
-        var deletedCount = 0
+    private var exactExtraCount: Int {
+        exactClusters.reduce(0) { $0 + $1.extraCount }
+    }
 
-        for cluster in clusters {
-            let toDelete = cluster.duplicatesToDelete
-            print("   Keeping: \(String(describing: cluster.canonical.title)) (ID: \(String(describing: cluster.canonical.id)))")
-            for duplicate in toDelete {
-                print("   🗑️ Deleting: \(String(describing: duplicate.title)) (ID: \(String(describing: duplicate.id)))")
-                modelContext.delete(duplicate)
-                deletedCount += 1
-            }
-        }
+    /// Removes `duplicate` after moving its book memberships to `keep` and taking down its
+    /// public copy. Nothing in a book is lost: each book that listed the duplicate lists the
+    /// kept copy instead (once).
+    private func mergeCopy(_ duplicate: RecipeX, into keep: RecipeX) async {
+        guard let dupID = duplicate.id, let keepID = keep.id, dupID != keepID else { return }
 
-        if deletedCount > 0 {
+        Self.repointBooks(from: dupID, to: keepID, in: allBooks)
+
+        if let tracked = sharedRecipes.first(where: { $0.recipeID == dupID && $0.isActive }),
+           let cloudRecordID = tracked.cloudRecordID {
             do {
-                try modelContext.save()
-                print("✅ Successfully deleted \(deletedCount) duplicate recipes")
-                clusters.removeAll()
-                monitor.duplicatesDetected = 0
-                // Record clean state so auto-scans skip until count changes
-                DuplicateScanTracker.recordCleanScan(recipeCount: allRecipes.count - deletedCount)
+                try await CloudKitSharingService.shared.unshareRecipe(cloudRecordID: cloudRecordID, modelContext: modelContext)
             } catch {
-                print("❌ Failed to save after deletion: \(error)")
+                AppLog.warning("Could not take down public copy of duplicate '\(duplicate.title ?? "")': \(error)", category: .sharing)
             }
         }
+
+        modelContext.delete(duplicate)
+        do {
+            try modelContext.save()
+            AppLog.info("Merged duplicate '\(duplicate.title ?? "")' (\(dupID)) into \(keepID)", category: .recipe)
+        } catch {
+            AppLog.error("Failed to save after merging duplicate: \(error)", category: .recipe)
+        }
+    }
+
+    /// Merges every exact-copy group (content fingerprint or same source URL). Same-title-only
+    /// groups are left for manual review.
+    private func mergeAllExactCopies() async {
+        isMerging = true
+        defer { isMerging = false }
+        var merged = 0
+        for cluster in exactClusters {
+            let keep = cluster.canonical
+            for duplicate in cluster.duplicatesToDelete {
+                await mergeCopy(duplicate, into: keep)
+                merged += 1
+            }
+        }
+        findDuplicates()
+        DuplicateScanTracker.recordCleanScan(recipeCount: allRecipes.count)
+        mergeMessage = "Merged \(merged) extra copies. Books now point at the kept copies. Use Update Public Copy on any book you want refreshed on the website."
     }
 }
 

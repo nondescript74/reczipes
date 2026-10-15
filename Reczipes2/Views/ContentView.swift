@@ -384,10 +384,16 @@ struct ContentView: View {
             return
         }
 
+        // Books must not lose a recipe when its copy is removed: point them at the kept copy.
+        let books = (try? modelContext.fetch(FetchDescriptor<Book>())) ?? []
         var deletedCount = 0
         for cluster in clusters {
+            let keep = cluster.canonical
             for dupe in cluster.duplicatesToDelete {
                 AppLog.info("🗑️ Auto-removing duplicate: '\(dupe.safeTitle)' (ID: \(String(describing: dupe.id)))", category: .cloudKit)
+                if let dupID = dupe.id, let keepID = keep.id {
+                    DuplicateRecipeDetectorView.repointBooks(from: dupID, to: keepID, in: books)
+                }
                 modelContext.delete(dupe)
                 deletedCount += 1
             }
