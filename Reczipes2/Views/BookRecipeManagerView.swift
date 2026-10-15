@@ -13,6 +13,7 @@ struct BookRecipeManagerView: View {
     @Environment(\.modelContext) private var modelContext
     @Query private var allRecipes: [RecipeX]
     @Query private var recipeXEntities: [RecipeX]
+    @Query private var allBooks: [Book]
     
     let book: Book
     
@@ -20,12 +21,44 @@ struct BookRecipeManagerView: View {
     @State private var selectedRecipeIDs: Set<UUID> = []
     /// Day used by "Add all added on…" to bulk-add one import session (e.g. a batch extraction).
     @State private var addedOnDay = Date()
+    /// Off by default: the picker offers only recipes that aren't in any book yet.
+    @State private var includeRecipesInOtherBooks = false
     
     // Get recipes currently in the book
     private var bookRecipeIDs: Set<UUID> {
         Set(book.recipeIDs ?? [])
     }
     
+    /// Recipe ids already filed in any book (this one included).
+    private var recipeIDsInAnyBook: Set<UUID> {
+        Set(allBooks.flatMap { $0.recipeIDs ?? [] })
+    }
+
+    /// Content fingerprints of recipes already in a book. A library merge can leave an exact
+    /// copy of a filed recipe under a new id (2026-10-15: Mac library merged into Production);
+    /// that copy is "already in the book" to the user even though its id is not.
+    private var fingerprintsInAnyBook: Set<String> {
+        let filed = recipeIDsInAnyBook
+        return Set(allRecipes.filter { filed.contains($0.id ?? UUID()) }.compactMap { $0.contentFingerprint })
+    }
+
+    /// Returns a predicate for recipes that may be offered for adding to this book.
+    /// Builds the lookup sets once per list evaluation (≈600 recipes).
+    private func offerablePredicate() -> (RecipeX) -> Bool {
+        let inThisBook = bookRecipeIDs
+        let include = includeRecipesInOtherBooks
+        let inAnyBook = include ? [] : recipeIDsInAnyBook
+        let filedPrints = include ? [] : fingerprintsInAnyBook
+        return { recipe in
+            let id = recipe.id ?? UUID()
+            if inThisBook.contains(id) { return false }
+            if include { return true }
+            if inAnyBook.contains(id) { return false }
+            if let fp = recipe.contentFingerprint, filedPrints.contains(fp) { return false }
+            return true
+        }
+    }
+
     // Filter recipes based on search
     private var filteredRecipes: [RecipeX] {
         if searchText.isEmpty {
@@ -40,7 +73,7 @@ struct BookRecipeManagerView: View {
     // Recipes not in the book, newest first so one import session sits together
     private var availableRecipes: [RecipeX] {
         filteredRecipes
-            .filter { !bookRecipeIDs.contains($0.id ?? UUID()) }
+            .filter(offerablePredicate())
             .sorted { ($0.dateAdded ?? .distantPast) > ($1.dateAdded ?? .distantPast) }
     }
 
@@ -49,7 +82,7 @@ struct BookRecipeManagerView: View {
     private var recipesAddedOnSelectedDay: [RecipeX] {
         let calendar = Calendar.current
         return allRecipes
-            .filter { !bookRecipeIDs.contains($0.id ?? UUID()) }
+            .filter(offerablePredicate())
             .filter { recipe in
                 guard let added = recipe.dateAdded else { return false }
                 return calendar.isDate(added, inSameDayAs: addedOnDay)
@@ -68,6 +101,14 @@ struct BookRecipeManagerView: View {
     var body: some View {
         NavigationStack {
             List {
+                Section {
+                    Toggle("Include recipes already in other books", isOn: $includeRecipesInOtherBooks)
+                } footer: {
+                    Text(includeRecipesInOtherBooks
+                         ? "Showing every recipe not in this book."
+                         : "Showing only recipes that aren't in any book yet (exact copies of filed recipes are hidden too).")
+                }
+
                 // Bulk add by date
                 Section {
                     DatePicker("Added on", selection: $addedOnDay, displayedComponents: .date)
@@ -83,7 +124,7 @@ struct BookRecipeManagerView: View {
                 } header: {
                     Text("Add by Date")
                 } footer: {
-                    Text("Adds every recipe you added on the chosen day that isn't already in this book — handy after a batch extraction.")
+                    Text("Adds every recipe you added on the chosen day that isn't already in a book (or this book, with the switch on) — handy after a batch extraction.")
                 }
 
                 // Recipes in book section
@@ -106,7 +147,7 @@ struct BookRecipeManagerView: View {
                             ContentUnavailableView(
                                 "No More Recipes",
                                 systemImage: "book.closed",
-                                description: Text("All your recipes are already in this book")
+                                description: Text(includeRecipesInOtherBooks ? "All your recipes are already in this book" : "Every recipe is already in a book. Turn on \"Include recipes already in other books\" to see them.")
                             )
                         } else {
                             ContentUnavailableView.search(text: searchText)
