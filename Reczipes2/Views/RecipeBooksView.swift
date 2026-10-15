@@ -20,6 +20,7 @@ struct RecipeBooksView: View {
     @State private var editingBook: Book?
     @State private var searchText = ""
     @State private var showingImport = false
+    @State private var showingAutoFile = false
     @State private var refreshID = UUID()
     @State private var contentFilter: ContentFilterMode = .mine
     @State private var lastSyncDate: Date?
@@ -119,6 +120,12 @@ struct RecipeBooksView: View {
                         } label: {
                             Label("Import Book", systemImage: "square.and.arrow.down")
                         }
+
+                        Button {
+                            showingAutoFile = true
+                        } label: {
+                            Label("Auto-File Unassigned Recipes…", systemImage: "wand.and.stars")
+                        }
                     } label: {
                         Label("Add", systemImage: "plus")
                     }
@@ -134,6 +141,9 @@ struct RecipeBooksView: View {
             }
             .sheet(isPresented: $showingImport) {
                 RecipeBookImportView().macOSSheetFrame()
+            }
+            .sheet(isPresented: $showingAutoFile, onDismiss: { refreshID = UUID() }) {
+                AutoFileRecipesView().macOSSheetFrame()
             }
             .sheet(item: $selectedBook) { book in
                 BookDetailView(book: book).macOSSheetFrame()
