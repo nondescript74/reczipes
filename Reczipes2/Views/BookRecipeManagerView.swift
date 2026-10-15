@@ -64,8 +64,10 @@ struct BookRecipeManagerView: View {
         if searchText.isEmpty {
             return allRecipes
         } else {
+            // Title or source URL, so e.g. "seriouseats" finds every Serious Eats recipe.
             return allRecipes.filter { recipe in
-                recipe.title?.localizedCaseInsensitiveContains(searchText) ?? false
+                (recipe.title?.localizedCaseInsensitiveContains(searchText) ?? false)
+                    || (recipe.reference?.localizedCaseInsensitiveContains(searchText) ?? false)
             }
         }
     }
@@ -160,12 +162,21 @@ struct BookRecipeManagerView: View {
                         }
                     }
                 } header: {
-                    Text("Available Recipes (\(availableRecipes.count))")
+                    HStack {
+                        Text("Available Recipes (\(availableRecipes.count))")
+                        Spacer()
+                        if !searchText.isEmpty && !availableRecipes.isEmpty {
+                            Button("Add all \(distinctAvailable.count) matching") {
+                                addAllMatching()
+                            }
+                            .font(.caption)
+                        }
+                    }
                 }
             }
             .navigationTitle("Manage Recipes")
             .platformNavigationBarTitleDisplayMode(.inline)
-            .searchable(text: $searchText, prompt: "Search recipes")
+            .searchable(text: $searchText, prompt: "Search title or source URL")
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {
                     Button("Done") {
@@ -196,6 +207,33 @@ struct BookRecipeManagerView: View {
         }
     }
     
+    /// Available recipes with exact copies (same contentFingerprint) collapsed to one, so a
+    /// bulk add files each recipe once even when the library merge left duplicates.
+    private var distinctAvailable: [RecipeX] {
+        var seen = Set<String>()
+        return availableRecipes.filter { recipe in
+            guard let fp = recipe.contentFingerprint else { return true }
+            return seen.insert(fp).inserted
+        }
+    }
+
+    /// Adds every recipe currently matching the search (one per exact-copy group).
+    private func addAllMatching() {
+        let recipes = distinctAvailable
+        guard !recipes.isEmpty else { return }
+        withAnimation {
+            for recipe in recipes {
+                if let recipeID = recipe.id { book.addRecipe(recipeID) }
+            }
+            do {
+                try modelContext.save()
+                AppLog.info("Added \(recipes.count) recipes matching '\(searchText)' to book '\(book.displayName)'", category: .recipe)
+            } catch {
+                AppLog.error("Failed to bulk-add matching recipes to book: \(error)", category: .recipe)
+            }
+        }
+    }
+
     private func addRecipesAddedOnSelectedDay() {
         let recipes = recipesAddedOnSelectedDay
         guard !recipes.isEmpty else { return }
