@@ -577,8 +577,24 @@ struct SharingSettingsView: View {
         }
     }
     
+    /// Recipes with no active public-share tracking entry. Additive only: sharing these
+    /// never unshares anything (unlike cycling the "Auto-Share New Recipes" toggle, whose
+    /// off-transition deletes every tracked public copy first).
+    private var unsharedRecipes: [RecipeX] {
+        let sharedIDs = Set(sharedRecipes.filter { $0.isActive }.compactMap { $0.recipeID })
+        return recipeXEntities.filter { !sharedIDs.contains($0.safeID) }
+    }
+
     private var quickActionsSection: some View {
         Section {
+            Button {
+                let pending = unsharedRecipes
+                Task { await shareUnsharedRecipes(pending) }
+            } label: {
+                Label("Share All Unshared Recipes (\(unsharedRecipes.count))", systemImage: "square.and.arrow.up.on.square.fill")
+            }
+            .disabled(!sharingService.isCloudKitAvailable || unsharedRecipes.isEmpty)
+
             Button {
                 showingRecipeSelector = true
             } label: {
@@ -753,6 +769,30 @@ struct SharingSettingsView: View {
         showingAlert = true
     }
     
+    /// Shares every recipe that has no active public share yet, one at a time with a
+    /// progress count. Never unshares. Lane 37 (web workstream), 2026-10-15.
+    private func shareUnsharedRecipes(_ recipes: [RecipeX]) async {
+        guard !recipes.isEmpty else { return }
+        isSharing = true
+        var successful = 0
+        var failed = 0
+        for (index, recipe) in recipes.enumerated() {
+            sharingStatus = "Sharing unshared recipes: \(index + 1)/\(recipes.count)"
+            do {
+                _ = try await sharingService.shareRecipe(recipe, modelContext: modelContext)
+                successful += 1
+            } catch {
+                AppLog.error("Failed to share recipe '\(recipe.safeTitle)': \(error)", category: .sharing)
+                failed += 1
+            }
+        }
+        isSharing = false
+        alertMessage = failed == 0
+            ? "Shared \(successful) previously unshared recipes"
+            : "Shared \(successful) of \(recipes.count) unshared recipes. \(failed) failed."
+        showingAlert = true
+    }
+
     private func shareRecipes(_ recipes: [RecipeX]) async {
         // Share selected RecipeX entities
         isSharing = true
