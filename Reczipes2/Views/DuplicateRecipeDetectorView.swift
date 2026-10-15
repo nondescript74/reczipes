@@ -493,7 +493,11 @@ struct DuplicateRecipeDetectorView: View {
             guard let rid = recipe.id,
                   let ref = recipe.reference,
                   !ref.isEmpty,
-                  URL(string: ref) != nil else { continue }
+                  // Only real web links: URL(string:) also accepts "75" or "Page 26", which
+                  // made recipes on the same book page "exact copies" for the launch auto-clean.
+                  let url = URL(string: ref.trimmingCharacters(in: .whitespacesAndNewlines)),
+                  let scheme = url.scheme?.lowercased(), scheme == "http" || scheme == "https",
+                  url.host != nil else { continue }
             let normalizedURL = ref.lowercased()
                 .replacingOccurrences(of: "http://", with: "https://")
                 .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
