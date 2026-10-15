@@ -438,7 +438,12 @@ struct DuplicateRecipeDetectorView: View {
         return sa < sb ? "\(sa)|\(sb)" : "\(sb)|\(sa)"
     }
 
-    static func buildDuplicateClusters(from allRecipes: [RecipeX]) -> [DuplicateCluster] {
+    /// - Parameter includeTitleMatches: when false, only exact copies (same content
+    ///   fingerprint or same source URL) are clustered. Automatic, unattended cleanup
+    ///   must pass false: different recipes often share a title ("Scones", "Fudge"),
+    ///   and re-extractions of the same page can differ in content, so title matches
+    ///   need a human to decide which copy to keep.
+    static func buildDuplicateClusters(from allRecipes: [RecipeX], includeTitleMatches: Bool = true) -> [DuplicateCluster] {
         var uf = RecipeUnionFind()
         var reasons: [String: Set<DuplicateCluster.MatchReason>] = [:]
 
@@ -488,9 +493,9 @@ struct DuplicateRecipeDetectorView: View {
             }
         }
 
-        // --- Strategy 3: Fuzzy title match ---
+        // --- Strategy 3: Fuzzy title match (manual review only) ---
         var byNormalizedTitle: [String: [UUID]] = [:]
-        for recipe in allRecipes {
+        for recipe in allRecipes where includeTitleMatches {
             guard let rid = recipe.id else { continue }
             let normalized = normalizeTitle(recipe.title ?? "")
             guard !normalized.isEmpty else { continue }

@@ -374,7 +374,9 @@ struct ContentView: View {
         DuplicateScanTracker.recordScanRan()
 
         // Reuse the shared detection logic
-        let clusters = DuplicateRecipeDetectorView.buildDuplicateClusters(from: allRecipes)
+        // Exact copies only (fingerprint / source URL). Same-title recipes are left
+        // for the user to review in Settings → Maintenance → Duplicate Recipe Detector.
+        let clusters = DuplicateRecipeDetectorView.buildDuplicateClusters(from: allRecipes, includeTitleMatches: false)
 
         guard !clusters.isEmpty else {
             DuplicateScanTracker.recordCleanScan(recipeCount: allRecipes.count)

@@ -199,7 +199,9 @@ class CloudKitDuplicateMonitor: ObservableObject {
         var byURL: [String: [UUID]] = [:]
         for recipe in allRecipes {
             guard let rid = recipe.id,
-                  let ref = recipe.reference, !ref.isEmpty else { continue }
+                  let ref = recipe.reference, !ref.isEmpty,
+                  let url = URL(string: ref), let scheme = url.scheme?.lowercased(),
+                  scheme == "http" || scheme == "https" else { continue }
             let normalized = ref.lowercased()
                 .replacingOccurrences(of: "http://", with: "https://")
                 .trimmingCharacters(in: CharacterSet(charactersIn: "/"))
@@ -209,17 +211,10 @@ class CloudKitDuplicateMonitor: ObservableObject {
             for i in 1..<ids.count { uf.union(ids[0], ids[i]) }
         }
 
-        // Strategy 3: Normalized title match
-        var byTitle: [String: [UUID]] = [:]
-        for recipe in allRecipes {
-            guard let rid = recipe.id else { continue }
-            let normalized = DuplicateRecipeDetectorView.normalizeTitle(recipe.title ?? "")
-            guard !normalized.isEmpty else { continue }
-            byTitle[normalized, default: []].append(rid)
-        }
-        for (_, ids) in byTitle where ids.count > 1 {
-            for i in 1..<ids.count { uf.union(ids[0], ids[i]) }
-        }
+        // NOTE: No title matching here. This runs unattended after every sync and
+        // deletes without asking; title-only matches (different recipes that share
+        // a name, or two extractions of the same page) must be reviewed manually in
+        // the Duplicate Recipe Detector instead.
 
         // Build groups
         var groups: [UUID: [UUID]] = [:]

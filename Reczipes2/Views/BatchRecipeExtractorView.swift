@@ -290,7 +290,7 @@ struct BatchRecipeExtractorView: View {
                     HStack {
                         Image(systemName: "checkmark.circle.fill")
                             .foregroundStyle(Color.appSuccess)
-                        Text("Extracted: \(String(describing: recipe.title))")
+                        Text("Extracted: \(recipe.title ?? "Untitled recipe")")
                             .font(.subheadline)
                             .fontWeight(.semibold)
                     }

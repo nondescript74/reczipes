@@ -89,7 +89,7 @@ struct BatchImageExtractorView: View {
                             
                             Button {
                                 AppLog.info("User tapped 'Add More from Files' to add additional images", category: .ui)
-                                showingDocumentPicker = true
+                                openFilesPicker()
                             } label: {
                                 Label("From Files (iCloud Drive)", systemImage: "folder")
                             }
@@ -111,7 +111,7 @@ struct BatchImageExtractorView: View {
                             
                             Button {
                                 AppLog.info("User tapped 'Add More from Files' to add additional images", category: .ui)
-                                showingDocumentPicker = true
+                                openFilesPicker()
                             } label: {
                                 Label("From Files (iCloud Drive)", systemImage: "folder")
                             }
@@ -341,7 +341,7 @@ struct BatchImageExtractorView: View {
                 
                 Button {
                     AppLog.info("User tapped 'Select from Files' in empty state", category: .ui)
-                    showingDocumentPicker = true
+                    openFilesPicker()
                 } label: {
                     Label("Select from Files (iCloud Drive)", systemImage: "folder.fill")
                         .font(.headline)
@@ -443,7 +443,7 @@ struct BatchImageExtractorView: View {
                     
                     Button {
                         AppLog.info("User tapped add more from Files", category: .ui)
-                        showingDocumentPicker = true
+                        openFilesPicker()
                     } label: {
                         Label("From Files", systemImage: "folder")
                     }
@@ -554,6 +554,59 @@ struct BatchImageExtractorView: View {
         .buttonStyle(.plain)
     }
     
+    // MARK: - Files picker
+
+    /// Opens the Files picker.
+    /// - iOS: presents `DocumentPickerView` (UIDocumentPickerViewController) as a sheet.
+    /// - macOS: shows `NSOpenPanel` directly. The previous approach — a zero-size SwiftUI
+    ///   sheet whose `onAppear` ran `NSOpenPanel.runModal()` — never appeared when the
+    ///   button lived inside the already-presented "Batch Image Extract" sheet, because
+    ///   macOS would not stack the second sheet, so the panel was never shown.
+    private func openFilesPicker() {
+        #if os(macOS)
+        let panel = NSOpenPanel()
+        panel.allowsMultipleSelection = true
+        panel.canChooseDirectories = false
+        panel.canChooseFiles = true
+        panel.allowedContentTypes = [.image]
+        panel.message = "Select recipe images to extract"
+        panel.prompt = "Add"
+        panel.begin { response in
+            guard response == .OK else {
+                AppLog.debug("User cancelled Files open panel", category: .ui)
+                return
+            }
+            let urls = panel.urls
+            AppLog.info("User selected \(urls.count) images from Files", category: .ui)
+            Task { @MainActor in
+                isLoadingImages = true
+                loadingProgress = LoadingProgress(current: 0, total: urls.count)
+                var loaded: [PlatformImage] = []
+                for (index, url) in urls.enumerated() {
+                    loadingProgress = LoadingProgress(
+                        current: index,
+                        total: urls.count,
+                        currentFileName: url.lastPathComponent
+                    )
+                    let scoped = url.startAccessingSecurityScopedResource()
+                    if let image = NSImage(contentsOf: url) {
+                        loaded.append(image)
+                    } else {
+                        AppLog.warning("Could not load image: \(url.lastPathComponent)", category: .image)
+                    }
+                    if scoped { url.stopAccessingSecurityScopedResource() }
+                    await Task.yield()
+                }
+                selectedImages.append(contentsOf: loaded)
+                isLoadingImages = false
+                AppLog.info("✅ Loaded \(loaded.count) of \(urls.count) images from Files", category: .image)
+            }
+        }
+        #else
+        showingDocumentPicker = true
+        #endif
+    }
+
     private var selectedImagesGrid: some View {
         VStack(alignment: .leading, spacing: 12) {
             HStack {
@@ -708,7 +761,7 @@ struct BatchImageExtractorView: View {
                         HStack {
                             Image(systemName: "checkmark.circle.fill")
                                 .foregroundStyle(Color.appSuccess)
-                            Text("Extracted: \(String(describing: recipe.title))")
+                            Text("Extracted: \(recipe.title ?? "Untitled recipe")")
                                 .font(.subheadline)
                                 .fontWeight(.semibold)
                         }
@@ -990,7 +1043,7 @@ struct BatchImageExtractorView: View {
                     
                     Button {
                         showingSourcePicker = false
-                        showingDocumentPicker = true
+                        openFilesPicker()
                     } label: {
                         HStack {
                             Image(systemName: "folder")
