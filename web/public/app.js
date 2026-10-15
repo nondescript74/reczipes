@@ -251,7 +251,7 @@ async function showRecipe(id) {
             ? h('div', { class: 'notes' }, r.notes.map((n) =>
                 h('div', { class: `note note--${n.type}` }, h('b', {}, NOTE_LABEL[n.type] ?? 'Note'), n.text)))
             : null,
-          r.reference ? h('p', { class: 'reference' }, `Source: ${r.reference}`) : null))),
+          r.reference ? h('p', { class: 'reference' }, 'Source: ', /^https?:\/\/\S+$/.test(r.reference) ? h('a', { href: r.reference, rel: 'noopener noreferrer', target: '_blank' }, r.reference) : r.reference) : null))),
   );
   main.focus({ preventScroll: true });
   window.scrollTo(0, 0);

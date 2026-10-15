@@ -15,11 +15,13 @@ const env = process.env;
 const PORT = Number(env.PORT) || 8080;
 const CONTAINER = env.CLOUDKIT_CONTAINER || 'iCloud.com.headydiscy.reczipes';
 const CK_ENV = env.CLOUDKIT_ENVIRONMENT || 'production';
-const useFixtures = env.RECZIPES_DATA === 'fixtures' || !env.CLOUDKIT_API_TOKEN;
+// Trim: a pasted token often carries a trailing newline or space.
+const API_TOKEN = (env.CLOUDKIT_API_TOKEN || '').trim();
+const useFixtures = env.RECZIPES_DATA === 'fixtures' || !API_TOKEN;
 
 const cloudkit = useFixtures
   ? null
-  : createCloudKitClient({ container: CONTAINER, environment: CK_ENV, apiToken: env.CLOUDKIT_API_TOKEN });
+  : createCloudKitClient({ container: CONTAINER, environment: CK_ENV, apiToken: API_TOKEN });
 
 const store = createStore({
   cloudkit,
