@@ -21,6 +21,7 @@ function h(tag, attrs = {}, ...children) {
   return el;
 }
 
+let backTo = { href: '#/', label: 'All recipes' };
 const cache = new Map();
 async function getJSON(url) {
   if (cache.has(url)) return cache.get(url);
@@ -108,6 +109,7 @@ function recipeCard(r) {
 
 async function showRecipes(query = '') {
   setTab('recipes');
+  backTo = { href: '#/', label: 'All recipes' };
   document.title = 'Recipes · Reczipes';
   let recipes;
   try {
@@ -179,7 +181,7 @@ async function showRecipe(id) {
   try {
     r = await getJSON(`/api/recipes/${encodeURIComponent(id)}`);
   } catch (e) {
-    return render(h('a', { class: 'back', href: '#/' }, '← All recipes'), errorView(e));
+    return render(h('a', { class: 'back', href: backTo.href }, `← ${backTo.label}`), errorView(e));
   }
   document.title = `${r.title} · Reczipes`;
 
@@ -225,7 +227,7 @@ async function showRecipe(id) {
   const facts = [r.yield, r.sharedByName ? `Shared by ${r.sharedByName}` : null, fmtDate(r.sharedDate)].filter(Boolean);
 
   render(
-    h('a', { class: 'back', href: '#/' }, '← All recipes'),
+    h('a', { class: 'back', href: backTo.href }, `← ${backTo.label}`),
     h('article', {},
       h('header', { class: `recipe-hero${r.imageURL ? ' has-img' : ''}` },
         r.imageURL ? h('img', { src: r.imageURL, alt: '' }) : null,
@@ -265,6 +267,12 @@ function swatch(color) {
   return el;
 }
 
+const plural = (n, word) => `${n} ${word}${n === 1 ? '' : 's'}`;
+
+function bookCover(b, cls) {
+  return b.coverURL ? h('img', { class: cls, src: b.coverURL, alt: '', loading: 'lazy' }) : swatch(b.color);
+}
+
 async function showBooks() {
   setTab('books');
   document.title = 'Books · Reczipes';
@@ -275,20 +283,61 @@ async function showBooks() {
     return render(errorView(e));
   }
   render(
-    h('div', { class: 'page-head' }, h('h1', {}, 'Books'),
-      h('p', { class: 'muted' }, `${books.length} book${books.length === 1 ? '' : 's'}`)),
+    h('div', { class: 'page-head' }, h('h1', {}, 'Books'), h('p', { class: 'muted' }, plural(books.length, 'book'))),
     books.length
       ? h('ul', { class: 'grid' }, books.map((b) => h('li', {},
-          h('div', { class: 'card' },
-            b.coverURL ? h('img', { class: 'card__img', src: b.coverURL, alt: '', loading: 'lazy' }) : swatch(b.color),
+          h('a', { class: 'card', href: `#/book/${encodeURIComponent(b.id)}` },
+            bookCover(b, 'card__img'),
             h('div', { class: 'card__body' },
               h('h2', { class: 'card__title' }, b.name),
-              h('span', { class: 'card__meta' }, [`${b.recipeCount} recipes`, b.sharedByName ? `by ${b.sharedByName}` : null].filter(Boolean).join(' · ')),
-              b.description ? h('p', {}, b.description) : null,
-              h('ul', { class: 'book-list' }, b.entries.map((p) => h('li', {},
-                p.available ? h('a', { href: `#/recipe/${encodeURIComponent(p.id)}` }, p.title) : h('span', { class: 'na', title: 'This recipe hasn’t been shared on its own yet' }, p.title)))))))))
+              h('span', { class: 'card__meta' },
+                [b.webCount ? plural(b.webCount, 'recipe') : 'No recipes yet', b.sharedByName ? `by ${b.sharedByName}` : null].filter(Boolean).join(' · ')),
+              b.description ? h('p', { class: 'card__desc' }, b.description) : null)))))
       : h('p', { class: 'empty' }, 'No books have been shared yet.'),
   );
+}
+
+async function showBook(id) {
+  setTab('books');
+  let book, recipes;
+  try {
+    [book, recipes] = await Promise.all([getJSON(`/api/books/${encodeURIComponent(id)}`), getJSON('/api/recipes')]);
+  } catch (e) {
+    return render(h('a', { class: 'back', href: '#/books' }, '← All books'), errorView(e));
+  }
+  document.title = `${book.name} · Reczipes`;
+  backTo = { href: `#/book/${encodeURIComponent(book.id)}`, label: book.name };
+  const byId = new Map(recipes.map((r) => [r.id, r]));
+  const inBook = book.entries
+    .filter((e) => e.available && byId.has(e.id))
+    .map((e) => byId.get(e.id))
+    .sort((a, b) => a.title.localeCompare(b.title, undefined, { sensitivity: 'base' }));
+
+  const list = h('ul', { class: 'grid' });
+  const count = h('p', { class: 'muted' });
+  const input = h('input', { type: 'search', placeholder: `Search ${book.name}`, 'aria-label': `Search ${book.name}`, autocomplete: 'off' });
+  const apply = () => {
+    const terms = input.value.toLowerCase().split(/\s+/).filter(Boolean);
+    const hits = inBook.filter((r) => terms.every((t) => r.search.includes(t)));
+    list.replaceChildren(...hits.map(recipeCard));
+    count.textContent = terms.length ? `${hits.length} of ${plural(inBook.length, 'recipe')}` : plural(inBook.length, 'recipe');
+    if (!hits.length) list.replaceChildren(h('li', { class: 'empty' }, terms.length ? 'No recipes in this book match that search.' : 'This book has no recipes on the web yet.'));
+  };
+  input.addEventListener('input', apply);
+  render(
+    h('a', { class: 'back', href: '#/books' }, '← All books'),
+    h('header', { class: 'book-head' },
+      book.coverURL ? h('img', { class: 'book-head__img', src: book.coverURL, alt: '' }) : null,
+      h('div', {},
+        h('h1', {}, book.name),
+        book.description ? h('p', { class: 'header-notes' }, book.description) : null,
+        book.sharedByName ? h('p', { class: 'muted' }, `Shared by ${book.sharedByName}`) : null,
+        count)),
+    inBook.length > 8 ? h('div', { class: 'search' }, searchIcon(), input) : null,
+    list,
+  );
+  apply();
+  window.scrollTo(0, 0);
 }
 
 // ---------- Router ----------
@@ -297,6 +346,8 @@ function route() {
   const [pathPart, queryPart] = hash.split('?');
   const m = pathPart.match(/^\/recipe\/(.+)$/);
   if (m) return showRecipe(decodeURIComponent(m[1]));
+  const mb = pathPart.match(/^\/book\/(.+)$/);
+  if (mb) return showBook(decodeURIComponent(mb[1]));
   if (pathPart === '/books') return showBooks();
   return showRecipes(new URLSearchParams(queryPart ?? '').get('q') ?? '');
 }

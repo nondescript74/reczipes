@@ -68,7 +68,10 @@ test('book decodes with previews', () => {
 
 test('store over fixtures marks book entries available only when shared', async () => {
   const store = createStore({ cloudkit: null, fixturesPath });
-  const [book] = await store.listBooks();
+  const [summary] = await store.listBooks();
+  assert.equal(summary.entries, undefined, 'list stays light');
+  assert.equal(summary.webCount, 2);
+  const book = await store.getBook(summary.id.toLowerCase());
   assert.deepEqual(book.entries.map((e) => e.available), [true, true, false]);
   assert.equal((await store.listRecipes()).length, 2);
   assert.equal((await store.getRecipe('a1b2c3d4-0000-4000-8000-000000000002')).title, 'Sample: Lemon Rice');

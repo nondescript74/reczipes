@@ -49,6 +49,29 @@ export function createStore({ cloudkit, fixturesPath, ttlMs = 5 * 60 * 1000, now
     };
   }
 
+
+  // A book's recipe list: the previews the app wrote, else its bare recipe ids. Each
+  // entry resolves through byId (so folded copies point at the kept recipe); entries
+  // whose recipe is not in the public catalogue are counted but not linked.
+  function bookWithEntries({ previews, recipeIDs, ...b }) {
+    const base = previews.length
+      ? previews
+      : recipeIDs.map((id) => ({ id, title: state.byId.get(id.toUpperCase())?.title ?? null }));
+    const seen = new Set();
+    const entries = [];
+    for (const p of base) {
+      const target = p.id ? state.byId.get(p.id.toUpperCase()) : null;
+      if (target) {
+        if (seen.has(target.id)) continue;
+        seen.add(target.id);
+        entries.push({ id: target.id, title: target.title, available: true });
+      } else if (p.title) {
+        entries.push({ id: p.id, title: p.title, available: false });
+      }
+    }
+    return { ...b, recipeCount: Math.max(recipeIDs.length, previews.length), entries };
+  }
+
   async function refresh() {
     if (!inflight) {
       inflight = (async () => {
@@ -100,23 +123,17 @@ export function createStore({ cloudkit, fixturesPath, ttlMs = 5 * 60 * 1000, now
     },
     async listBooks() {
       await ensure();
-      return state.books.map(({ previews, recipeIDs, ...b }) => {
-        // Prefer the previews the app wrote; fall back to the bare recipe ids.
-        const base = previews.length
-          ? previews
-          : recipeIDs.map((id) => ({ id, title: state.byId.get(id.toUpperCase())?.title ?? null }));
-        // Only link entries whose recipe is itself shared and therefore readable here.
-        const seen = new Set();
-        const entries = base
-          .map((p) => {
-            const target = p.id ? state.byId.get(p.id.toUpperCase()) : null;
-            // Point at the kept copy so a book never links to a collapsed duplicate.
-            return { ...p, id: target ? target.id : p.id, available: Boolean(target) };
-          })
-          .filter((p) => p.title)
-          .filter((p) => !p.available || (seen.has(p.id) ? false : seen.add(p.id)));
-        return { ...b, recipeCount: Math.max(recipeIDs.length, previews.length), entries };
+      return state.books.map((b) => {
+        const { entries, ...rest } = bookWithEntries(b);
+        return { ...rest, webCount: entries.filter((e) => e.available).length };
       });
+    },
+    async getBook(id) {
+      await ensure();
+      const b = state.books.find((x) => x.id.toUpperCase() === String(id).toUpperCase());
+      if (!b) return null;
+      const full = bookWithEntries(b);
+      return { ...full, webCount: full.entries.filter((e) => e.available).length };
     },
   };
 }

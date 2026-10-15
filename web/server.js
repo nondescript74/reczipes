@@ -95,6 +95,11 @@ async function handle(req, res) {
     try {
       if (p === '/api/recipes') return sendJSON(res, 200, await store.listRecipes(), 'public, max-age=60');
       if (p === '/api/books') return sendJSON(res, 200, await store.listBooks(), 'public, max-age=60');
+      const mb = p.match(/^\/api\/books\/([A-Za-z0-9-]{1,64})$/);
+      if (mb) {
+        const b = await store.getBook(mb[1]);
+        return b ? sendJSON(res, 200, b, 'public, max-age=60') : sendJSON(res, 404, { error: 'Book not found' });
+      }
       const m = p.match(/^\/api\/recipes\/([A-Za-z0-9-]{1,64})$/);
       if (m) {
         const r = await store.getRecipe(m[1]);
