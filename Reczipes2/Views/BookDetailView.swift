@@ -13,6 +13,7 @@ struct BookDetailView: View {
     @Environment(\.modelContext) private var modelContext
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Query private var savedRecipes: [RecipeX]
+    @Query private var sharedBooks: [SharedRecipeBook]
     
     let book: Book
     
@@ -24,6 +25,13 @@ struct BookDetailView: View {
     @State private var showingShareSheet = false
     @State private var exportError: Error?
     @State private var showingExportError = false
+    @State private var isUpdatingPublicCopy = false
+    @State private var publicCopyMessage: String?
+
+    /// True when this book has an active public share (shown on the community/web catalogue).
+    private var isPubliclyShared: Bool {
+        sharedBooks.contains { $0.bookID == book.id && $0.isActive }
+    }
     
     private var isPad: Bool {
         horizontalSizeClass == .regular
@@ -70,6 +78,16 @@ struct BookDetailView: View {
                             Label("Edit Book", systemImage: "pencil")
                         }
                         
+                        if isPubliclyShared {
+                            Button {
+                                Task { await updatePublicCopy() }
+                            } label: {
+                                Label(isUpdatingPublicCopy ? "Updating Public Copy…" : "Update Public Copy",
+                                      systemImage: "arrow.triangle.2.circlepath")
+                            }
+                            .disabled(isUpdatingPublicCopy)
+                        }
+
                         Divider()
                         
                         Button {
@@ -107,6 +125,14 @@ struct BookDetailView: View {
                 if let url = exportedFileURL {
                     ShareSheet_BDV(activityItems: [url])
                 }
+            }
+            .alert("Public Copy", isPresented: Binding(
+                get: { publicCopyMessage != nil },
+                set: { if !$0 { publicCopyMessage = nil } }
+            )) {
+                Button("OK", role: .cancel) { publicCopyMessage = nil }
+            } message: {
+                Text(publicCopyMessage ?? "")
             }
             .alert("Export Failed", isPresented: $showingExportError) {
                 Button("OK") { }
@@ -210,6 +236,20 @@ struct BookDetailView: View {
     
     // MARK: - Export
     
+    /// Overwrites this book's public record with its current recipe list, in place.
+    /// Nothing is unshared or deleted; the web reader picks it up within its cache window.
+    private func updatePublicCopy() async {
+        isUpdatingPublicCopy = true
+        defer { isUpdatingPublicCopy = false }
+        do {
+            _ = try await CloudKitSharingService.shared.shareRecipeBook(book, modelContext: modelContext, refreshExisting: true)
+            publicCopyMessage = "Updated the public copy of '\(book.displayName)' with \(bookRecipes.count) recipes."
+        } catch {
+            AppLog.error("Failed to update public copy of book '\(book.displayName)': \(error)", category: .sharing)
+            publicCopyMessage = "Couldn't update the public copy: \(error.localizedDescription)"
+        }
+    }
+
     private func exportBook(includeImages: Bool) async {
         isExporting = true
         exportError = nil

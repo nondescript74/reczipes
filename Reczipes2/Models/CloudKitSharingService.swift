@@ -603,7 +603,10 @@ class CloudKitSharingService: ObservableObject {
         return minimal
     }
 
-    func shareRecipeBook(_ book: Book, modelContext: ModelContext) async throws -> String {
+    /// Shares a book publicly. With `refreshExisting: true`, an already-shared book's
+    /// public record is overwritten in place with the book's current recipes (same record
+    /// id, nothing deleted), e.g. after recipes were added to the book.
+    func shareRecipeBook(_ book: Book, modelContext: ModelContext, refreshExisting: Bool = false) async throws -> String {
         guard isCloudKitAvailable else {
             throw SharingError.cloudKitUnavailable()
         }
@@ -620,6 +623,8 @@ class CloudKitSharingService: ObservableObject {
             }
         )
         
+        var existingRecordToUpdate: CKRecord?
+        var existingTracking: SharedRecipeBook?
         if let existingShared = try? modelContext.fetch(existingDescriptor).first {
             // Verify the public record still exists in THIS environment before trusting
             // local tracking (mirrors shareRecipe). A share made from a build pointed at
@@ -627,9 +632,15 @@ class CloudKitSharingService: ObservableObject {
             // this check the book is skipped forever as "already shared".
             if let cloudRecordID = existingShared.cloudRecordID {
                 do {
-                    _ = try await publicDatabase.record(for: CKRecord.ID(recordName: cloudRecordID))
-                    AppLog.info("Book '\(String(describing: book.name))' is already shared (verified in CloudKit)", category: .sharing)
-                    return cloudRecordID
+                    let fetched = try await publicDatabase.record(for: CKRecord.ID(recordName: cloudRecordID))
+                    if refreshExisting {
+                        existingRecordToUpdate = fetched
+                        existingTracking = existingShared
+                        AppLog.info("Book '\(String(describing: book.name))' is shared; refreshing its public record in place", category: .sharing)
+                    } else {
+                        AppLog.info("Book '\(String(describing: book.name))' is already shared (verified in CloudKit)", category: .sharing)
+                        return cloudRecordID
+                    }
                 } catch let error as CKError where error.code == .unknownItem {
                     AppLog.warning("CloudKit record missing for tracked book share - will reshare", category: .sharing)
                     modelContext.delete(existingShared)
@@ -718,8 +729,8 @@ class CloudKitSharingService: ObservableObject {
         // images; previews are only a convenience for browsing a book.
         recipePreviews = Self.fitPreviewsToRecordBudget(recipePreviews)
         
-        // Create CloudKit record
-        let record = CKRecord(recordType: CloudKitRecordType.sharedRecipeBook)
+        // Create CloudKit record, or reuse the existing one when refreshing in place
+        let record = existingRecordToUpdate ?? CKRecord(recordType: CloudKitRecordType.sharedRecipeBook)
         
         // Convert book to CloudKit-friendly format with previews
         let cloudBook = CloudKitRecipeBook(
@@ -762,6 +773,16 @@ class CloudKitSharingService: ObservableObject {
         AppLog.info("📚 Saving to CloudKit Public Database...", category: .sharing)
         let savedRecord = try await publicDatabase.save(record)
         
+        // Refresh in place: keep the existing tracking entry, update its display fields
+        if let tracking = existingTracking {
+            tracking.bookName = book.name!
+            tracking.bookDescription = book.bookDescription
+            tracking.coverImageName = book.coverImageName
+            try modelContext.save()
+            AppLog.info("✅ Refreshed public book: \(String(describing: book.name)) with \(recipePreviews.count) recipe previews", category: .sharing)
+            return savedRecord.recordID.recordName
+        }
+
         // Track locally
         let sharedBook = SharedRecipeBook(
             bookID: book.id!,
