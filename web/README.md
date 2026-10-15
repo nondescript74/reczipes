@@ -3,7 +3,7 @@
 Reczipes in any browser — Safari, Chrome, Brave, Firefox, on any computer or phone, no Apple device needed.
 Lane 37 (Reczipes2), **Web workstream**. Status: **Phase 0 LIVE** at https://reczipes-production.up.railway.app (Railway project `reczipes-web`), reading the
 CloudKit **Production** public database. As of 2026-10-15 14:20 MT: 747 `SharedRecipe` records → 742 recipe ids → **588
-recipes shown** (154 merged-library copies folded), **12 books**. Live state: `GET /api/status`.
+recipes shown** (154 merged-library copies folded), **19 books** (21:20Z). Live state: `GET /api/status`.
 
 ## What it does today
 
