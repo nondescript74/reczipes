@@ -1,0 +1,41 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <title>Reczipes</title>
+  <meta name="description" content="Recipes and books shared from the Reczipes app, readable in any browser.">
+  <meta name="theme-color" content="#f6f1e7" media="(prefers-color-scheme: light)">
+  <meta name="theme-color" content="#1c1915" media="(prefers-color-scheme: dark)">
+  <link rel="icon" href="/icon.svg" type="image/svg+xml">
+  <link rel="manifest" href="/manifest.webmanifest">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,500;9..144,650&family=Source+Sans+3:wght@400;600&display=swap">
+  <link rel="stylesheet" href="/app.css">
+  <script src="/app.js" type="module" defer></script>
+</head>
+<body>
+  <a class="skip" href="#main">Skip to content</a>
+  <header class="masthead">
+    <div class="wrap masthead__row">
+      <a class="brand" href="#/" aria-label="Reczipes home">
+        <img src="/icon.svg" alt="" width="32" height="32">
+        <span>Reczipes</span>
+      </a>
+      <nav class="tabs" aria-label="Sections">
+        <a href="#/" data-tab="recipes">Recipes</a>
+        <a href="#/books" data-tab="books">Books</a>
+      </nav>
+    </div>
+  </header>
+  <div id="banner" class="wrap" role="status" aria-live="polite"></div>
+  <main id="main" class="wrap" tabindex="-1">
+    <p class="muted">Loading recipes…</p>
+  </main>
+  <footer class="wrap footer">
+    <p>Recipes shared from the Reczipes app for iPhone, iPad and Mac. <span id="source"></span></p>
+  </footer>
+  <noscript><p class="wrap">Reczipes needs JavaScript turned on to show recipes.</p></noscript>
+</body>
+</html>

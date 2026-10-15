@@ -1,0 +1,9 @@
+{
+  "name": "Reczipes",
+  "short_name": "Reczipes",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#f6f1e7",
+  "theme_color": "#b5562b",
+  "icons": [{ "src": "/icon.svg", "sizes": "any", "type": "image/svg+xml" }]
+}
