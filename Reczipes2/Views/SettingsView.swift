@@ -115,7 +115,7 @@ private enum SettingsCategory: String, CaseIterable, Identifiable {
                 ]),
                 SettingsSummaryGroup(title: "Developer Tools", items: [
                     "Recipe Data Diagnostics", "Delete Empty Recipes", "Database Maintenance",
-                    "Duplicate Detection & Cleanup", "Database Recovery"
+                    "Duplicate Recipe Detector", "Remove Duplicate Recipes", "Database Recovery"
                 ])
             ]
         case .helpAbout:
@@ -140,8 +140,94 @@ private struct SettingsSummaryGroup: Identifiable {
     var id: String { title ?? items.first ?? "" }
 }
 
+// MARK: - Settings Search
+
+/// One searchable item in Settings. Opens a tool directly, or the category sheet
+/// for items that live inline there (API keys, toggles, help, legal).
+private struct SettingsSearchEntry: Identifiable {
+    enum Target {
+        case destination(SettingsDestination)
+        case category(SettingsCategory)
+    }
+
+    let title: String
+    let icon: String
+    let category: SettingsCategory
+    let keywords: [String]
+    let target: Target
+
+    var id: String { category.rawValue + "/" + title }
+
+    func matches(_ query: String) -> Bool {
+        let terms = query.lowercased().split(separator: " ").map(String.init)
+        guard !terms.isEmpty else { return false }
+        let haystack = ([title, category.title] + keywords).joined(separator: " ").lowercased()
+        return terms.allSatisfy { haystack.contains($0) }
+    }
+
+    static func dest(_ title: String, _ icon: String, _ category: SettingsCategory,
+                     _ destination: SettingsDestination, _ keywords: [String] = []) -> SettingsSearchEntry {
+        SettingsSearchEntry(title: title, icon: icon, category: category, keywords: keywords, target: .destination(destination))
+    }
+
+    static func inCategory(_ title: String, _ icon: String, _ category: SettingsCategory,
+                           _ keywords: [String] = []) -> SettingsSearchEntry {
+        SettingsSearchEntry(title: title, icon: icon, category: category, keywords: keywords, target: .category(category))
+    }
+
+    /// Every item reachable from Settings. Keep in sync when adding a row to a category sheet.
+    static let all: [SettingsSearchEntry] = [
+        // Extraction
+        inCategory("Claude API Key", "key.fill", .extraction, ["api", "key", "anthropic", "token"]),
+        inCategory("Recipe API Setup & Test", "key", .extraction, ["api", "key", "spoonacular"]),
+        inCategory("Setup & Diagnostics", "gear.circle", .extraction, ["onboarding", "icloud", "setup"]),
+        inCategory("Auto-Extract on Image Selection", "wand.and.stars", .extraction, ["extract", "automatic", "photo", "image"]),
+        inCategory("Image Preprocessing", "photo", .extraction, ["ocr", "contrast", "grayscale", "extract", "handwriting"]),
+        // iCloud & Sync
+        dest("System Health", "heart.text.square", .sync, .systemHealth, ["status", "health", "icloud"]),
+        dest("Quick Sync Check", "checkmark.circle", .sync, .quickSync, ["sync", "icloud", "cloudkit"]),
+        dest("Sync Monitor", "antenna.radiowaves.left.and.right", .sync, .syncMonitor, ["sync", "cloudkit", "status"]),
+        dest("iCloud Sync Settings", "icloud.fill", .sync, .iCloudSettings, ["sync", "cloudkit"]),
+        dest("User Content Import/Export", "arrow.up.arrow.down.circle", .sync, .backupRestore,
+             ["backup", "restore", "export", "import", "reczipes", "bookbackup", "save"]),
+        dest("Advanced Diagnostics", "stethoscope", .sync, .advancedDiagnostics, ["cloudkit", "debug"]),
+        dest("Container Details", "cylinder.split.1x2", .sync, .containerDetails, ["cloudkit", "store", "database"]),
+        dest("Validate CloudKit Container", "checkmark.seal.fill", .sync, .validateCloudKit, ["cloudkit", "check"]),
+        // Community
+        dest("Browse Community Recipes", "tray.full.fill", .community, .communityRecipes, ["shared", "public", "recipes"]),
+        dest("Browse Community Books", "books.vertical.circle.fill", .community, .communityBooks, ["shared", "public", "books"]),
+        dest("Public Sharing Settings", "person.3.fill", .community, .sharingSettings, ["share", "public"]),
+        dest("Fix Sharing Issues", "wrench.and.screwdriver.fill", .community, .fixSharingIssues, ["share", "repair", "cleanup"]),
+        // Dietary
+        dest("FODMAP Settings", "leaf.circle", .dietary, .fodmapSettings, ["diet", "ibs", "fodmap"]),
+        dest("Diabetic-Friendly Analysis", "heart.text.square", .dietary, .diabeticSettings, ["diabetes", "glycemic", "carbs", "sugar"]),
+        // Maintenance
+        dest("Database Diagnostics", "stethoscope", .maintenance, .databaseDiagnostics, ["database", "debug"]),
+        dest("Logging Settings", "text.alignleft", .maintenance, .loggingSettings, ["log", "logs", "debug"]),
+        inCategory("Export Diagnostic Logs", "doc.text", .maintenance, ["log", "logs", "export"]),
+        dest("Recipe Data Diagnostics", "cross.case.fill", .maintenance, .recipeDataDiagnostics,
+             ["missing", "ingredients", "instructions", "broken", "check"]),
+        dest("Delete Empty Recipes", "trash.square.fill", .maintenance, .deleteEmptyRecipes, ["empty", "blank", "cleanup", "remove"]),
+        dest("Database Maintenance", "wrench.and.screwdriver.fill", .maintenance, .databaseMaintenance, ["cleanup", "repair"]),
+        dest("Duplicate Recipe Detector", "doc.on.doc.fill", .maintenance, .duplicateDetector,
+             ["dedupe", "de-dupe", "deduplicate", "duplicate", "duplicates", "copies", "same", "double", "merge", "cleanup"]),
+        dest("Database Investigation", "magnifyingglass.circle.fill", .maintenance, .databaseInvestigation, ["database", "inspect", "debug"]),
+        dest("Remove Duplicate Recipes", "trash.circle.fill", .maintenance, .removeDuplicates,
+             ["dedupe", "de-dupe", "deduplicate", "duplicate", "duplicates", "copies", "cleanup"]),
+        dest("Database Recovery", "externaldrive.badge.exclamationmark", .maintenance, .databaseRecovery, ["recover", "restore", "repair", "corrupt"]),
+        // Help & About
+        inCategory("Browse Help Topics", "questionmark.circle", .helpAbout, ["help", "how", "guide"]),
+        inCategory("Diagnostic Log", "doc.text.magnifyingglass", .helpAbout, ["log", "logs"]),
+        inCategory("License Agreement", "doc.plaintext", .helpAbout, ["legal", "terms"]),
+        dest("Version History", "clock.arrow.circlepath", .helpAbout, .versionHistory, ["version", "release", "changes", "whats new"]),
+    ]
+}
+
 struct SettingsView: View {
     @State private var activeCategory: SettingsCategory?
+    @State private var activeDestination: SettingsDestination?
+    @State private var searchText = ""
+    @FocusState private var searchFocused: Bool
     @StateObject private var onboarding = CloudKitOnboardingService.shared
     @State private var isAPIKeyConfigured = APIKeyHelper.isConfigured
     @State private var isRecipeAPIConfigured = APIKeyHelper.isRecipeAPIConfigured
@@ -170,8 +256,13 @@ struct SettingsView: View {
 
             ScrollView {
                 VStack(spacing: 28) {
-                    statusHeader
-                    categoryGrid
+                    searchBar
+                    if searchText.trimmingCharacters(in: .whitespaces).isEmpty {
+                        statusHeader
+                        categoryGrid
+                    } else {
+                        searchResults
+                    }
                 }
                 .frame(maxWidth: showsExpandedCards ? 1060 : 720)
                 .frame(maxWidth: .infinity)
@@ -183,10 +274,115 @@ struct SettingsView: View {
                 SettingsCategorySheet(category: category)
                     .macOSSheetFrame()
             }
+            .sheet(item: $activeDestination) { destination in
+                SettingsDetailSheet(destination: destination)
+                    .macOSSheetFrame()
+            }
             .onAppear {
                 isAPIKeyConfigured = APIKeyHelper.isConfigured
                 isRecipeAPIConfigured = APIKeyHelper.isRecipeAPIConfigured
             }
+        }
+    }
+
+    // MARK: - Search
+
+    private var searchBar: some View {
+        HStack(spacing: 8) {
+            Image(systemName: "magnifyingglass")
+                .foregroundStyle(.secondary)
+            TextField("Find a setting or tool (e.g. duplicates, backup, API key)", text: $searchText)
+                .textFieldStyle(.plain)
+                .focused($searchFocused)
+                .onSubmit {
+                    if let first = searchMatches.first { open(first) }
+                }
+            if !searchText.isEmpty {
+                Button {
+                    searchText = ""
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .foregroundStyle(.secondary)
+                }
+                .buttonStyle(.plain)
+                .accessibilityLabel("Clear search")
+            }
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .background(Color.appSecondaryGroupedBackground, in: RoundedRectangle(cornerRadius: 12, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 12, style: .continuous).strokeBorder(Color.primary.opacity(0.08)))
+        .background(
+            // ⌘F focuses the search field
+            Button("") { searchFocused = true }
+                .keyboardShortcut("f", modifiers: .command)
+                .opacity(0)
+                .accessibilityHidden(true)
+        )
+    }
+
+    private var searchMatches: [SettingsSearchEntry] {
+        let query = searchText.trimmingCharacters(in: .whitespaces)
+        return SettingsSearchEntry.all.filter { $0.matches(query) }
+    }
+
+    @ViewBuilder
+    private var searchResults: some View {
+        let matches = searchMatches
+        VStack(alignment: .leading, spacing: 0) {
+            if matches.isEmpty {
+                Text("No settings match \"\(searchText)\"")
+                    .foregroundStyle(.secondary)
+                    .padding(16)
+            } else {
+                ForEach(Array(matches.enumerated()), id: \.element.id) { index, entry in
+                    Button {
+                        open(entry)
+                    } label: {
+                        HStack(spacing: 12) {
+                            ZStack {
+                                RoundedRectangle(cornerRadius: 7, style: .continuous)
+                                    .fill(entry.category.color)
+                                    .frame(width: 28, height: 28)
+                                Image(systemName: entry.icon)
+                                    .font(.system(size: 13, weight: .medium))
+                                    .foregroundStyle(.white)
+                            }
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(entry.title)
+                                    .foregroundStyle(.primary)
+                                Text(entry.category.title)
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                            }
+                            Spacer()
+                            Image(systemName: "chevron.right")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                        .padding(.horizontal, 16)
+                        .padding(.vertical, 10)
+                        .contentShape(Rectangle())
+                    }
+                    .buttonStyle(.plain)
+                    if index < matches.count - 1 {
+                        Divider().padding(.leading, 56)
+                    }
+                }
+            }
+        }
+        .frame(maxWidth: .infinity, alignment: .leading)
+        .background(Color.appSecondaryGroupedBackground, in: RoundedRectangle(cornerRadius: 16, style: .continuous))
+        .overlay(RoundedRectangle(cornerRadius: 16, style: .continuous).strokeBorder(Color.primary.opacity(0.08)))
+    }
+
+    private func open(_ entry: SettingsSearchEntry) {
+        settingsLog.info("Settings search: opening \(entry.id, privacy: .public)")
+        switch entry.target {
+        case .destination(let destination):
+            activeDestination = destination
+        case .category(let category):
+            activeCategory = category
         }
     }
 

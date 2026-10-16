@@ -5,6 +5,21 @@
 //  Tool for finding and cleaning up duplicate recipes
 //  Created by Zahirudeen Premji on 1/19/26.
 //
+//  Rule set (revised Oct 2026 after the Shahsultan book dedupe):
+//  • A matching title alone is never a duplicate. Same-title recipes are only
+//    grouped when their ingredient lists match (by ingredient name — quantities
+//    are ignored because OCR re-extractions often misread them).
+//  • The "source URL" rule only applies to real http(s) links. Page numbers
+//    stored in the reference field ("12", "Page 9") are ignored.
+//  • Each group carries a confidence level. Only exact copies (same content
+//    fingerprint or same web link) may be bulk-merged; everything else is
+//    review-only, one copy at a time.
+//  • The suggested keeper is the most complete copy (ingredients + steps),
+//    preferring one that is already in a book, then the oldest. The user can
+//    override it with "Keep This".
+//  • Removing a copy is a merge: every book that listed it lists the kept copy
+//    instead, and its public (website) copy is taken down.
+//
 
 import SwiftUI
 import SwiftData
@@ -45,11 +60,42 @@ struct DuplicateCluster: Identifiable {
     let id = UUID()
     let recipes: [RecipeX]
     let matchReasons: Set<MatchReason>
+    /// How sure we are that every recipe in the group is the same recipe
+    var confidence: Confidence = .exactCopy
+    /// Lowest pairwise ingredient similarity inside the group (nil for exact copies)
+    var ingredientSimilarity: Double? = nil
+    /// IDs of recipes that belong to at least one book (used to pick the keeper)
+    var bookRecipeIDs: Set<UUID> = []
 
     enum MatchReason: Hashable {
         case fingerprint         // Exact content fingerprint match
-        case sameSourceURL       // Same reference URL
-        case similarTitle        // Normalized title match
+        case sameSourceURL       // Same http(s) reference link
+        case sameIngredients     // Same title + matching ingredient list
+        case similarTitle        // Same title + partially matching ingredients (review)
+    }
+
+    enum Confidence: Int, Comparable {
+        case possible = 0    // same title, ingredients only partly match — review
+        case likely = 1      // same title, ingredient lists match — review
+        case exactCopy = 2   // identical content or same web link — safe to bulk merge
+
+        static func < (a: Confidence, b: Confidence) -> Bool { a.rawValue < b.rawValue }
+
+        var label: String {
+            switch self {
+            case .exactCopy: return "Exact Copy"
+            case .likely:    return "Likely Same Recipe"
+            case .possible:  return "Possible — Review"
+            }
+        }
+
+        var color: Color {
+            switch self {
+            case .exactCopy: return .red
+            case .likely:    return .orange
+            case .possible:  return .yellow
+            }
+        }
     }
 
     var title: String {
@@ -59,14 +105,23 @@ struct DuplicateCluster: Identifiable {
     var copyCount: Int { recipes.count }
     var extraCount: Int { recipes.count - 1 }
 
-    /// The recipe to keep (oldest by dateAdded, preferring the one with more data)
+    /// Only exact copies are merged by "Merge Exact Copies" and by the launch auto-clean.
+    var isSafeToBulkDelete: Bool { confidence == .exactCopy }
+
+    /// Stable key for this group (survives re-scans), used for keeper overrides.
+    var stableKey: String {
+        recipes.compactMap { $0.id?.uuidString }.sorted().joined(separator: "|")
+    }
+
+    /// The suggested recipe to keep: most complete, then in a book, then oldest.
     var canonical: RecipeX {
         recipes.sorted { r1, r2 in
-            // Prefer recipe with more complete data
-            let score1 = dataCompletenessScore(r1)
-            let score2 = dataCompletenessScore(r2)
-            if score1 != score2 { return score1 > score2 }
-            // Then prefer oldest
+            let s1 = Self.completenessScore(r1)
+            let s2 = Self.completenessScore(r2)
+            if s1 != s2 { return s1 > s2 }
+            let b1 = r1.id.map { bookRecipeIDs.contains($0) } ?? false
+            let b2 = r2.id.map { bookRecipeIDs.contains($0) } ?? false
+            if b1 != b2 { return b1 }
             return (r1.dateAdded ?? .distantFuture) < (r2.dateAdded ?? .distantFuture)
         }.first!
     }
@@ -80,12 +135,14 @@ struct DuplicateCluster: Identifiable {
         matchReasons.sorted(by: { $0.sortOrder < $1.sortOrder }).map(\.label)
     }
 
-    private func dataCompletenessScore(_ recipe: RecipeX) -> Int {
-        var score = 0
-        if recipe.ingredientSectionsData != nil && !recipe.ingredientSections.isEmpty { score += 1 }
-        if recipe.instructionSectionsData != nil && !recipe.instructionSections.isEmpty { score += 1 }
+    /// Ingredients + instruction steps, plus a point each for image, notes and yield.
+    static func completenessScore(_ recipe: RecipeX) -> Int {
+        let ingredientCount = recipe.ingredientSections.reduce(0) { $0 + $1.ingredients.count }
+        let stepCount = recipe.instructionSections.reduce(0) { $0 + $1.steps.count }
+        var score = ingredientCount + stepCount
         if recipe.imageData != nil { score += 1 }
         if recipe.notesData != nil && !recipe.notes.isEmpty { score += 1 }
+        if let y = recipe.recipeYield, !y.isEmpty { score += 1 }
         return score
     }
 }
@@ -93,33 +150,46 @@ struct DuplicateCluster: Identifiable {
 extension DuplicateCluster.MatchReason {
     var label: String {
         switch self {
-        case .fingerprint:    return "Exact Match"
-        case .sameSourceURL:  return "Same URL"
-        case .similarTitle:   return "Similar Title"
+        case .fingerprint:     return "Exact Match"
+        case .sameSourceURL:   return "Same URL"
+        case .sameIngredients: return "Same Ingredients"
+        case .similarTitle:    return "Same Title"
         }
     }
 
     var icon: String {
         switch self {
-        case .fingerprint:    return "equal.circle.fill"
-        case .sameSourceURL:  return "link.circle.fill"
-        case .similarTitle:   return "textformat.abc"
+        case .fingerprint:     return "equal.circle.fill"
+        case .sameSourceURL:   return "link.circle.fill"
+        case .sameIngredients: return "list.bullet.circle.fill"
+        case .similarTitle:    return "textformat.abc"
         }
     }
 
     var color: Color {
         switch self {
-        case .fingerprint:    return .red
-        case .sameSourceURL:  return .orange
-        case .similarTitle:   return .yellow
+        case .fingerprint:     return .red
+        case .sameSourceURL:   return .orange
+        case .sameIngredients: return .orange
+        case .similarTitle:    return .yellow
         }
     }
 
     var sortOrder: Int {
         switch self {
-        case .fingerprint:    return 0
-        case .sameSourceURL:  return 1
-        case .similarTitle:   return 2
+        case .fingerprint:     return 0
+        case .sameSourceURL:   return 1
+        case .sameIngredients: return 2
+        case .similarTitle:    return 3
+        }
+    }
+
+    /// Strength of a single pairwise match, as a confidence level
+    var confidence: DuplicateCluster.Confidence {
+        switch self {
+        case .fingerprint, .sameSourceURL: return .exactCopy
+        case .sameIngredients:             return .likely
+        case .similarTitle:                return .possible
         }
     }
 }
@@ -140,6 +210,9 @@ struct DuplicateRecipeDetectorView: View {
     @State private var selectedRecipe: RecipeX?
     @State private var isMerging = false
     @State private var mergeMessage: String?
+    /// User-chosen keeper per group (keyed by DuplicateCluster.stableKey)
+    @State private var keeperOverrides: [String: UUID] = [:]
+    @State private var keepConfirmation: (cluster: DuplicateCluster, recipe: RecipeX)?
 
     var body: some View {
         List {
@@ -154,12 +227,28 @@ struct DuplicateRecipeDetectorView: View {
             isPresented: $showingConfirmation,
             titleVisibility: .visible
         ) {
-            Button("Merge \(exactExtraCount) Copies", role: .destructive) {
+            Button("Merge \(exactCopyCount) Copies", role: .destructive) {
                 Task { await mergeAllExactCopies() }
             }
             Button("Cancel", role: .cancel) { }
         } message: {
-            Text("Removes \(exactExtraCount) extra copies that match exactly (same content or same source link), keeping the most complete copy of each. Books that held a removed copy get the kept copy instead, and the removed copy's public (website) copy is taken down. Same-title groups are NOT touched — review those one by one.")
+            Text("Removes \(exactCopyCount) extra copies that match exactly (same content or same web link), keeping one of each. Books that held a removed copy get the kept copy instead, and the removed copy's website copy is taken down. Groups matched by title or ingredients are NOT touched — review those one at a time. This cannot be undone.")
+        }
+        .alert("Keep This Copy?", isPresented: .init(
+            get: { keepConfirmation != nil },
+            set: { if !$0 { keepConfirmation = nil } }
+        )) {
+            Button("Remove the Others", role: .destructive) {
+                if let pending = keepConfirmation {
+                    Task { await keepOnly(pending.recipe, in: pending.cluster) }
+                }
+                keepConfirmation = nil
+            }
+            Button("Cancel", role: .cancel) { keepConfirmation = nil }
+        } message: {
+            if let pending = keepConfirmation {
+                Text("Keeps '\(pending.recipe.title ?? "this recipe")' and removes the other \(pending.cluster.copyCount - 1) cop\(pending.cluster.copyCount - 1 == 1 ? "y" : "ies") in this group. Their books get this copy instead; their website copies are taken down.")
+            }
         }
         .alert("Duplicates", isPresented: Binding(
             get: { mergeMessage != nil },
@@ -185,9 +274,9 @@ struct DuplicateRecipeDetectorView: View {
             HStack {
                 statisticView(title: "Total Recipes", value: "\(allRecipes.count)", color: nil)
                 Spacer()
-                statisticView(title: "Duplicate Groups", value: "\(clusters.count)", color: clusters.isEmpty ? .green : .red)
+                statisticView(title: "Groups to Review", value: "\(clusters.count)", color: clusters.isEmpty ? .green : .orange)
                 Spacer()
-                statisticView(title: "Extra Copies", value: "\(totalDuplicateCount)", color: totalDuplicateCount == 0 ? .green : .orange)
+                statisticView(title: "Exact Copies", value: "\(exactCopyCount)", color: exactCopyCount == 0 ? .green : .red)
             }
             .padding(.vertical, 8)
         } header: {
@@ -210,16 +299,14 @@ struct DuplicateRecipeDetectorView: View {
     private var actionsSection: some View {
         Section {
             scanButton
-            if !clusters.isEmpty {
-                deleteAllButton
+            if exactCopyCount > 0 {
+                mergeAllButton
             }
         } header: {
             Text("Actions")
         } footer: {
-            if !clusters.isEmpty {
-                Text("Merging keeps the most complete copy and moves its book memberships across. Groups marked only \"Similar Title\" may be different recipes (e.g. two fudges) — open them and remove a copy only if it really is the same recipe.")
-                    .font(.caption)
-            }
+            Text("A shared title alone never counts as a duplicate. \"Likely\" and \"Possible\" groups are for review only: compare the ingredients, then remove one copy or use \"Keep This\". Removing a copy moves its book memberships to the kept copy.")
+                .font(.caption)
         }
     }
 
@@ -240,18 +327,18 @@ struct DuplicateRecipeDetectorView: View {
         .disabled(isAnalyzing)
     }
 
-    private var deleteAllButton: some View {
+    private var mergeAllButton: some View {
         Button {
             showingConfirmation = true
         } label: {
             HStack {
                 Image(systemName: "arrow.triangle.merge")
                 Text(isMerging ? "Merging…" : "Merge Exact Copies")
-                Text("(\(exactExtraCount))")
+                Text("(\(exactCopyCount))")
                     .foregroundStyle(.secondary)
             }
         }
-        .disabled(exactExtraCount == 0 || isMerging)
+        .disabled(exactCopyCount == 0 || isMerging)
         .foregroundStyle(Color.appCritical)
     }
 
@@ -285,61 +372,77 @@ struct DuplicateRecipeDetectorView: View {
         }
     }
 
+    private func keeper(for cluster: DuplicateCluster) -> RecipeX {
+        if let overrideID = keeperOverrides[cluster.stableKey],
+           let chosen = cluster.recipes.first(where: { $0.id == overrideID }) {
+            return chosen
+        }
+        return cluster.canonical
+    }
+
     private func duplicateClusterRow(_ cluster: DuplicateCluster) -> some View {
-        DisclosureGroup {
+        let keep = keeper(for: cluster)
+        return DisclosureGroup {
             ForEach(cluster.recipes.sorted(by: { r1, r2 in
                 (r1.dateAdded ?? Date.distantPast) < (r2.dateAdded ?? Date.distantPast)
             })) { recipe in
-                recipeRow(recipe, isCanonical: recipe.id == cluster.canonical.id,
-                          keep: cluster.canonical, titleOnly: cluster.matchReasons == [.similarTitle])
+                recipeRow(recipe, in: cluster, keep: keep)
             }
         } label: {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
                     Text(cluster.title)
                         .font(.headline)
-                    Text("\(cluster.copyCount) copies found")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                    // Match reason badges
                     HStack(spacing: 4) {
+                        Text("\(cluster.copyCount) copies")
+                        if let sim = cluster.ingredientSimilarity {
+                            Text("· ingredients \(Int((sim * 100).rounded()))% alike")
+                        }
+                    }
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+                    HStack(spacing: 4) {
+                        badge(cluster.confidence.label, color: cluster.confidence.color)
                         ForEach(cluster.reasonLabels, id: \.self) { label in
                             let reason = cluster.matchReasons.first(where: { $0.label == label })
-                            Text(label)
-                                .font(.system(size: 9, weight: .medium))
-                                .padding(.horizontal, 5)
-                                .padding(.vertical, 2)
-                                .background((reason?.color ?? .gray).opacity(0.2))
-                                .foregroundStyle(reason?.color ?? .gray)
-                                .clipShape(Capsule())
+                            badge(label, color: reason?.color ?? .gray)
                         }
                     }
                 }
 
                 Spacer()
 
-                Image(systemName: "exclamationmark.triangle.fill")
-                    .foregroundStyle(Color.appWarning)
+                Image(systemName: cluster.isSafeToBulkDelete ? "exclamationmark.triangle.fill" : "eye.circle.fill")
+                    .foregroundStyle(cluster.isSafeToBulkDelete ? Color.appWarning : Color.secondary)
             }
         }
+    }
+
+    private func badge(_ text: String, color: Color) -> some View {
+        Text(text)
+            .font(.system(size: 9, weight: .medium))
+            .padding(.horizontal, 5)
+            .padding(.vertical, 2)
+            .background(color.opacity(0.2))
+            .foregroundStyle(color)
+            .clipShape(Capsule())
     }
 
     // MARK: - Row Views
 
     @ViewBuilder
-    private func recipeRow(_ recipe: RecipeX, isCanonical: Bool, keep: RecipeX, titleOnly: Bool) -> some View {
-        let recipeIDPreview: String = {
-            if let id = recipe.id {
-                return String(id.uuidString.prefix(8))
-            } else {
-                return "unknown"
-            }
-        }()
+    private func recipeRow(_ recipe: RecipeX, in cluster: DuplicateCluster, keep: RecipeX) -> some View {
+        let isKeeper = recipe.id == keep.id
+        let reviewOnly = !cluster.isSafeToBulkDelete
+        let recipeIDPreview: String = recipe.id.map { String($0.uuidString.prefix(8)) } ?? "unknown"
+        let ingredientNames = recipe.ingredientSections.flatMap { $0.ingredients }.map(\.name)
+        let stepCount = recipe.instructionSections.reduce(0) { $0 + $1.steps.count }
+        let inBook = recipe.id.map { cluster.bookRecipeIDs.contains($0) } ?? false
 
         HStack(alignment: .top, spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
-                    if isCanonical {
+                    if isKeeper {
                         Image(systemName: "checkmark.circle.fill")
                             .foregroundStyle(Color.appSuccess)
                         Text("KEEP")
@@ -347,12 +450,12 @@ struct DuplicateRecipeDetectorView: View {
                             .fontWeight(.bold)
                             .foregroundStyle(Color.appSuccess)
                     } else {
-                        Image(systemName: titleOnly ? "questionmark.circle.fill" : "trash.circle.fill")
-                            .foregroundStyle(titleOnly ? Color.appWarning : Color.appCritical)
-                        Text(titleOnly ? "SAME TITLE — CHECK" : "EXTRA COPY")
+                        Image(systemName: reviewOnly ? "questionmark.circle.fill" : "trash.circle.fill")
+                            .foregroundStyle(reviewOnly ? Color.appWarning : Color.appCritical)
+                        Text(reviewOnly ? "CHECK — SAME RECIPE?" : "EXTRA COPY")
                             .font(.caption2)
                             .fontWeight(.bold)
-                            .foregroundStyle(titleOnly ? Color.appWarning : Color.appCritical)
+                            .foregroundStyle(reviewOnly ? Color.appWarning : Color.appCritical)
                     }
                 }
 
@@ -360,6 +463,17 @@ struct DuplicateRecipeDetectorView: View {
                     .font(.caption)
                     .foregroundStyle(.primary)
                     .lineLimit(1)
+
+                Text("\(ingredientNames.count) ingredients · \(stepCount) steps\(inBook ? " · in a book" : "")")
+                    .font(.caption2)
+                    .foregroundStyle(.secondary)
+
+                if !ingredientNames.isEmpty {
+                    Text(ingredientNames.prefix(4).joined(separator: ", ") + (ingredientNames.count > 4 ? "…" : ""))
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
+                        .lineLimit(2)
+                }
 
                 Text("ID: \(recipeIDPreview)...")
                     .font(.system(.caption2, design: .monospaced))
@@ -387,18 +501,31 @@ struct DuplicateRecipeDetectorView: View {
 
             Spacer()
 
-            if !isCanonical {
-                Button {
-                    selectedRecipe = recipe
-                } label: {
-                    Image(systemName: "trash")
-                        .foregroundStyle(Color.appCritical)
+            if !isKeeper {
+                VStack(spacing: 8) {
+                    Button {
+                        if let rid = recipe.id {
+                            keeperOverrides[cluster.stableKey] = rid
+                        }
+                        keepConfirmation = (cluster, recipe)
+                    } label: {
+                        Text("Keep This")
+                            .font(.caption)
+                    }
+                    .buttonStyle(.bordered)
+
+                    Button {
+                        selectedRecipe = recipe
+                    } label: {
+                        Image(systemName: "trash")
+                            .foregroundStyle(Color.appCritical)
+                    }
+                    .buttonStyle(.borderless)
                 }
-                .buttonStyle(.borderless)
             }
         }
         .padding(.vertical, 4)
-        .alert("Delete This Recipe?", isPresented: .init(
+        .alert("Remove This Copy?", isPresented: .init(
             get: { selectedRecipe == recipe },
             set: { if !$0 { selectedRecipe = nil } }
         )) {
@@ -415,8 +542,13 @@ struct DuplicateRecipeDetectorView: View {
 
     // MARK: - Computed Properties
 
-    private var totalDuplicateCount: Int {
-        clusters.reduce(0) { $0 + $1.extraCount }
+    /// Extra copies that "Merge Exact Copies" would remove
+    private var exactCopyCount: Int {
+        clusters.filter(\.isSafeToBulkDelete).reduce(0) { $0 + $1.extraCount }
+    }
+
+    private var bookRecipeIDs: Set<UUID> {
+        Set(allBooks.flatMap { $0.recipeIDs ?? [] })
     }
 
     // MARK: - Multi-Strategy Duplicate Detection
@@ -425,7 +557,7 @@ struct DuplicateRecipeDetectorView: View {
         isAnalyzing = true
 
         let recipes = allRecipes
-        let resultClusters = Self.buildDuplicateClusters(from: recipes)
+        let resultClusters = Self.buildDuplicateClusters(from: recipes, bookRecipeIDs: bookRecipeIDs)
 
         clusters = resultClusters
         isAnalyzing = false
@@ -439,10 +571,9 @@ struct DuplicateRecipeDetectorView: View {
 
         print("📊 Duplicate scan complete:")
         print("   Total recipes: \(recipes.count)")
-        print("   Duplicate groups: \(resultClusters.count)")
-        print("   Extra copies: \(totalDuplicateCount)")
+        print("   Groups: \(resultClusters.count) (exact-copy extras: \(exactCopyCount))")
         for cluster in resultClusters {
-            print("   → \(cluster.title): \(cluster.copyCount) copies [\(cluster.reasonLabels.joined(separator: ", "))]")
+            print("   → \(cluster.title): \(cluster.copyCount) copies [\(cluster.confidence.label); \(cluster.reasonLabels.joined(separator: ", "))]")
         }
     }
 
@@ -452,14 +583,32 @@ struct DuplicateRecipeDetectorView: View {
         return sa < sb ? "\(sa)|\(sb)" : "\(sb)|\(sa)"
     }
 
-    /// - Parameter includeTitleMatches: when false, only exact copies (same content
-    ///   fingerprint or same source URL) are clustered. Automatic, unattended cleanup
-    ///   must pass false: different recipes often share a title ("Scones", "Fudge"),
-    ///   and re-extractions of the same page can differ in content, so title matches
-    ///   need a human to decide which copy to keep.
-    static func buildDuplicateClusters(from allRecipes: [RecipeX], includeTitleMatches: Bool = true) -> [DuplicateCluster] {
+    // MARK: Thresholds (calibrated on the Oct 2026 Shahsultan book dedupe:
+    // all 12 true duplicate pairs scored ≥ 0.60; same-name different recipes
+    // scored ≤ 0.67, and ≥ 0.75 only for a genuine re-extraction)
+
+    /// Same title + at least this ingredient match → "Likely Same Recipe"
+    static let likelyIngredientMatch = 0.75
+    /// Same title + at least this ingredient match → "Possible — Review"
+    static let possibleIngredientMatch = 0.60
+    /// Fewer ingredients than this can't be compared meaningfully (e.g. "1 lb butter")
+    static let minimumIngredientsToCompare = 3
+
+    /// Builds duplicate clusters from multiple strategies (fingerprint, URL, ingredient-checked title).
+    /// - Parameters:
+    ///   - includeTitleMatches: when false, only exact copies (same content
+    ///     fingerprint or same http(s) link) are clustered. Automatic, unattended cleanup
+    ///     must pass false: different recipes often share a title ("Dhokra", "Nan"),
+    ///     so title-based groups need a human to decide.
+    ///   - bookRecipeIDs: recipes that are in a book, preferred as the keeper.
+    static func buildDuplicateClusters(
+        from allRecipes: [RecipeX],
+        includeTitleMatches: Bool = true,
+        bookRecipeIDs: Set<UUID> = []
+    ) -> [DuplicateCluster] {
         var uf = RecipeUnionFind()
         var reasons: [String: Set<DuplicateCluster.MatchReason>] = [:]
+        var pairSimilarity: [String: Double] = [:]
 
         let recipeMap: [UUID: RecipeX] = Dictionary(
             allRecipes.compactMap { r in r.id.map { ($0, r) } },
@@ -482,21 +631,21 @@ struct DuplicateRecipeDetectorView: View {
         for (_, ids) in byFingerprint where ids.count > 1 {
             for i in 1..<ids.count {
                 uf.union(ids[0], ids[i])
-                let key = pairKey(ids[0], ids[i])
-                reasons[key, default: []].insert(.fingerprint)
+                reasons[pairKey(ids[0], ids[i]), default: []].insert(.fingerprint)
             }
         }
 
-        // --- Strategy 2: Same source URL ---
+        // --- Strategy 2: Same source URL (real http/https links only) ---
+        // Extracted book pages store page numbers ("12", "Page 9") in `reference`;
+        // URL(string: "12") is non-nil, so a scheme check is required.
         var byURL: [String: [UUID]] = [:]
         for recipe in allRecipes {
             guard let rid = recipe.id,
-                  let ref = recipe.reference,
+                  let ref = recipe.reference?.trimmingCharacters(in: .whitespacesAndNewlines),
                   !ref.isEmpty,
-                  // Only real web links: URL(string:) also accepts "75" or "Page 26", which
-                  // made recipes on the same book page "exact copies" for the launch auto-clean.
-                  let url = URL(string: ref.trimmingCharacters(in: .whitespacesAndNewlines)),
-                  let scheme = url.scheme?.lowercased(), scheme == "http" || scheme == "https",
+                  let url = URL(string: ref),
+                  let scheme = url.scheme?.lowercased(),
+                  scheme == "http" || scheme == "https",
                   url.host != nil else { continue }
             let normalizedURL = ref.lowercased()
                 .replacingOccurrences(of: "http://", with: "https://")
@@ -506,29 +655,45 @@ struct DuplicateRecipeDetectorView: View {
         for (_, ids) in byURL where ids.count > 1 {
             for i in 1..<ids.count {
                 uf.union(ids[0], ids[i])
-                let key = pairKey(ids[0], ids[i])
-                reasons[key, default: []].insert(.sameSourceURL)
+                reasons[pairKey(ids[0], ids[i]), default: []].insert(.sameSourceURL)
             }
         }
 
-        // --- Strategy 3: Fuzzy title match (manual review only) ---
-        var byNormalizedTitle: [String: [UUID]] = [:]
-        for recipe in allRecipes where includeTitleMatches {
-            guard let rid = recipe.id else { continue }
-            let normalized = normalizeTitle(recipe.title ?? "")
-            guard !normalized.isEmpty else { continue }
-            byNormalizedTitle[normalized, default: []].append(rid)
-        }
-        for (_, ids) in byNormalizedTitle where ids.count > 1 {
-            for i in 1..<ids.count {
-                uf.union(ids[0], ids[i])
-                let key = pairKey(ids[0], ids[i])
-                reasons[key, default: []].insert(.similarTitle)
+        // --- Strategy 3: Same title AND matching ingredients (manual review only) ---
+        if includeTitleMatches {
+            var byNormalizedTitle: [String: [RecipeX]] = [:]
+            for recipe in allRecipes where recipe.id != nil {
+                let normalized = normalizeTitle(recipe.title ?? "")
+                guard !normalized.isEmpty else { continue }
+                byNormalizedTitle[normalized, default: []].append(recipe)
+            }
+            for (_, group) in byNormalizedTitle where group.count > 1 {
+                let lines = group.map { ingredientLines($0) }
+                for i in 0..<group.count {
+                    for j in (i + 1)..<group.count {
+                        guard let a = group[i].id, let b = group[j].id else { continue }
+                        let key = pairKey(a, b)
+                        if reasons[key]?.isEmpty == false { continue } // already an exact copy
+                        guard lines[i].count >= minimumIngredientsToCompare,
+                              lines[j].count >= minimumIngredientsToCompare else { continue }
+                        let sim = ingredientSimilarity(lines[i], lines[j])
+                        let countGap = abs(lines[i].count - lines[j].count)
+                        if sim >= likelyIngredientMatch && countGap <= 1 {
+                            uf.union(a, b)
+                            reasons[key, default: []].insert(.sameIngredients)
+                            pairSimilarity[key] = sim
+                        } else if sim >= possibleIngredientMatch {
+                            uf.union(a, b)
+                            reasons[key, default: []].insert(.similarTitle)
+                            pairSimilarity[key] = sim
+                        }
+                        // Below the threshold: same name, different recipe — not a duplicate.
+                    }
+                }
             }
         }
 
         // --- Build clusters from Union-Find ---
-        // find() is mutating (path compression), so we work with the mutable uf
         var groupsByRoot: [UUID: [UUID]] = [:]
         for rid in uf.allIDs {
             let root = uf.find(rid)
@@ -540,25 +705,80 @@ struct DuplicateRecipeDetectorView: View {
             let recipes = memberIDs.compactMap { recipeMap[$0] }
             guard recipes.count > 1 else { continue }
 
-            // Collect all match reasons for this cluster
             var clusterReasons: Set<DuplicateCluster.MatchReason> = []
+            var weakest: DuplicateCluster.Confidence = .exactCopy
+            var lowestSimilarity: Double?
             for i in 0..<memberIDs.count {
-                for j in (i+1)..<memberIDs.count {
+                for j in (i + 1)..<memberIDs.count {
                     let key = pairKey(memberIDs[i], memberIDs[j])
-                    if let pairReasons = reasons[key] {
-                        clusterReasons.formUnion(pairReasons)
+                    guard let pairReasons = reasons[key], !pairReasons.isEmpty else { continue }
+                    clusterReasons.formUnion(pairReasons)
+                    let strongest = pairReasons.map(\.confidence).max() ?? .possible
+                    weakest = min(weakest, strongest)
+                    if let s = pairSimilarity[key] {
+                        lowestSimilarity = min(lowestSimilarity ?? s, s)
                     }
                 }
             }
 
             resultClusters.append(DuplicateCluster(
                 recipes: recipes,
-                matchReasons: clusterReasons
+                matchReasons: clusterReasons,
+                confidence: weakest,
+                ingredientSimilarity: weakest == .exactCopy ? nil : lowestSimilarity,
+                bookRecipeIDs: bookRecipeIDs
             ))
         }
 
-        resultClusters.sort { $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending }
+        // Exact copies first, then likely, then possible; alphabetical within each
+        resultClusters.sort {
+            if $0.confidence != $1.confidence { return $0.confidence > $1.confidence }
+            return $0.title.localizedCaseInsensitiveCompare($1.title) == .orderedAscending
+        }
         return resultClusters
+    }
+
+    // MARK: Ingredient comparison
+
+    private static let ingredientStopWords: Set<String> = [
+        "cup", "cups", "tsp", "tbsp", "tablespoon", "tablespoons", "teaspoon", "teaspoons",
+        "lb", "lbs", "oz", "ozs", "grams", "gram", "kg", "ml", "large", "small", "medium",
+        "chopped", "ground", "fresh", "crushed", "pkt", "can", "little", "and", "the", "for",
+        "mug", "mugs", "pinch", "dash", "level", "heaped"
+    ]
+
+    /// Each ingredient reduced to a set of name words (quantities ignored — OCR misreads them).
+    static func ingredientLines(_ recipe: RecipeX) -> [Set<String>] {
+        recipe.ingredientSections.flatMap { $0.ingredients }.map { ingredient in
+            let letters = ingredient.name.lowercased().unicodeScalars.map {
+                CharacterSet.letters.contains($0) ? Character($0) : " "
+            }
+            let words = String(letters).split(separator: " ").map(String.init)
+            return Set(words.compactMap { word -> String? in
+                guard word.count > 2, !ingredientStopWords.contains(word) else { return nil }
+                return word.hasSuffix("s") ? String(word.dropLast()) : word
+            })
+        }.filter { !$0.isEmpty }
+    }
+
+    /// Fraction of ingredient lines that have a counterpart in the other recipe
+    /// (name words at least half shared), relative to the longer list.
+    static func ingredientSimilarity(_ a: [Set<String>], _ b: [Set<String>]) -> Double {
+        guard !a.isEmpty, !b.isEmpty else { return 0 }
+        var used = Set<Int>()
+        var matched = 0
+        for lineA in a {
+            for (j, lineB) in b.enumerated() where !used.contains(j) {
+                let union = lineA.union(lineB).count
+                guard union > 0 else { continue }
+                if Double(lineA.intersection(lineB).count) / Double(union) >= 0.5 {
+                    used.insert(j)
+                    matched += 1
+                    break
+                }
+            }
+        }
+        return Double(matched) / Double(max(a.count, b.count))
     }
 
     /// Normalize a recipe title for fuzzy comparison:
@@ -598,15 +818,6 @@ struct DuplicateRecipeDetectorView: View {
         }
     }
 
-    /// Clusters joined by exact content or same source URL only (never by title alone).
-    private var exactClusters: [DuplicateCluster] {
-        Self.buildDuplicateClusters(from: allRecipes, includeTitleMatches: false)
-    }
-
-    private var exactExtraCount: Int {
-        exactClusters.reduce(0) { $0 + $1.extraCount }
-    }
-
     /// Removes `duplicate` after moving its book memberships to `keep` and taking down its
     /// public copy. Nothing in a book is lost: each book that listed the duplicate lists the
     /// kept copy instead (once).
@@ -633,21 +844,30 @@ struct DuplicateRecipeDetectorView: View {
         }
     }
 
-    /// Merges every exact-copy group (content fingerprint or same source URL). Same-title-only
-    /// groups are left for manual review.
+    /// Keeps the chosen copy and merges every other copy in its group into it
+    private func keepOnly(_ keep: RecipeX, in cluster: DuplicateCluster) async {
+        for other in cluster.recipes where other.id != keep.id {
+            await mergeCopy(other, into: keep)
+        }
+        keeperOverrides[cluster.stableKey] = nil
+        findDuplicates()
+    }
+
+    /// Merges every exact-copy group (content fingerprint or same http(s) link).
+    /// Title- and ingredient-matched groups are left for manual review.
     private func mergeAllExactCopies() async {
         isMerging = true
         defer { isMerging = false }
         var merged = 0
-        for cluster in exactClusters {
-            let keep = cluster.canonical
-            for duplicate in cluster.duplicatesToDelete {
+        for cluster in clusters where cluster.isSafeToBulkDelete {
+            let keep = keeper(for: cluster)
+            for duplicate in cluster.recipes where duplicate.id != keep.id {
                 await mergeCopy(duplicate, into: keep)
                 merged += 1
             }
         }
+        monitor.duplicatesDetected = 0
         findDuplicates()
-        DuplicateScanTracker.recordCleanScan(recipeCount: allRecipes.count)
         mergeMessage = "Merged \(merged) extra copies. Books now point at the kept copies. Use Update Public Copy on any book you want refreshed on the website."
     }
 }
