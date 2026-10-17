@@ -58,7 +58,7 @@ function setTab(name) {
 }
 
 function render(...nodes) {
-  main.replaceChildren(...nodes);
+  main.replaceChildren(...nodes.flat(Infinity).filter((n) => n != null && n !== false));
 }
 
 function errorView(err) {
