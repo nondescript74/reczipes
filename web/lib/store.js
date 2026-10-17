@@ -124,8 +124,13 @@ export function createStore({ cloudkit, fixturesPath, ttlMs = 5 * 60 * 1000, now
     async listBooks() {
       await ensure();
       return state.books.map((b) => {
-        const { entries, ...rest } = bookWithEntries(b);
-        return { ...rest, webCount: entries.filter((e) => e.available).length };
+        const { entries, sections, images, glossary, ...rest } = bookWithEntries(b);
+        return {
+          ...rest,
+          webCount: entries.filter((e) => e.available).length,
+          pictureCount: images.length,
+          glossaryCount: glossary.length,
+        };
       });
     },
     async getBook(id) {
@@ -133,7 +138,13 @@ export function createStore({ cloudkit, fixturesPath, ttlMs = 5 * 60 * 1000, now
       const b = state.books.find((x) => x.id.toUpperCase() === String(id).toUpperCase());
       if (!b) return null;
       const full = bookWithEntries(b);
-      return { ...full, webCount: full.entries.filter((e) => e.available).length };
+      // Contents rows that name a recipe resolve like entries do (folded copies -> kept recipe).
+      const sections = full.sections.map((s) => {
+        if (s.itemType !== 'recipe') return s;
+        const target = s.itemID ? state.byId.get(s.itemID) : null;
+        return { ...s, itemID: target ? target.id : s.itemID, available: Boolean(target) };
+      });
+      return { ...full, sections, webCount: full.entries.filter((e) => e.available).length };
     },
   };
 }

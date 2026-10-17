@@ -145,7 +145,61 @@ export function decodeSharedBook(record) {
     sharedDate:
       typeof sharedDateField === 'number' ? new Date(sharedDateField).toISOString() : swiftDateToISO(data.sharedDate),
     coverURL: assetURL(record, 'coverImage'),
+    ...decodeBookContent(record, data),
   };
+}
+
+// Optional book content (contract in web/README.md, "Book content"). Every field is
+// optional: books shared by older app builds simply have none of it.
+//   bookData.tableOfContents  [{ id, title, order, itemType, itemID }]  itemType: heading | recipe | image | glossary | …
+//   bookData.images           [{ id, title, caption, kind, order }]      kind: cover | interior (default interior)
+//   bookData.glossary         [{ id, term, localName, definition, relatedTerms, order }]
+//   record.bookImages         CKAsset list, same order as bookData.images
+export function assetListURLs(record, name) {
+  const list = fieldValue(record, name);
+  if (!Array.isArray(list)) return [];
+  return list.map((a, i) =>
+    typeof a?.downloadURL === 'string' ? a.downloadURL.replace('${f}', encodeURIComponent(`${name}-${i}.jpg`)) : null,
+  );
+}
+
+const byOrder = (a, b) => (a.order ?? 0) - (b.order ?? 0);
+const upperId = (v) => (str(v) ? v.trim().toUpperCase() : null);
+
+function decodeBookContent(record, data) {
+  const urls = assetListURLs(record, 'bookImages');
+  const images = (Array.isArray(data.images) ? data.images : [])
+    .map((m, i) => (m && typeof m === 'object' ? { m, url: urls[i] ?? null } : null))
+    .filter((x) => x && x.url)
+    .map(({ m, url }) => ({
+      id: upperId(m.id),
+      title: str(m.title),
+      caption: str(m.caption),
+      kind: m.kind === 'cover' ? 'cover' : 'interior',
+      order: Number.isFinite(m.order) ? m.order : 0,
+      url,
+    }))
+    .sort(byOrder);
+  const sections = (Array.isArray(data.tableOfContents) ? data.tableOfContents : [])
+    .filter((s) => s && str(s.title) && str(s.itemType))
+    .map((s) => ({
+      title: s.title.trim(),
+      itemType: s.itemType.trim().toLowerCase(),
+      itemID: upperId(s.itemID),
+      order: Number.isFinite(s.order) ? s.order : 0,
+    }))
+    .sort(byOrder);
+  const glossary = (Array.isArray(data.glossary) ? data.glossary : [])
+    .filter((g) => g && str(g.term) && str(g.definition))
+    .map((g) => ({
+      term: g.term.trim(),
+      localName: str(g.localName),
+      definition: g.definition.trim(),
+      relatedTerms: (Array.isArray(g.relatedTerms) ? g.relatedTerms : []).filter((t) => str(t)),
+      order: Number.isFinite(g.order) ? g.order : 0,
+    }))
+    .sort(byOrder);
+  return { sections, images, glossary };
 }
 
 // The list view needs a light summary, not the whole recipe.

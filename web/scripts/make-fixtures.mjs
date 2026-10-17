@@ -49,7 +49,23 @@ const out = {
   SharedRecipeBook: [{
     recordName: 'sample-book-1', recordType: 'SharedRecipeBook',
     fields: {
-      bookData: { type: 'STRING', value: JSON.stringify({ id: 'B0000000-0000-4000-8000-000000000001', name: 'Sample: Weeknight Basics', bookDescription: 'A sample book.', coverImageName: null, recipeIDs: recipes.map((r) => r.id), color: '#B5562B', sharedByUserID: '_sample', sharedByUserName: 'Reczipes sample', sharedDate: swiftNow('2026-10-14T18:00:00Z') }) },
+      bookData: { type: 'STRING', value: JSON.stringify({ id: 'B0000000-0000-4000-8000-000000000001', name: 'Sample: Weeknight Basics', bookDescription: 'A sample book.', coverImageName: null, recipeIDs: recipes.map((r) => r.id), color: '#B5562B', sharedByUserID: '_sample', sharedByUserName: 'Reczipes sample', sharedDate: swiftNow('2026-10-14T18:00:00Z'),
+        // Optional book content (README "Book content")
+        tableOfContents: [
+          { id: 'D0000000-0000-4000-8000-000000000001', title: 'Chapter 1 — Everyday', order: 0, itemType: 'heading', itemID: 'D0000000-0000-4000-8000-000000000001' },
+          ...recipes.map((r, i) => ({ id: `D0000000-0000-4000-8000-00000000001${i}`, title: r.title, order: i + 1, itemType: 'recipe', itemID: r.id })),
+          { id: 'D0000000-0000-4000-8000-000000000009', title: 'The spice tin', order: 9, itemType: 'image', itemID: 'E0000000-0000-4000-8000-000000000002' },
+        ],
+        images: [
+          { id: 'E0000000-0000-4000-8000-000000000001', title: 'Front cover', caption: null, kind: 'cover', order: 0 },
+          { id: 'E0000000-0000-4000-8000-000000000002', title: 'The spice tin', caption: 'Cardamom, cumin and cloves.', kind: 'interior', order: 1 },
+        ],
+        glossary: [
+          { id: 'F0000000-0000-4000-8000-000000000001', term: 'Cardamom', localName: 'Elchi', definition: 'Green pods of a ginger-family plant; crush lightly before use.', relatedTerms: ['Garam masala'], order: 0 },
+          { id: 'F0000000-0000-4000-8000-000000000002', term: 'Ghee', localName: null, definition: 'Butter simmered until the milk solids brown, then strained.', relatedTerms: [], order: 1 },
+        ],
+      }) },
+      bookImages: { type: 'ASSETID_LIST', value: [{ downloadURL: '/icon.svg?${f}' }, { downloadURL: '/icon.svg?${f}' }] },
       name: { type: 'STRING', value: 'Sample: Weeknight Basics' },
       sharedByName: { type: 'STRING', value: 'Reczipes sample' },
       sharedDate: { type: 'TIMESTAMP', value: Date.parse('2026-10-14T18:00:00Z') },

@@ -165,3 +165,28 @@ test('store resolves a collapsed copy id to the kept recipe', async () => {
   assert.equal((await store.getRecipe('old')).id, 'NEW');
   assert.equal((await store.status()).collapsedCopies, 1);
 });
+
+test('book content: contents, pictures and glossary decode; missing fields are empty', async () => {
+  const b = decodeSharedBook(fixtures.SharedRecipeBook[0]);
+  assert.deepEqual(b.sections.map((s) => s.itemType), ['heading', 'recipe', 'recipe', 'image']);
+  assert.deepEqual(b.images.map((i) => i.kind), ['cover', 'interior']);
+  assert.match(b.images[0].url, /bookImages-0\.jpg/);
+  assert.equal(b.glossary[0].localName, 'Elchi');
+  const bare = decodeSharedBook({ recordName: 'x', fields: { bookData: { value: JSON.stringify({ id: 'X', name: 'Old book', recipeIDs: [] }) } } });
+  assert.deepEqual([bare.sections, bare.images, bare.glossary], [[], [], []]);
+});
+
+test('pictures without an uploaded asset are dropped; list stays light', async () => {
+  const rec = { recordName: 'y', fields: {
+    bookData: { value: JSON.stringify({ id: 'Y', name: 'B', recipeIDs: [], images: [{ id: 'I1', title: 'a', order: 0 }, { id: 'I2', title: 'b', order: 1 }] }) },
+    bookImages: { value: [{ downloadURL: 'https://cvws.icloud-content.com/1/${f}' }] },
+  } };
+  assert.equal(decodeSharedBook(rec).images.length, 1);
+  const store = createStore({ cloudkit: null, fixturesPath });
+  const [summary] = await store.listBooks();
+  assert.equal(summary.sections, undefined);
+  assert.equal(summary.pictureCount, 2);
+  assert.equal(summary.glossaryCount, 2);
+  const full = await store.getBook(summary.id);
+  assert.deepEqual(full.sections.filter((s) => s.itemType === 'recipe').map((s) => s.available), [true, true]);
+});

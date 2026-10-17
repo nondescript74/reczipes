@@ -2,16 +2,19 @@
 
 Reczipes in any browser — Safari, Chrome, Brave, Firefox, on any computer or phone, no Apple device needed.
 Lane 37 (Reczipes2), **Web workstream**. Status: **Phase 0 LIVE** at https://reczipes-production.up.railway.app (Railway project `reczipes-web`), reading the
-CloudKit **Production** public database. As of 2026-10-15 14:20 MT: 747 `SharedRecipe` records → 742 recipe ids → **588
-recipes shown** (154 merged-library copies folded), **19 books** (21:20Z). Live state: `GET /api/status`.
+CloudKit **Production** public database. As of 2026-10-17 12:15 MT: 888 `SharedRecipe` records → **729 recipes shown**
+(155 merged-library copies folded), **19 books**; *A Spicy Touch* shows 118 recipes. Live state: `GET /api/status`.
 
 ## What it does today
 
 - **Recipes:** every recipe shared to the public catalogue from the iOS/macOS app, searchable by title or ingredient.
 - **Recipe page:** ingredients (with metric toggle where the app stored metric), method, tips/substitutions/warnings,
   tap-to-tick ingredients and steps, *Keep screen on* while cooking (where the browser supports it), print layout.
-- **Books:** compact cards (count = recipes actually on the web); each book opens its own page with the first 10 recipes,
-  "Show all N", and search across the whole book. The recipe page's back link returns to the book it came from.
+- **Books:** compact cards (count = recipes actually on the web); each book opens its own page with views:
+  - **Recipes** — the first 10 recipes, "Show all N", and search across the whole book.
+  - **Index** — A–Z of the book's *current* recipes with letter jumps, generated on every load (never stored page numbers).
+  - **Contents**, **Pictures**, **Glossary** — shown only when the app published them with the book (see *Book content*).
+  The recipe page's back link returns to the book view it came from.
 - Light and dark mode, phone to desktop, keyboard accessible. No account, no sign-in, read-only.
 
 ## How it gets recipes
@@ -27,6 +30,20 @@ The app already publishes shared recipes to the CloudKit **public** database of 
 The server reads those over CloudKit Web Services with an **API token** (public-database reads need no user sign-in),
 decodes them (`lib/decode.js` mirrors `SharedContentModels.swift` and `RecipeDisplayItem.swift`), caches for 5 minutes,
 and serves a small JSON API to the page. The token never reaches the browser.
+
+### Book content (optional fields; contract for the app)
+
+Older app builds publish none of these and their books still work. When present, the site reads:
+
+| where | field | shape |
+|---|---|---|
+| `bookData` JSON | `tableOfContents` | `[{ id, title, order, itemType, itemID }]` — `itemType` `heading` (a chapter/sub-heading row), `recipe` (itemID = recipe id), `image` (itemID = an `images[].id`); other types are listed as plain text |
+| `bookData` JSON | `images` | `[{ id, title, caption, kind, order }]` — `kind` `cover` or `interior` (default); **no image bytes** |
+| `bookData` JSON | `glossary` | `[{ id, term, localName, definition, relatedTerms, order }]` — **no image bytes** |
+| record field | `bookImages` | CKAsset **list**, one asset per `images[]` entry, same order (pictures without an asset are skipped) |
+
+`bookImages` is a new field on `SharedRecipeBook`: it has to exist in the Production schema (add in Development, deploy to
+Production) before the app can write it. Keep image bytes out of `bookData` — the whole record is capped at ~1 MB.
 
 **Consequence:** the web shows exactly what has been shared from the app — nothing private. To put a recipe on the web,
 share it from the app. A private-library view would need iCloud sign-in in the browser (a later phase; see `MVP.md`).
@@ -53,7 +70,7 @@ ever deleted.
 ```bash
 cd web
 npm start            # http://localhost:8080 — sample data unless CLOUDKIT_API_TOKEN is set
-npm test             # 13 tests: decoding, pagination, error handling, store behaviour
+npm test             # 17 tests: decoding, pagination, error handling, store behaviour
 ```
 
 No dependencies (Node ≥ 20). No build step.

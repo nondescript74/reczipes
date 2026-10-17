@@ -297,7 +297,95 @@ async function showBooks() {
   );
 }
 
-async function showBook(id) {
+// A book page has views: Recipes (cards, first 10), Index (A–Z, generated from the
+// book's current recipes — never stored page numbers), and, when the app published
+// them, Contents (the book's sections in order), Pictures and Glossary.
+const BOOK_VIEWS = [
+  ['recipes', 'Recipes'],
+  ['index', 'Index'],
+  ['contents', 'Contents'],
+  ['pictures', 'Pictures'],
+  ['glossary', 'Glossary'],
+];
+
+const letterOf = (title) => {
+  const c = title.normalize('NFD').replace(/[̀-ͯ]/g, '').trim().charAt(0).toUpperCase();
+  return /[A-Z]/.test(c) ? c : '#';
+};
+
+function bookIndexView(inBook) {
+  if (!inBook.length) return h('p', { class: 'empty' }, 'This book has no recipes on the web yet.');
+  const groups = new Map();
+  for (const r of inBook) {
+    const k = letterOf(r.title);
+    if (!groups.has(k)) groups.set(k, []);
+    groups.get(k).push(r);
+  }
+  const letters = [...groups.keys()].sort((a, b) => (a === '#') - (b === '#') || a.localeCompare(b));
+  return h('div', { class: 'book-index' },
+    h('nav', { class: 'az', 'aria-label': 'Jump to letter' },
+      letters.map((k) => h('a', { href: '#', onclick: (ev) => { ev.preventDefault(); document.getElementById(`idx-${k}`)?.scrollIntoView({ behavior: 'smooth' }); } }, k))),
+    letters.map((k) => h('section', { class: 'idx-group', id: `idx-${k}` },
+      h('h2', {}, k),
+      h('ul', { class: 'idx-list' }, groups.get(k).map((r) =>
+        h('li', {}, h('a', { href: `#/recipe/${encodeURIComponent(r.id)}` }, r.title)))))));
+}
+
+function bookContentsView(book, byId) {
+  const pics = new Map(book.images.filter((i) => i.id).map((i) => [i.id, i]));
+  const rows = [];
+  for (const s of book.sections) {
+    if (s.itemType === 'heading') {
+      rows.push(h('li', { class: 'toc-heading' }, h('h2', {}, s.title)));
+    } else if (s.itemType === 'recipe') {
+      const r = s.available && s.itemID ? byId.get(s.itemID) : null;
+      rows.push(h('li', { class: 'toc-recipe' }, r ? h('a', { href: `#/recipe/${encodeURIComponent(r.id)}` }, r.title) : h('span', { class: 'na' }, s.title)));
+    } else if (s.itemType === 'image') {
+      const pic = s.itemID ? pics.get(s.itemID) : null;
+      rows.push(h('li', { class: 'toc-image' },
+        pic ? h('figure', {}, h('img', { src: pic.url, alt: pic.title ?? s.title, loading: 'lazy' }), h('figcaption', {}, pic.caption ?? pic.title ?? s.title)) : h('span', { class: 'na' }, s.title)));
+    } else {
+      rows.push(h('li', { class: 'toc-other' }, s.title));
+    }
+  }
+  return h('ol', { class: 'toc' }, rows);
+}
+
+function bookPicturesView(book) {
+  const covers = book.images.filter((i) => i.kind === 'cover');
+  const inside = book.images.filter((i) => i.kind !== 'cover');
+  const fig = (i) => h('li', {},
+    h('a', { href: i.url, target: '_blank', rel: 'noopener noreferrer' },
+      h('figure', { class: 'pic' },
+        h('img', { src: i.url, alt: i.title ?? '', loading: 'lazy' }),
+        i.title || i.caption ? h('figcaption', {}, i.title ? h('b', {}, i.title) : null, i.caption && i.caption !== i.title ? ` ${i.caption}` : null) : null)));
+  return h('div', {},
+    covers.length ? [h('h2', { class: 'pics-head' }, 'Covers'), h('ul', { class: 'pics' }, covers.map(fig))] : null,
+    inside.length ? [h('h2', { class: 'pics-head' }, 'Inside the book'), h('ul', { class: 'pics' }, inside.map(fig))] : null);
+}
+
+function bookGlossaryView(book) {
+  const input = h('input', { type: 'search', placeholder: 'Search the glossary', 'aria-label': 'Search the glossary', autocomplete: 'off' });
+  const list = h('dl', { class: 'glossary' });
+  const apply = () => {
+    const terms = input.value.toLowerCase().split(/\s+/).filter(Boolean);
+    const hits = book.glossary.filter((g) => {
+      const hay = [g.term, g.localName, g.definition, ...g.relatedTerms].filter(Boolean).join(' ').toLowerCase();
+      return terms.every((t) => hay.includes(t));
+    });
+    list.replaceChildren(...(hits.length
+      ? hits.flatMap((g) => [
+          h('dt', {}, g.term, g.localName ? h('span', { class: 'muted' }, ` — ${g.localName}`) : null),
+          h('dd', {}, g.definition, g.relatedTerms.length ? h('span', { class: 'muted' }, ` See also: ${g.relatedTerms.join(', ')}.`) : null),
+        ])
+      : [h('p', { class: 'empty' }, 'No glossary entries match that search.')]));
+  };
+  input.addEventListener('input', apply);
+  apply();
+  return h('div', {}, book.glossary.length > 8 ? h('div', { class: 'search' }, searchIcon(), input) : null, list);
+}
+
+async function showBook(id, view = 'recipes') {
   setTab('books');
   let book, recipes;
   try {
@@ -306,48 +394,73 @@ async function showBook(id) {
     return render(h('a', { class: 'back', href: '#/books' }, '← All books'), errorView(e));
   }
   document.title = `${book.name} · Reczipes`;
-  backTo = { href: `#/book/${encodeURIComponent(book.id)}`, label: book.name };
+  const bookHref = `#/book/${encodeURIComponent(book.id)}`;
+  backTo = { href: view === 'recipes' ? bookHref : `${bookHref}?view=${view}`, label: book.name };
   const byId = new Map(recipes.map((r) => [r.id, r]));
   const inBook = book.entries
     .filter((e) => e.available && byId.has(e.id))
     .map((e) => byId.get(e.id))
     .sort((a, b) => a.title.localeCompare(b.title, undefined, { sensitivity: 'base' }));
 
-  const list = h('ul', { class: 'grid' });
-  const count = h('p', { class: 'muted' });
-  const input = h('input', { type: 'search', placeholder: `Search ${book.name}`, 'aria-label': `Search ${book.name}`, autocomplete: 'off' });
-  // Long books show the first 10; search always covers the whole book.
-  const PREVIEW = 10;
-  let showAll = false;
-  const more = h('div', { class: 'more' });
-  const apply = () => {
-    const terms = input.value.toLowerCase().split(/\s+/).filter(Boolean);
-    const hits = inBook.filter((r) => terms.every((t) => r.search.includes(t)));
-    const shown = terms.length || showAll ? hits : hits.slice(0, PREVIEW);
-    list.replaceChildren(...shown.map(recipeCard));
-    count.textContent = terms.length ? `${hits.length} of ${plural(inBook.length, 'recipe')}` : plural(inBook.length, 'recipe');
-    if (!hits.length) list.replaceChildren(h('li', { class: 'empty' }, terms.length ? 'No recipes in this book match that search.' : 'This book has no recipes on the web yet.'));
-    more.replaceChildren(
-      shown.length < hits.length
-        ? h('button', { class: 'btn', type: 'button', onclick: () => { showAll = true; apply(); } }, `Show all ${plural(hits.length, 'recipe')}`)
-        : '',
-    );
+  const has = {
+    recipes: true,
+    index: inBook.length > 0,
+    contents: book.sections.length > 0,
+    pictures: book.images.length > 0,
+    glossary: book.glossary.length > 0,
   };
-  input.addEventListener('input', apply);
+  if (!has[view]) view = 'recipes';
+  const views = BOOK_VIEWS.filter(([k]) => has[k]);
+  const nav = views.length > 1
+    ? h('nav', { class: 'subtabs', 'aria-label': `${book.name} sections` },
+        views.map(([k, label]) => h('a', { href: k === 'recipes' ? bookHref : `${bookHref}?view=${k}`, 'aria-current': k === view ? 'page' : null }, label)))
+    : null;
+
+  const count = h('p', { class: 'muted' });
+  let body;
+  if (view === 'recipes') {
+    const list = h('ul', { class: 'grid' });
+    const input = h('input', { type: 'search', placeholder: `Search ${book.name}`, 'aria-label': `Search ${book.name}`, autocomplete: 'off' });
+    // Long books show the first 10; search always covers the whole book.
+    const PREVIEW = 10;
+    let showAll = false;
+    const more = h('div', { class: 'more' });
+    const apply = () => {
+      const terms = input.value.toLowerCase().split(/\s+/).filter(Boolean);
+      const hits = inBook.filter((r) => terms.every((t) => r.search.includes(t)));
+      const shown = terms.length || showAll ? hits : hits.slice(0, PREVIEW);
+      list.replaceChildren(...shown.map(recipeCard));
+      count.textContent = terms.length ? `${hits.length} of ${plural(inBook.length, 'recipe')}` : plural(inBook.length, 'recipe');
+      if (!hits.length) list.replaceChildren(h('li', { class: 'empty' }, terms.length ? 'No recipes in this book match that search.' : 'This book has no recipes on the web yet.'));
+      more.replaceChildren(
+        shown.length < hits.length
+          ? h('button', { class: 'btn', type: 'button', onclick: () => { showAll = true; apply(); } }, `Show all ${plural(hits.length, 'recipe')}`)
+          : '',
+      );
+    };
+    input.addEventListener('input', apply);
+    apply();
+    body = [inBook.length > PREVIEW ? h('div', { class: 'search' }, searchIcon(), input) : null, list, more];
+  } else {
+    count.textContent = plural(inBook.length, 'recipe');
+    body = view === 'index' ? bookIndexView(inBook)
+      : view === 'contents' ? bookContentsView(book, byId)
+      : view === 'pictures' ? bookPicturesView(book)
+      : bookGlossaryView(book);
+  }
+
   render(
     h('a', { class: 'back', href: '#/books' }, '← All books'),
-    h('header', { class: 'book-head' },
+    h('header', { class: book.coverURL ? 'book-head has-img' : 'book-head' },
       book.coverURL ? h('img', { class: 'book-head__img', src: book.coverURL, alt: '' }) : null,
       h('div', {},
         h('h1', {}, book.name),
         book.description ? h('p', { class: 'header-notes' }, book.description) : null,
         book.sharedByName ? h('p', { class: 'muted' }, `Shared by ${book.sharedByName}`) : null,
         count)),
-    inBook.length > PREVIEW ? h('div', { class: 'search' }, searchIcon(), input) : null,
-    list,
-    more,
+    nav,
+    body,
   );
-  apply();
   window.scrollTo(0, 0);
 }
 
@@ -358,7 +471,7 @@ function route() {
   const m = pathPart.match(/^\/recipe\/(.+)$/);
   if (m) return showRecipe(decodeURIComponent(m[1]));
   const mb = pathPart.match(/^\/book\/(.+)$/);
-  if (mb) return showBook(decodeURIComponent(mb[1]));
+  if (mb) return showBook(decodeURIComponent(mb[1]), new URLSearchParams(queryPart ?? '').get('view') ?? 'recipes');
   if (pathPart === '/books') return showBooks();
   return showRecipes(new URLSearchParams(queryPart ?? '').get('q') ?? '');
 }
