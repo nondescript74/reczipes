@@ -27,6 +27,7 @@ struct BookDetailView: View {
     @State private var showingExportError = false
     @State private var isUpdatingPublicCopy = false
     @State private var publicCopyMessage: String?
+    @State private var showingRemoveMissing = false
 
     /// True when this book has an active public share (shown on the community/web catalogue).
     private var isPubliclyShared: Bool {
@@ -45,6 +46,15 @@ struct BookDetailView: View {
         }
     }
     
+    /// Recipe ids this book lists that no longer match any recipe in the library
+    /// (left behind when a recipe was deleted or merged away). Empty while the
+    /// library hasn't loaded, so an empty store never looks like "all missing".
+    private var missingRecipeIDs: [UUID] {
+        guard let recipeIDs = book.recipeIDs, !savedRecipes.isEmpty else { return [] }
+        let existing = Set(savedRecipes.compactMap(\.id))
+        return recipeIDs.filter { !existing.contains($0) }
+    }
+
     private var bookColor: Color {
         if let colorHex = book.color {
             return Color(hex: colorHex) ?? .blue
@@ -88,6 +98,15 @@ struct BookDetailView: View {
                             .disabled(isUpdatingPublicCopy)
                         }
 
+                        if !missingRecipeIDs.isEmpty {
+                            Button {
+                                showingRemoveMissing = true
+                            } label: {
+                                Label("Remove \(missingRecipeIDs.count) Missing Recipe Link\(missingRecipeIDs.count == 1 ? "" : "s")…",
+                                      systemImage: "scissors")
+                            }
+                        }
+
                         Divider()
                         
                         Button {
@@ -103,6 +122,14 @@ struct BookDetailView: View {
             }
             .sheet(isPresented: $showingBookEditor) {
                 BookEditorView(book: book)
+            }
+            .confirmationDialog("Remove Missing Recipe Links?", isPresented: $showingRemoveMissing, titleVisibility: .visible) {
+                Button("Remove \(missingRecipeIDs.count) Link\(missingRecipeIDs.count == 1 ? "" : "s")", role: .destructive) {
+                    Task { await removeMissingRecipeLinks() }
+                }
+                Button("Cancel", role: .cancel) { }
+            } message: {
+                Text(missingLinksMessage)
             }
             .confirmationDialog("Export Recipe Book", isPresented: $showingExportOptions) {
                 Button("Export with Images") {
@@ -247,6 +274,36 @@ struct BookDetailView: View {
         } catch {
             AppLog.error("Failed to update public copy of book '\(book.displayName)': \(error)", category: .sharing)
             publicCopyMessage = "Couldn't update the public copy: \(error.localizedDescription)"
+        }
+    }
+
+    /// Names the missing entries from the book's stored previews where it can.
+    private var missingLinksMessage: String {
+        let titles = Dictionary(book.recipePreviews.map { ($0.id, $0.title) }, uniquingKeysWith: { a, _ in a })
+        let names = missingRecipeIDs.map { titles[$0] ?? "Untitled (\($0.uuidString.prefix(8)))" }
+        return "This book lists \(names.count) recipe\(names.count == 1 ? "" : "s") that no longer exist in your library: "
+            + names.joined(separator: ", ")
+            + ". Only the links are removed from the book; no recipe is deleted."
+            + (isPubliclyShared ? " The book's public copy is updated afterwards." : "")
+    }
+
+    /// Drops recipe ids that match no recipe in the library. Never deletes a recipe.
+    private func removeMissingRecipeLinks() async {
+        let missing = missingRecipeIDs
+        guard !missing.isEmpty else { return }
+        for id in missing { book.removeRecipe(id) }
+        do {
+            try modelContext.save()
+            AppLog.info("Removed \(missing.count) missing recipe links from book '\(book.displayName)': \(missing.map(\.uuidString))", category: .recipe)
+        } catch {
+            AppLog.error("Failed to save after removing missing links from '\(book.displayName)': \(error)", category: .recipe)
+            publicCopyMessage = "Couldn't save the book: \(error.localizedDescription)"
+            return
+        }
+        if isPubliclyShared {
+            await updatePublicCopy()
+        } else {
+            publicCopyMessage = "Removed \(missing.count) missing recipe link\(missing.count == 1 ? "" : "s") from '\(book.displayName)'."
         }
     }
 
