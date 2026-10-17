@@ -344,6 +344,8 @@ function bookContentsView(book, byId) {
       const pic = s.itemID ? pics.get(s.itemID) : null;
       rows.push(h('li', { class: 'toc-image' },
         pic ? h('figure', {}, h('img', { src: pic.url, alt: pic.title ?? s.title, loading: 'lazy' }), h('figcaption', {}, pic.caption ?? pic.title ?? s.title)) : h('span', { class: 'na' }, s.title)));
+    } else if (s.itemType === 'glossary' && book.glossary.length) {
+      rows.push(h('li', { class: 'toc-recipe' }, h('a', { href: `#/book/${encodeURIComponent(book.id)}?view=glossary` }, s.title)));
     } else {
       rows.push(h('li', { class: 'toc-other' }, s.title));
     }
