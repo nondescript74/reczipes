@@ -126,7 +126,10 @@ class CloudKitSyncMonitor: ObservableObject {
         }
     }
     
-    @objc private func handleAccountChange() {
+    // CloudKit posts CKAccountChanged on its own background queue. This class is
+    // @MainActor, so the selector must be nonisolated or Swift's isolation check
+    // traps (_dispatch_assert_queue_fail); the work hops to the main actor below.
+    @objc nonisolated private func handleAccountChange() {
         Task { @MainActor in
             AppLog.info("🔄 iCloud account changed, rechecking status...", category: .storage)
             // Clear warnings when account changes so we get fresh feedback
