@@ -31,6 +31,9 @@ struct SharingSettingsView: View {
     @State private var showingUnshareAllConfirmation = false
     @State private var showingUnshareAllBooksConfirmation = false
     @State private var showingUnshareAllMealsConfirmation = false
+    @State private var repairPreview: SharingRepairReport?
+    @State private var repairMessage: String?
+    @State private var isRepairing = false
     
     private var preferences: SharingPreferences {
         if let existing = sharingPreferences.first {
@@ -586,11 +589,66 @@ struct SharingSettingsView: View {
     }
 
     /// Books with no active public-share tracking entry. Additive only, like unsharedRecipes.
+    /// Books that already have an active public copy (this user's), in library order.
+    private var publicBooks: [Book] {
+        let sharedIDs = Set(sharedRecipeBooks.filter { $0.isActive }.compactMap { $0.bookID })
+        return allBooks.filter { b in
+            guard let id = b.id else { return false }
+            return sharedIDs.contains(id)
+        }
+    }
+
+    /// Re-publishes every shared book so the website picks up new members, pictures,
+    /// contents and glossary (the per-book "Update Public Copy", for all books at once).
+    private func updateAllPublicBooks(_ books: [Book]) async {
+        isSharing = true
+        var successful = 0
+        var failed: [String] = []
+        for (i, book) in books.enumerated() {
+            sharingStatus = "Updating public copy \(i + 1) of \(books.count): \(book.displayName)"
+            do {
+                _ = try await sharingService.shareRecipeBook(book, modelContext: modelContext, refreshExisting: true)
+                successful += 1
+            } catch {
+                AppLog.error("Failed to update public copy of '\(book.displayName)': \(error)", category: .sharing)
+                failed.append(book.displayName)
+            }
+        }
+        isSharing = false
+        sharingStatus = ""
+        alertMessage = failed.isEmpty
+            ? "Updated the public copies of all \(successful) books."
+            : "Updated \(successful) of \(books.count) books. Failed: \(failed.joined(separator: ", "))."
+        showingAlert = true
+    }
+
     private var unsharedBooks: [Book] {
         let sharedIDs = Set(sharedRecipeBooks.filter { $0.isActive }.compactMap { $0.bookID })
         return allBooks.filter { book in
             guard let id = book.id else { return false }
             return !sharedIDs.contains(id)
+        }
+    }
+
+    private func previewSharingRepair() async {
+        isRepairing = true
+        defer { isRepairing = false }
+        do {
+            repairPreview = try await sharingService.repairSharingRecords(modelContext: modelContext, dryRun: true)
+        } catch {
+            repairMessage = "Couldn't check sharing records: \(error.localizedDescription)"
+        }
+    }
+
+    private func applySharingRepair() async {
+        isRepairing = true
+        defer { isRepairing = false }
+        do {
+            let report = try await sharingService.repairSharingRecords(modelContext: modelContext, dryRun: false)
+            repairPreview = nil
+            repairMessage = report.summary
+        } catch {
+            repairMessage = "Repair failed — nothing was changed: \(error.localizedDescription)"
         }
     }
 
@@ -613,6 +671,14 @@ struct SharingSettingsView: View {
             .disabled(!sharingService.isCloudKitAvailable || unsharedBooks.isEmpty)
 
             Button {
+                let books = publicBooks
+                Task { await updateAllPublicBooks(books) }
+            } label: {
+                Label("Update All Public Books (\(publicBooks.count))", systemImage: "arrow.triangle.2.circlepath.circle")
+            }
+            .disabled(!sharingService.isCloudKitAvailable || publicBooks.isEmpty || isSharing)
+
+            Button {
                 showingRecipeSelector = true
             } label: {
                 Label("Share Specific Recipes", systemImage: "square.and.arrow.up")
@@ -625,6 +691,35 @@ struct SharingSettingsView: View {
                 Label("Share Specific Books", systemImage: "square.and.arrow.up.on.square")
             }
             .disabled(!sharingService.isCloudKitAvailable)
+
+            // Repair duplicate / stale local sharing records (local-only, asks first)
+            Button {
+                Task { await previewSharingRepair() }
+            } label: {
+                Label(isRepairing ? "Checking Sharing Records…" : "Repair Sharing Records",
+                      systemImage: "wrench.and.screwdriver")
+            }
+            .disabled(!sharingService.isCloudKitAvailable || isRepairing)
+            .confirmationDialog(
+                "Repair Sharing Records?",
+                isPresented: Binding(get: { repairPreview != nil }, set: { if !$0 { repairPreview = nil } }),
+                titleVisibility: .visible
+            ) {
+                Button("Repair") {
+                    Task { await applySharingRepair() }
+                }
+                Button("Cancel", role: .cancel) { repairPreview = nil }
+            } message: {
+                Text(repairPreview?.summary ?? "")
+            }
+            .alert("Sharing Records", isPresented: Binding(
+                get: { repairMessage != nil },
+                set: { if !$0 { repairMessage = nil } }
+            )) {
+                Button("OK") { repairMessage = nil }
+            } message: {
+                Text(repairMessage ?? "")
+            }
             
             // Advanced Tools (collapsed into disclosure group)
             DisclosureGroup {

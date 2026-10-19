@@ -7,7 +7,7 @@
 // it never quietly substitutes sample data for real data (MTA M-19).
 
 import { readFile } from 'node:fs/promises';
-import { decodeSharedRecipe, decodeSharedBook, newestPerId, collapseCopies, summarize } from './decode.js';
+import { decodeSharedRecipe, decodeSharedBook, decodeSharedBookPicture, attachBookPictures, newestPerId, collapseCopies, summarize } from './decode.js';
 
 export function createStore({ cloudkit, fixturesPath, ttlMs = 5 * 60 * 1000, now = () => Date.now() }) {
   const source = cloudkit ? 'cloudkit' : 'fixtures';
@@ -17,23 +17,35 @@ export function createStore({ cloudkit, fixturesPath, ttlMs = 5 * 60 * 1000, now
 
   async function loadRaw() {
     if (cloudkit) {
-      const [recipeRecords, bookRecords] = await Promise.all([
+      const [recipeRecords, bookRecords, pictureRecords] = await Promise.all([
         cloudkit.queryAll('SharedRecipe'),
         cloudkit.queryAll('SharedRecipeBook'),
+        // Picture records exist only once an app build from 2026-10-17 has shared a book
+        // with pictures; a missing record type must not take the whole catalogue down.
+        cloudkit.queryAll('SharedBookPicture').catch((err) => {
+          console.error('[SharedBookPicture]', err.message);
+          return [];
+        }),
       ]);
-      return { recipeRecords, bookRecords };
+      return { recipeRecords, bookRecords, pictureRecords };
     }
     const json = JSON.parse(await readFile(fixturesPath, 'utf8'));
-    return { recipeRecords: json.SharedRecipe ?? [], bookRecords: json.SharedRecipeBook ?? [] };
+    return {
+      recipeRecords: json.SharedRecipe ?? [],
+      bookRecords: json.SharedRecipeBook ?? [],
+      pictureRecords: json.SharedBookPicture ?? [],
+    };
   }
 
-  function build({ recipeRecords, bookRecords }) {
+  function build({ recipeRecords, bookRecords, pictureRecords = [] }) {
     const uniqueById = newestPerId(recipeRecords.map(decodeSharedRecipe).filter(Boolean));
     const { kept, alias } = collapseCopies(uniqueById);
     const recipes = kept.sort((a, b) => a.title.localeCompare(b.title, undefined, { sensitivity: 'base' }));
-    const books = newestPerId(bookRecords.map(decodeSharedBook).filter(Boolean)).sort((a, b) =>
-      a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }),
-    );
+    const pictures = pictureRecords.map(decodeSharedBookPicture).filter(Boolean);
+    const books = attachBookPictures(
+      newestPerId(bookRecords.map(decodeSharedBook).filter(Boolean)),
+      pictures,
+    ).sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
     const byId = new Map(recipes.map((r) => [r.id.toUpperCase(), r]));
     // Links to a collapsed copy (old URLs, book entries) resolve to the kept recipe.
     for (const [dropped, keptId] of alias) byId.set(dropped, byId.get(keptId.toUpperCase()));
@@ -43,7 +55,7 @@ export function createStore({ cloudkit, fixturesPath, ttlMs = 5 * 60 * 1000, now
       byId,
       skipped: { recipes: recipeRecords.length - recipes.length, books: bookRecords.length - books.length },
       collapsedCopies: alias.size,
-      rawCounts: { recipes: recipeRecords.length, books: bookRecords.length },
+      rawCounts: { recipes: recipeRecords.length, books: bookRecords.length, pictures: pictureRecords.length },
       loadedAt: new Date(now()).toISOString(),
       loadedAtMs: now(),
     };

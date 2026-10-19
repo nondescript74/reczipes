@@ -388,6 +388,7 @@ extension Book {
         }
         size += (recipePreviewsData?.count ?? 0)
         size += (imagesData?.count ?? 0)
+        size += BookImageProcessing.totalBytes(images)   // picture records
         size += (instructionsData?.count ?? 0)
         size += (glossaryData?.count ?? 0)
         size += (customContentData?.count ?? 0)

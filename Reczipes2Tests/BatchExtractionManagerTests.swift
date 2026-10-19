@@ -23,7 +23,7 @@ struct BatchExtractionManagerTests {
     /// Creates a temporary in-memory model container for testing
     private func createTestModelContainer() throws -> ModelContainer {
         let schema = Schema([RecipeX.self, SavedLink.self, RecipeImageAssignment.self, VersionHistoryRecord.self])
-        let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+        let configuration = ModelConfiguration(UUID().uuidString, schema: schema, isStoredInMemoryOnly: true, cloudKitDatabase: .none)
         return try ModelContainer(for: schema, configurations: [configuration])
     }
     

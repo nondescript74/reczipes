@@ -119,8 +119,20 @@ class BookSyncService: ObservableObject {
             record["coverImage"] = asset
         }
         
+        // Pictures: one public SharedBookPicture record each (CKAsset); this record
+        // carries their metadata only (imagesJSON). Picture failures never fail the book.
+        var pictureMetadata: [BookPictureMetadata] = []
+        if configuration.includeContentImages, let bookID = book.id {
+            pictureMetadata = await BookPicturePublisher(database: publicDatabase).publish(
+                bookID: bookID,
+                bookRecordName: recordID.recordName,
+                pictures: book.pictures(in: modelContext),
+                sharedBy: ownerUserID
+            )
+        }
+
         // Encode and set content as JSON strings
-        try setContentFields(on: record, from: book, configuration: configuration)
+        try setContentFields(on: record, from: book, configuration: configuration, pictureMetadata: pictureMetadata)
         
         // Upload to CloudKit
         do {
@@ -279,8 +291,24 @@ class BookSyncService: ObservableObject {
         // Set content data
         book.setRecipePreviews(cloudBook.recipePreviews)
         
+        // Pictures: bytes come from SharedBookPicture records named in imagesJSON;
+        // entries from older publishers may still carry inline bytes.
+        var downloadedImages: [BookImage] = []
         if options.downloadAllContent {
-            book.setImages(cloudBook.images)
+            let metadata = decodeOptionalJSON([BookPictureMetadata].self, from: record["imagesJSON"] as? String) ?? []
+            let bytes = await BookPicturePublisher(database: publicDatabase).downloadPictures(metadata)
+            let inlineByID = Dictionary(cloudBook.images.filter(\.hasBytes).map { ($0.id, $0) }, uniquingKeysWith: { a, _ in a })
+            downloadedImages = cloudBook.images.compactMap { image -> BookImage? in
+                if let data = bytes[image.id] {
+                    var copy = image
+                    copy.imageData = data
+                    return copy
+                }
+                return inlineByID[image.id]
+            }
+        }
+        
+        if options.downloadAllContent {
             book.setInstructions(cloudBook.instructions)
             book.setGlossary(cloudBook.glossary)
             book.setCustomContent(cloudBook.customContent)
@@ -289,7 +317,13 @@ class BookSyncService: ObservableObject {
         
         if options.createLocalCopy {
             modelContext.insert(book)
+            if !downloadedImages.isEmpty {
+                book.setImagesUpdatingPrimaryCover(downloadedImages, in: modelContext)
+            }
             try modelContext.save()
+        } else if !downloadedImages.isEmpty {
+            // Transient book (not saved): pictures stay inline on the object
+            book.setImages(downloadedImages)
         }
         
         logger.info("Downloaded book: \(book.displayName)")
@@ -305,6 +339,8 @@ class BookSyncService: ObservableObject {
         }
         
         let ckRecordID = CKRecord.ID(recordName: recordID)
+        // Picture records first (their names are listed in the book record)
+        await BookPicturePublisher(database: publicDatabase).deleteAllPictures(bookID: book.id, bookRecordName: recordID)
         try await publicDatabase.deleteRecord(withID: ckRecordID)
         
         // Update local book
@@ -421,7 +457,8 @@ class BookSyncService: ObservableObject {
     private func setContentFields(
         on record: CKRecord,
         from book: Book,
-        configuration: BookSharingConfiguration
+        configuration: BookSharingConfiguration,
+        pictureMetadata: [BookPictureMetadata]
     ) throws {
         // Recipe previews
         if let data = book.recipePreviewsData,
@@ -429,9 +466,11 @@ class BookSyncService: ObservableObject {
             record["recipePreviewsJSON"] = jsonString
         }
         
-        // Images
+        // Images (covers + interior pictures): METADATA ONLY. The bytes are in
+        // SharedBookPicture records (`pictureRecordName`), so this record stays small.
         if configuration.includeContentImages,
-           let data = book.imagesData,
+           !pictureMetadata.isEmpty,
+           let data = try? JSONEncoder().encode(pictureMetadata),
            let jsonString = String(data: data, encoding: .utf8) {
             record["imagesJSON"] = jsonString
         }
@@ -515,6 +554,12 @@ class BookSyncService: ObservableObject {
         )
     }
     
+    /// Decode JSON string to type, nil when absent or invalid
+    private func decodeOptionalJSON<T: Decodable>(_ type: T.Type, from jsonString: String?) -> T? {
+        guard let jsonString, let data = jsonString.data(using: .utf8) else { return nil }
+        return try? JSONDecoder().decode(type, from: data)
+    }
+
     /// Decode JSON string to type
     private func decodeJSON<T: Decodable>(_ type: T.Type, from jsonString: String?) -> T {
         guard let jsonString = jsonString,

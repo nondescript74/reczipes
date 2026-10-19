@@ -8,6 +8,7 @@
 import SwiftUI
 import SwiftData
 import PhotosUI
+import UniformTypeIdentifiers
 
 struct BookEditorView: View {
     @Environment(\.dismiss) private var dismiss
@@ -25,6 +26,17 @@ struct BookEditorView: View {
     @State private var showingRecipeManager = false
     @State private var category: String
     @State private var cuisine: String
+    /// Covers + interior pictures (saved on Save)
+    @State private var images: [BookImage]
+    private let originalImages: [BookImage]
+    @State private var selectedPictureItems: [PhotosPickerItem] = []
+    @State private var newPictureKind: String = BookImage.interiorKind
+    @State private var isProcessingPictures = false
+    /// Glossary (optional; saved on Save)
+    @State private var glossary: [BookGlossaryEntry]
+    private let originalGlossary: [BookGlossaryEntry]
+    @State private var showingGlossaryImporter = false
+    @State private var glossaryMessage: String?
     
     private let availableColors: [Color] = [
         .blue, .purple, .pink, .red, .orange,
@@ -46,6 +58,12 @@ struct BookEditorView: View {
         _coverImageData = State(initialValue: book?.coverImageData)
         _category = State(initialValue: book?.category ?? "")
         _cuisine = State(initialValue: book?.cuisine ?? "")
+        let existingImages = book?.images ?? []
+        _images = State(initialValue: existingImages)
+        self.originalImages = existingImages
+        let existingGlossary = book?.glossary ?? []
+        _glossary = State(initialValue: existingGlossary)
+        self.originalGlossary = existingGlossary
         
         if let colorHex = book?.color, let color = Color(hex: colorHex) {
             _selectedColor = State(initialValue: color)
@@ -107,6 +125,10 @@ struct BookEditorView: View {
                     }
                 }
                 
+                picturesSection
+
+                glossarySection
+
                 Section("Color Theme") {
                     LazyVGrid(columns: [GridItem(.adaptive(minimum: 44))], spacing: 12) {
                         ForEach(availableColors, id: \.self) { color in
@@ -152,6 +174,7 @@ struct BookEditorView: View {
                     }
                 }
             }
+            .formStyle(.grouped)   // scrolls on macOS; the default column style does not
             .navigationTitle(book == nil ? "New Book" : "Edit Book")
             .platformNavigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -173,6 +196,24 @@ struct BookEditorView: View {
                     await loadImage(from: newItem)
                 }
             }
+            .onChange(of: selectedPictureItems) { _, items in
+                guard !items.isEmpty else { return }
+                Task { await addPictures(from: items) }
+            }
+            .fileImporter(isPresented: $showingGlossaryImporter, allowedContentTypes: [.json]) { result in
+                switch result {
+                case .success(let url): importGlossary(from: url)
+                case .failure(let error): glossaryMessage = "Couldn't open the file: \(error.localizedDescription)"
+                }
+            }
+            .alert("Glossary", isPresented: Binding(
+                get: { glossaryMessage != nil },
+                set: { if !$0 { glossaryMessage = nil } }
+            )) {
+                Button("OK") { glossaryMessage = nil }
+            } message: {
+                Text(glossaryMessage ?? "")
+            }
             .sheet(isPresented: $showingRecipeManager) {
                 if let book = book {
                     BookRecipeManagerView(book: book)
@@ -180,10 +221,171 @@ struct BookEditorView: View {
             }
         }
         #if os(macOS)
-        .frame(minWidth: 700, minHeight: 700)
+        .frame(minWidth: 700, idealWidth: 760, minHeight: 480, idealHeight: 760)
         #endif
     }
     
+    // MARK: - Pictures
+
+    private var picturesSection: some View {
+        Section {
+            ForEach(images) { image in
+                pictureRow(image)
+            }
+
+            Picker("Add as", selection: $newPictureKind) {
+                Text("Cover").tag(BookImage.coverKind)
+                Text("Interior").tag(BookImage.interiorKind)
+            }
+            PhotosPicker(selection: $selectedPictureItems, maxSelectionCount: 20, matching: .images) {
+                Label("Add Pictures", systemImage: "photo.badge.plus")
+            }
+            .disabled(isProcessingPictures)
+            if isProcessingPictures {
+                HStack {
+                    ProgressView()
+                    Text("Processing pictures...")
+                        .foregroundStyle(.secondary)
+                }
+            }
+        } header: {
+            Text("Covers & Pictures (\(images.count))")
+        } footer: {
+            Text("Several covers are allowed; the first cover is the book's main cover. Pictures are stored at up to 1600 px, one iCloud record each.")
+        }
+    }
+
+    private func pictureRow(_ image: BookImage) -> some View {
+        let index = images.firstIndex(where: { $0.id == image.id })
+        return HStack(alignment: .top, spacing: 12) {
+            BookImageThumbnail(image: image, size: 64)
+            VStack(alignment: .leading, spacing: 6) {
+                Picker("Kind", selection: Binding(
+                    get: { image.isCover ? BookImage.coverKind : BookImage.interiorKind },
+                    set: { newKind in updateImage(image.id) { $0.kind = newKind } }
+                )) {
+                    Text("Cover").tag(BookImage.coverKind)
+                    Text("Interior").tag(BookImage.interiorKind)
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                TextField("Caption", text: Binding(
+                    get: { image.caption ?? "" },
+                    set: { text in updateImage(image.id) { $0.caption = text.isEmpty ? nil : text } }
+                ), axis: .vertical)
+                .lineLimit(1...4)
+                .font(.caption)
+                HStack(spacing: 16) {
+                    Button {
+                        moveImage(image.id, by: -1)
+                    } label: {
+                        Image(systemName: "arrow.up")
+                    }
+                    .disabled(index == 0)
+                    Button {
+                        moveImage(image.id, by: 1)
+                    } label: {
+                        Image(systemName: "arrow.down")
+                    }
+                    .disabled(index == images.count - 1)
+                    Spacer()
+                    Button(role: .destructive) {
+                        images.removeAll { $0.id == image.id }
+                    } label: {
+                        Image(systemName: "trash")
+                    }
+                }
+                .buttonStyle(.borderless)
+            }
+        }
+        .padding(.vertical, 4)
+    }
+
+    private func updateImage(_ id: UUID, _ change: (inout BookImage) -> Void) {
+        guard let i = images.firstIndex(where: { $0.id == id }) else { return }
+        change(&images[i])
+    }
+
+    private func moveImage(_ id: UUID, by offset: Int) {
+        guard let i = images.firstIndex(where: { $0.id == id }) else { return }
+        let j = i + offset
+        guard j >= 0, j < images.count else { return }
+        images.swapAt(i, j)
+    }
+
+    private func addPictures(from items: [PhotosPickerItem]) async {
+        isProcessingPictures = true
+        defer {
+            isProcessingPictures = false
+            selectedPictureItems = []
+        }
+        let kind = newPictureKind
+        for item in items {
+            do {
+                guard let raw = try await item.loadTransferable(type: Data.self),
+                      let prepared = BookImageProcessing.prepare(data: raw) else {
+                    AppLog.error("Failed to load book picture", category: .image)
+                    continue
+                }
+                images.append(BookImage(
+                    id: UUID(),
+                    title: nil,
+                    caption: nil,
+                    imageData: prepared,
+                    order: images.count,
+                    dateAdded: Date(),
+                    kind: kind
+                ))
+            } catch {
+                AppLog.error("Error loading book picture: \(error)", category: .image)
+            }
+        }
+    }
+
+    // MARK: - Glossary
+
+    private var glossarySection: some View {
+        Section {
+            if glossary.isEmpty {
+                Text("No glossary")
+                    .foregroundStyle(.secondary)
+            } else {
+                Text("\(glossary.count) terms")
+                Button("Remove Glossary", role: .destructive) {
+                    glossary = []
+                }
+            }
+            Button {
+                #if os(macOS)
+                if let url = MacFilePicker.pickFile(types: [.json], message: "Choose a glossary JSON file") {
+                    importGlossary(from: url)
+                }
+                #else
+                showingGlossaryImporter = true
+                #endif
+            } label: {
+                Label(glossary.isEmpty ? "Import Glossary JSON…" : "Replace Glossary from JSON…",
+                      systemImage: "character.book.closed")
+            }
+        } header: {
+            Text("Glossary (Optional)")
+        } footer: {
+            Text("A JSON list of {term, local_name, definition, book_page}.")
+        }
+    }
+
+    private func importGlossary(from url: URL) {
+        let scoped = url.startAccessingSecurityScopedResource()
+        defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+        do {
+            let entries = try FlexibleGlossaryEntry.entries(from: Data(contentsOf: url))
+            glossary = entries
+            glossaryMessage = "Loaded \(entries.count) glossary terms. Tap Save to keep them."
+        } catch {
+            glossaryMessage = "That file isn't a glossary list: \(error.localizedDescription)"
+        }
+    }
+
     // MARK: - Helper Methods
     
     private func colorMatches(_ color1: Color, _ color2: Color) -> Bool {
@@ -249,6 +451,17 @@ struct BookEditorView: View {
             book.color = colorHex
             book.category = trimmedCategory.isEmpty ? nil : trimmedCategory
             book.cuisine = trimmedCuisine.isEmpty ? nil : trimmedCuisine
+            if images != originalImages {
+                // Writes BookPicture records; also makes the first cover picture the main cover
+                book.setImagesUpdatingPrimaryCover(images, in: modelContext)
+            }
+            if glossary != originalGlossary {
+                if glossary.isEmpty {
+                    book.glossaryData = nil
+                } else {
+                    book.setGlossary(glossary)
+                }
+            }
             book.markModified()
             
             AppLog.info("Updated book: \(book.displayName)", category: .recipe)
@@ -273,7 +486,15 @@ struct BookEditorView: View {
             newBook.coverImageHash = Book.calculateImageHash(from: coverImageData)
             newBook.recipeIDsHash = Book.calculateRecipeIDsHash(from: [])
             
+            if !glossary.isEmpty {
+                newBook.setGlossary(glossary)
+            }
+
             modelContext.insert(newBook)
+            // After insert: pictures are written as BookPicture records for this book
+            if !images.isEmpty {
+                newBook.setImagesUpdatingPrimaryCover(images, in: modelContext)
+            }
             
             AppLog.info("Created new Book: \(newBook.displayName)", category: .recipe)
         }

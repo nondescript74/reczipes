@@ -14,7 +14,7 @@ import SwiftData
 @MainActor
 private func makeMealImportContainer() -> ModelContainer {
     let schema = Schema([Meal.self, RecipeX.self])
-    let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+    let configuration = ModelConfiguration(UUID().uuidString, schema: schema, isStoredInMemoryOnly: true, cloudKitDatabase: .none)
     return try! ModelContainer(for: schema, configurations: [configuration])
 }
 

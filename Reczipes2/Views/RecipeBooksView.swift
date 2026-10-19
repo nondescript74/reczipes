@@ -313,32 +313,18 @@ struct RecipeBooksView: View {
     
     private func deleteBook(_ book: Book) {
         withAnimation {
-            // Delete all recipes in this book
-            let recipeIDsToDelete = book.recipeIDs ?? []
-            AppLog.info("Deleting book '\(book.name ?? "Untitled")' and \(recipeIDsToDelete.count) associated recipes", category: .recipe)
+            // Deleting a book NEVER deletes its recipes (BookMembershipGuard rule):
+            // the recipes stay in the library; only the book record goes away.
+            let memberCount = book.recipeIDs?.count ?? 0
+            AppLog.info("Deleting book '\(book.name ?? "Untitled")' — its \(memberCount) recipe(s) stay in the library", category: .recipe)
             
-            // Fetch and delete each recipe
-            for recipeID in recipeIDsToDelete {
-                let descriptor = FetchDescriptor<RecipeX>(
-                    predicate: #Predicate<RecipeX> { recipe in
-                        recipe.id == recipeID
-                    }
-                )
-                
-                if let recipes = try? modelContext.fetch(descriptor),
-                   let recipe = recipes.first {
-                    AppLog.debug("Deleting recipe '\(recipe.title ?? "Untitled")' (ID: \(recipeID))", category: .recipe)
-                    modelContext.delete(recipe)
-                }
-            }
-            
-            // Delete the book itself (cover image is stored as Data, not file)
-            modelContext.delete(book)
+            // Delete the book itself and its picture records (cover image is stored as Data, not file)
+            BookPictureStore.deleteBook(book, in: modelContext)
             
             // Save changes
             do {
                 try modelContext.save()
-                AppLog.info("Successfully deleted book '\(book.name ?? "Untitled")' and its recipes", category: .recipe)
+                AppLog.info("Successfully deleted book '\(book.name ?? "Untitled")' (recipes kept)", category: .recipe)
             } catch {
                 AppLog.error("Failed to save after deleting book: \(error)", category: .recipe)
             }

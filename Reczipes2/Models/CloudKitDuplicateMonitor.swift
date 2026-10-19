@@ -171,7 +171,7 @@ class CloudKitDuplicateMonitor: ObservableObject {
 
     /// Finds duplicate clusters using fingerprint, URL, and title matching
     /// Returns array of (canonical recipe to keep, duplicates to delete)
-    private func findDuplicateClusters(_ allRecipes: [RecipeX]) -> [(keep: RecipeX, delete: [RecipeX])] {
+    private func findDuplicateClusters(_ allRecipes: [RecipeX], bookRecipeIDs: Set<UUID> = []) -> [(keep: RecipeX, delete: [RecipeX])] {
         var uf = RecipeUnionFind()
 
         let recipeMap: [UUID: RecipeX] = Dictionary(
@@ -228,8 +228,11 @@ class CloudKitDuplicateMonitor: ObservableObject {
             let recipes = memberIDs.compactMap { recipeMap[$0] }
             guard recipes.count > 1 else { continue }
 
-            // Keep most complete, then oldest
+            // Keep a book member first (it can never be removed), then most complete, then oldest
             let sorted = recipes.sorted { r1, r2 in
+                let b1 = r1.id.map { bookRecipeIDs.contains($0) } ?? false
+                let b2 = r2.id.map { bookRecipeIDs.contains($0) } ?? false
+                if b1 != b2 { return b1 }
                 let s1 = dataScore(r1); let s2 = dataScore(r2)
                 if s1 != s2 { return s1 > s2 }
                 return (r1.dateAdded ?? .distantFuture) < (r2.dateAdded ?? .distantFuture)
@@ -278,7 +281,10 @@ class CloudKitDuplicateMonitor: ObservableObject {
 
             AppLog.info("📊 Total recipes: \(allRecipes.count)", category: .cloudKit)
 
-            let clusters = findDuplicateClusters(allRecipes)
+            // Recipes in a book are never auto-removed (BookMembershipGuard);
+            // a copy in a book is preferred as the keeper.
+            let bookGuard = BookMembershipGuard(context: context)
+            let clusters = findDuplicateClusters(allRecipes, bookRecipeIDs: bookGuard.protectedRecipeIDs)
             let totalDuplicates = clusters.reduce(0) { $0 + $1.delete.count }
 
             duplicatesDetected = totalDuplicates
@@ -291,6 +297,10 @@ class CloudKitDuplicateMonitor: ObservableObject {
                 for cluster in clusters {
                     AppLog.info("   Keeping: '\(cluster.keep.safeTitle)' (ID: \(String(describing: cluster.keep.id)))", category: .cloudKit)
                     for duplicate in cluster.delete {
+                        guard bookGuard.canRemoveDuplicate(duplicate.id, keeping: cluster.keep.id) else {
+                            bookGuard.logSkip(recipeTitle: duplicate.safeTitle, recipeID: duplicate.id, operation: "Post-sync duplicate auto-clean")
+                            continue
+                        }
                         AppLog.info("   🗑️ Deleting duplicate: \(String(describing: duplicate.id))", category: .cloudKit)
                         context.delete(duplicate)
                         deletedCount += 1
@@ -352,6 +362,15 @@ class CloudKitDuplicateMonitor: ObservableObject {
                     if canonical.coverImageData == nil { canonical.coverImageData = extra.coverImageData }
                     if canonical.color == nil { canonical.color = extra.color }
                     if canonical.cloudRecordID == nil { canonical.cloudRecordID = extra.cloudRecordID }
+                    // Book content: pictures, glossary, contents.
+                    // Pictures are BookPicture records keyed by the book id, which the
+                    // copies share, so they already belong to the kept book. Inline
+                    // pictures an older build left on the extra copy are moved into
+                    // records first, so deleting the copy can't lose them.
+                    BookPictureMigration.migrate(book: extra, in: context)
+                    if canonical.imagesData == nil { canonical.imagesData = extra.imagesData }
+                    if canonical.glossaryData == nil { canonical.glossaryData = extra.glossaryData }
+                    if canonical.tableOfContentsData == nil { canonical.tableOfContentsData = extra.tableOfContentsData }
 
                     context.delete(extra)
                     deletedCount += 1

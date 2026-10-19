@@ -194,7 +194,9 @@ struct RecipeExtractorView: View {
                     NotificationCenter.default.post(name: NSNotification.Name("ShowDuplicateDetector"), object: nil)
                 }
                 Button("Undo Save", role: .destructive) {
-                    if let recipe = viewModel.extractedRecipe {
+                    if let recipe = viewModel.extractedRecipe,
+                       !BookMembershipGuard(context: modelContext).isProtected(recipe.id) {
+                        // A just-saved recipe is normally in no book; if it already is, keep it.
                         modelContext.delete(recipe)
                         try? modelContext.save()
                         AppLog.info("Undid duplicate recipe save: \(recipe.safeTitle)", category: .storage)

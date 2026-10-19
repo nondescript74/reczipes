@@ -23,7 +23,24 @@ class ModelContainerManager: ObservableObject {
     private var cancellables = Set<AnyCancellable>()
     private nonisolated(unsafe) var accountStatusObserver: NSObjectProtocol?
     
+    /// True when this process is hosting unit tests (XCTest injects
+    /// `XCTestConfigurationFilePath`) or was launched by the UI tests (`UI_TESTING`).
+    /// Under tests the app must never open the operator's real store or CloudKit:
+    /// on macOS the test host is the real app with the real Application Support folder.
+    nonisolated static var isRunningUnderTests: Bool {
+        let info = ProcessInfo.processInfo
+        return info.environment["XCTestConfigurationFilePath"] != nil
+            || info.arguments.contains("UI_TESTING")
+    }
+
     private init() {
+        if Self.isRunningUnderTests {
+            AppLog.info("🧪 Test host: using an empty in-memory store (no CloudKit, real library untouched)", category: .storage)
+            self.container = Self.createTestHostContainer()
+            self.isCloudKitEnabled = false
+            return
+        }
+
         // IMPORTANT: Try CloudKit first for community sharing features
         // Only fall back to local-only if CloudKit is genuinely unavailable
         AppLog.info("🚀 ModelContainerManager initializing...", category: .storage)
@@ -170,6 +187,7 @@ class ModelContainerManager: ObservableObject {
             let container = try ModelContainer(
                 for: RecipeX.self,              // Unified recipe model (CloudKit compatible)
                 Book.self,                      // Unified book model (CloudKit compatible)
+                BookPicture.self,               // One record per book picture (bytes in external storage)
                 RecipeImageAssignment.self,
                 UserAllergenProfile.self,
                 CachedDiabeticAnalysis.self,
@@ -241,6 +259,7 @@ class ModelContainerManager: ObservableObject {
                         let container = try ModelContainer(
                             for: RecipeX.self,              // Unified recipe model (CloudKit compatible)
                             Book.self,                      // Unified book model (CloudKit compatible)
+                            BookPicture.self,               // One record per book picture (bytes in external storage)
                             RecipeImageAssignment.self,
                             UserAllergenProfile.self,
                             CachedDiabeticAnalysis.self,
@@ -343,6 +362,7 @@ class ModelContainerManager: ObservableObject {
                         let container = try ModelContainer(
                             for: RecipeX.self,              // Unified recipe model (CloudKit compatible)
                             Book.self,                      // Unified book model (CloudKit compatible)
+                            BookPicture.self,               // One record per book picture (bytes in external storage)
                             RecipeImageAssignment.self,
                             UserAllergenProfile.self,
                             CachedDiabeticAnalysis.self,
@@ -378,6 +398,39 @@ class ModelContainerManager: ObservableObject {
         }
     }
     
+    /// In-memory, CloudKit-free container with the full schema, for test runs.
+    private static func createTestHostContainer() -> ModelContainer {
+        let configuration = ModelConfiguration(
+            "TestHost",
+            isStoredInMemoryOnly: true,
+            cloudKitDatabase: .none
+        )
+        do {
+            return try ModelContainer(
+                for: RecipeX.self,
+                Book.self,
+                BookPicture.self,               // One record per book picture (bytes in external storage)
+                RecipeImageAssignment.self,
+                UserAllergenProfile.self,
+                CachedDiabeticAnalysis.self,
+                SavedLink.self,
+                CookingSession.self,
+                SharedRecipe.self,
+                SharedRecipeBook.self,
+                SharingPreferences.self,
+                CachedSharedRecipe.self,
+                CloudKitRecipePreview.self,
+                VersionHistoryRecord.self,
+                Meal.self,
+                SharedMeal.self,
+                CachedSharedMeal.self,
+                configurations: configuration
+            )
+        } catch {
+            fatalError("Test host in-memory ModelContainer failed: \(error)")
+        }
+    }
+
     private static func createLocalContainer() -> ModelContainer {
         // CRITICAL: Use the same database file as CloudKit config to preserve data!
         let cloudKitURL = URL.applicationSupportDirectory.appending(path: "CloudKitModel.sqlite")
@@ -389,6 +442,7 @@ class ModelContainerManager: ObservableObject {
             let container = try ModelContainer(
                 for: RecipeX.self,              // Unified recipe model (CloudKit compatible)
                 Book.self,                      // Unified book model (CloudKit compatible)
+                BookPicture.self,               // One record per book picture (bytes in external storage)
                 RecipeImageAssignment.self,
                 UserAllergenProfile.self,
                 CachedDiabeticAnalysis.self,
@@ -462,6 +516,7 @@ class ModelContainerManager: ObservableObject {
                         let container = try ModelContainer(
                             for: RecipeX.self,              // Unified recipe model (CloudKit compatible)
                             Book.self,                      // Unified book model (CloudKit compatible)
+                            BookPicture.self,               // One record per book picture (bytes in external storage)
                             RecipeImageAssignment.self,
                             UserAllergenProfile.self,
                             CachedDiabeticAnalysis.self,

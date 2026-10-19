@@ -99,7 +99,7 @@ struct RecipeExportImportRestoreTests {
     func testImportBackupFromReczipes2Folder() async throws {
         // Create export
         let exportSchema = Schema([RecipeX.self, Book.self])
-        let exportConfig = ModelConfiguration(schema: exportSchema, isStoredInMemoryOnly: true)
+        let exportConfig = ModelConfiguration(UUID().uuidString, schema: exportSchema, isStoredInMemoryOnly: true, cloudKitDatabase: .none)
         let exportContainer = try ModelContainer(for: exportSchema, configurations: [exportConfig])
         let exportContext = exportContainer.mainContext
         
@@ -110,7 +110,7 @@ struct RecipeExportImportRestoreTests {
         
         // Create new context for import
         let importSchema = Schema([RecipeX.self, Book.self])
-        let importConfig = ModelConfiguration(schema: importSchema, isStoredInMemoryOnly: true)
+        let importConfig = ModelConfiguration(UUID().uuidString, schema: importSchema, isStoredInMemoryOnly: true, cloudKitDatabase: .none)
         let importContainer = try ModelContainer(for: importSchema, configurations: [importConfig])
         let importContext = importContainer.mainContext
         
@@ -136,7 +136,7 @@ struct RecipeExportImportRestoreTests {
     @Test("Import with overwrite mode replaces existing recipes")
     func testImportOverwriteMode() async throws {
         let schema = Schema([RecipeX.self, Book.self])
-        let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+        let configuration = ModelConfiguration(UUID().uuidString, schema: schema, isStoredInMemoryOnly: true, cloudKitDatabase: .none)
         let container = try ModelContainer(for: schema, configurations: [configuration])
         let context = container.mainContext
         
@@ -172,7 +172,7 @@ struct RecipeExportImportRestoreTests {
         let nonExistentURL = getBackupDirectory().appendingPathComponent("DoesNotExist.reczipes")
         
         let schema = Schema([RecipeX.self, Book.self])
-        let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+        let configuration = ModelConfiguration(UUID().uuidString, schema: schema, isStoredInMemoryOnly: true, cloudKitDatabase: .none)
         let container = try! ModelContainer(for: schema, configurations: [configuration])
         let context = container.mainContext
         
@@ -200,7 +200,7 @@ struct RecipeExportImportRestoreTests {
         try corruptedData.write(to: corruptedURL)
         
         let schema = Schema([RecipeX.self, Book.self])
-        let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+        let configuration = ModelConfiguration(UUID().uuidString, schema: schema, isStoredInMemoryOnly: true, cloudKitDatabase: .none)
         let container = try ModelContainer(for: schema, configurations: [configuration])
         let context = container.mainContext
         
@@ -232,7 +232,7 @@ struct RecipeExportImportRestoreTests {
         try emptyData.write(to: emptyURL)
         
         let schema = Schema([RecipeX.self, Book.self])
-        let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+        let configuration = ModelConfiguration(UUID().uuidString, schema: schema, isStoredInMemoryOnly: true, cloudKitDatabase: .none)
         let container = try ModelContainer(for: schema, configurations: [configuration])
         let context = container.mainContext
         
@@ -257,7 +257,7 @@ struct RecipeExportImportRestoreTests {
     @Test("Backup persists across app sessions")
     func testBackupPersistence() async throws {
         let schema = Schema([RecipeX.self, Book.self])
-        let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+        let configuration = ModelConfiguration(UUID().uuidString, schema: schema, isStoredInMemoryOnly: true, cloudKitDatabase: .none)
         let container = try ModelContainer(for: schema, configurations: [configuration])
         let context = container.mainContext
         
@@ -316,7 +316,7 @@ struct RecipeExportImportRestoreTests {
     @Test("Multiple sequential backups all persist")
     func testMultipleSequentialBackups() async throws {
         let schema = Schema([RecipeX.self, Book.self])
-        let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+        let configuration = ModelConfiguration(UUID().uuidString, schema: schema, isStoredInMemoryOnly: true, cloudKitDatabase: .none)
         let container = try ModelContainer(for: schema, configurations: [configuration])
         let context = container.mainContext
         

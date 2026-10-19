@@ -32,6 +32,13 @@ struct ExportableBook: Codable {
     let dateModified: Date
     let recipeIDs: [UUID]
     let color: String?
+    /// Book content — optional with nil defaults so older packages decode and
+    /// existing memberwise call sites keep compiling.
+    /// Covers + interior pictures (image bytes inline)
+    var images: [BookImage]? = nil
+    var glossary: [BookGlossaryEntry]? = nil
+    /// Contents rows (headings, recipes, pictures)
+    var tableOfContents: [BookSection]? = nil
 }
 
 /// Exportable recipe data

@@ -272,7 +272,7 @@ struct RecipeExportImportBasicTests {
         
         // Create in-memory ModelContainer for this test
         let schema = Schema([RecipeX.self, Book.self])
-        let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+        let configuration = ModelConfiguration(UUID().uuidString, schema: schema, isStoredInMemoryOnly: true, cloudKitDatabase: .none)
         let container = try ModelContainer(for: schema, configurations: [configuration])
         let context = container.mainContext
         

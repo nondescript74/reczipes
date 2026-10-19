@@ -110,6 +110,26 @@ struct CloudKitRecipeManagerView: View {
                     .disabled(isLoading)
                 }
             }
+
+            // Admin: the only path that can delete a recipe that belongs to a book
+            Section {
+                NavigationLink {
+                    BookRecipeAdminDeleteView()
+                } label: {
+                    Label("Delete a Book Recipe (Admin)…", systemImage: "lock.shield")
+                        .foregroundStyle(Color.appCritical)
+                }
+                NavigationLink {
+                    RecipeBatchAdminDeleteView()
+                } label: {
+                    Label("Delete Recipes Added on a Day (Admin)…", systemImage: "calendar.badge.minus")
+                        .foregroundStyle(Color.appCritical)
+                }
+            } header: {
+                Text("Book Recipes")
+            } footer: {
+                Text("Recipes in a book are protected everywhere else. This removes one from its books and deletes it after you type its title.")
+            }
         }
         .searchable(text: $searchText, prompt: "Search recipes")
         .navigationTitle("My CloudKit Recipes")

@@ -112,11 +112,13 @@ class BackgroundProcessingManager: ObservableObject {
         request.requiresExternalPower = false // Allow on battery
         request.earliestBeginDate = Date(timeIntervalSinceNow: 1) // Start ASAP
 
-        do {
-            try BGTaskScheduler.shared.submit(request)
-            AppLog.info("Background extraction task scheduled", category: .background)
-        } catch {
-            AppLog.error("Failed to schedule background task: \(error)", category: .background)
+        Task {
+            do {
+                try await BGTaskScheduler.shared.submitTaskRequest(request)
+                AppLog.info("Background extraction task scheduled", category: .background)
+            } catch {
+                AppLog.error("Failed to schedule background task: \(error)", category: .background)
+            }
         }
         #endif
     }

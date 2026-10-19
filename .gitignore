@@ -20,3 +20,4 @@ Backups/
 .DS_Store
 xcuserdata/
 build_log.txt
+_testlogs/

@@ -503,7 +503,7 @@ class RecipeExtractorViewModel: ObservableObject {
             // Reduce image size to 10-20KB max before sending to Claude
             // Since we're only extracting text, we don't need high resolution
             AppLog.info("Reducing image size before sending to Claude...", category: .extraction)
-            guard let imageData = imagePreprocessor.reduceImageSize(image, maxSizeBytes: 20_000) else {
+            guard let imageData = imagePreprocessor.reduceImageSize(image, maxSizeBytes: ImagePreprocessor.extractionMaxBytes, maxDimension: ImagePreprocessor.extractionMaxDimension) else {
                 throw ClaudeAPIError.invalidResponse
             }
             AppLog.info("Image size after reduction: \(imageData.count) bytes (~\(imageData.count / 1024)KB)", category: .extraction)

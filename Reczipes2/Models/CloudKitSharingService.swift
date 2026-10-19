@@ -398,6 +398,7 @@ class CloudKitSharingService: ObservableObject {
     /// Delete a recipe book from CloudKit
     func deleteRecipeBookFromCloudKit(cloudRecordID: String) async throws {
         let recordID = CKRecord.ID(recordName: cloudRecordID)
+        await BookPicturePublisher(database: publicDatabase).deleteAllPictures(bookID: nil, bookRecordName: cloudRecordID)
         
         do {
             _ = try await publicDatabase.deleteRecord(withID: recordID)
@@ -582,6 +583,9 @@ class CloudKitSharingService: ObservableObject {
     /// ~1 MB CloudKit record limit for bookData (recipe ids) and the other fields.
     static let previewsByteBudget = 700_000
 
+    /// Bytes allowed for bookData (ids + picture metadata + contents + glossary)
+    static let bookDataByteBudget = 250_000
+
     static func fitPreviewsToRecordBudget(_ previews: [RecipePreviewData]) -> [RecipePreviewData] {
         func size(_ p: [RecipePreviewData]) -> Int { (try? JSONEncoder().encode(p).count) ?? Int.max }
         if size(previews) <= previewsByteBudget { return previews }
@@ -732,8 +736,32 @@ class CloudKitSharingService: ObservableObject {
         // Create CloudKit record, or reuse the existing one when refreshing in place
         let record = existingRecordToUpdate ?? CKRecord(recordType: CloudKitRecordType.sharedRecipeBook)
         
+        // Pictures: one public SharedBookPicture record each (image as CKAsset).
+        // bookData lists their METADATA only, so the book record stays small.
+        // Picture failures are logged and never fail the book share.
+        let previousPictureNames = existingRecordToUpdate.map(BookPicturePublisher.pictureRecordNames(in:)) ?? []
+        let bookPictures = book.pictures(in: modelContext)
+        var pictureMetadata: [BookPictureMetadata]? = nil
+        if !bookPictures.isEmpty || !previousPictureNames.isEmpty {
+            AppLog.info("📚 Publishing \(bookPictures.count) book picture(s)...", category: .sharing)
+            let published = await BookPicturePublisher(database: publicDatabase).publish(
+                bookID: book.id!,
+                bookRecordName: record.recordID.recordName,
+                pictures: bookPictures,
+                sharedBy: userID,
+                previousRecordNames: previousPictureNames
+            )
+            pictureMetadata = published.isEmpty ? nil : published
+        }
+        let contents = book.tableOfContents
+        let glossary = book.glossary.map { entry -> BookGlossaryEntry in
+            var copy = entry
+            copy.imageData = nil
+            return copy
+        }
+
         // Convert book to CloudKit-friendly format with previews
-        let cloudBook = CloudKitRecipeBook(
+        var cloudBook = CloudKitRecipeBook(
             id: book.id!,
             name: book.name!,
             bookDescription: book.bookDescription,
@@ -742,12 +770,26 @@ class CloudKitSharingService: ObservableObject {
             color: book.color,
             sharedByUserID: userID,
             sharedByUserName: currentUserName,
-            sharedDate: Date()
+            sharedDate: Date(),
+            images: pictureMetadata,
+            tableOfContents: contents.isEmpty ? nil : contents,
+            glossary: glossary.isEmpty ? nil : glossary
         )
         
-        // Encode book data to JSON
+        // Encode book data to JSON. bookData + recipePreviews must stay under the
+        // ~1 MB record cap: drop contents, then glossary, if bookData is too big.
         let encoder = JSONEncoder()
-        let bookJsonData = try encoder.encode(cloudBook)
+        var bookJsonData = try encoder.encode(cloudBook)
+        if bookJsonData.count > Self.bookDataByteBudget, cloudBook.tableOfContents != nil {
+            AppLog.warning("📚 bookData \(bookJsonData.count) bytes; dropping contents rows from the public copy", category: .sharing)
+            cloudBook.tableOfContents = nil
+            bookJsonData = try encoder.encode(cloudBook)
+        }
+        if bookJsonData.count > Self.bookDataByteBudget, cloudBook.glossary != nil {
+            AppLog.warning("📚 bookData \(bookJsonData.count) bytes; dropping glossary from the public copy", category: .sharing)
+            cloudBook.glossary = nil
+            bookJsonData = try encoder.encode(cloudBook)
+        }
         
         record["bookData"] = String(data: bookJsonData, encoding: .utf8)
         record["name"] = book.name! as any CKRecordValue as CKRecordValue
@@ -1088,6 +1130,8 @@ class CloudKitSharingService: ObservableObject {
         // share made against another CloudKit environment) counts as unshared, so the
         // stale tracking entry below is still removed.
         let recordID = CKRecord.ID(recordName: cloudRecordID)
+        // Picture records first (their names are listed in the book record)
+        await BookPicturePublisher(database: publicDatabase).deleteAllPictures(bookID: bookID, bookRecordName: cloudRecordID)
         do {
             try await publicDatabase.deleteRecord(withID: recordID)
             AppLog.info("📚 Deleted CloudKit record: \(cloudRecordID)", category: .sharing)
@@ -1840,6 +1884,7 @@ class CloudKitSharingService: ObservableObject {
         for (book, cloudRecordID) in ghostBooks {
             do {
                 let recordID = CKRecord.ID(recordName: cloudRecordID)
+                await BookPicturePublisher(database: publicDatabase).deleteAllPictures(bookID: book.id, bookRecordName: cloudRecordID)
                 try await publicDatabase.deleteRecord(withID: recordID)
                 AppLog.info("👻   Deleted '\(book.name)'", category: .sharing)
                 successCount += 1
@@ -2287,6 +2332,9 @@ class CloudKitSharingService: ObservableObject {
                 AppLog.info("📚   Created RecipeBook: '\(cloudBook.name)' by \(cloudBook.sharedByUserName ?? "Unknown")", category: .sharing)
             }
             
+            // Contents, glossary and pictures published with the book (newer builds)
+            await applyPublishedBookContent(cloudBook, to: book, modelContext: modelContext)
+            
             // Check if SharedRecipeBook tracking entry exists
             if let existingSharedBook = existingSharedBooksByID[cloudBook.id] {
                 // Update existing tracking entry if needed
@@ -2413,8 +2461,8 @@ class CloudKitSharingService: ObservableObject {
                         // Note: We intentionally DO NOT delete the Recipe entities themselves
                         // because they might be used in other books or standalone.
                         // Only delete the book container.
-                        AppLog.info("📚     Deleting RecipeBook entity", category: .sharing)
-                        modelContext.delete(recipeBook)
+                        AppLog.info("📚     Deleting RecipeBook entity and its pictures", category: .sharing)
+                        BookPictureStore.deleteBook(recipeBook, in: modelContext)
                     } else {
                         // RecipeBook might have already been deleted, but tracking remains
                         AppLog.warning("📚     RecipeBook entity not found (might have been already deleted)", category: .sharing)
@@ -2844,5 +2892,176 @@ class CloudKitSharingService: ObservableObject {
         try modelContext.save()
         
         AppLog.info("Imported shared recipe: \(cloudRecipe.title)", category: .sharing)
+    }
+}
+
+// MARK: - Published book content (receiving side)
+
+extension CloudKitSharingService {
+
+    /// Applies the optional content of a community book: contents rows, glossary
+    /// and pictures. Pictures are downloaded from their SharedBookPicture records
+    /// (only those whose hash changed) and stored as BookPicture rows.
+    /// Books shared by older builds have none of this and are left as they are.
+    func applyPublishedBookContent(_ cloudBook: CloudKitRecipeBook, to book: Book, modelContext: ModelContext) async {
+        let encoder = JSONEncoder()
+        if let rows = cloudBook.tableOfContents, !rows.isEmpty,
+           let data = try? encoder.encode(rows), data != book.tableOfContentsData {
+            book.tableOfContentsData = data
+        }
+        if let entries = cloudBook.glossary, !entries.isEmpty,
+           let data = try? encoder.encode(entries), data != book.glossaryData {
+            book.glossaryData = data
+        }
+
+        guard let metadata = cloudBook.images, BookPictureStore.isAvailable(in: modelContext) else { return }
+        let bookID = cloudBook.id
+        var localHashes: [UUID: String] = [:]
+        for row in BookPictureStore.fetch(bookID: bookID, in: modelContext) {
+            if let id = row.id, let hash = row.imageHash, row.imageData != nil { localHashes[id] = hash }
+        }
+        let downloaded = await BookPicturePublisher(database: publicDatabase).downloadPictures(metadata, skipping: localHashes)
+        let stored = BookPictureStore.applyPublished(bookID: bookID, metadata: metadata, downloaded: downloaded, in: modelContext)
+        let json = BookPictureStore.metadataJSON(for: stored)
+        if json != book.imagesData { book.imagesData = json }
+        if book.coverImageData == nil,
+           let cover = book.pictures(in: modelContext).first(where: \.isCover) {
+            book.updatePrimaryCover(from: cover)
+        }
+        if !downloaded.isEmpty {
+            AppLog.info("📚   📷 Downloaded \(downloaded.count) picture(s) for '\(cloudBook.name)'", category: .sharing)
+        }
+    }
+}
+
+// MARK: - Repair local sharing records (local-only; never deletes public records, recipes or books)
+
+/// Outcome of `repairSharingRecords`. "Before" counts are what Settings → Sharing showed.
+struct SharingRepairReport: Equatable {
+    var recipeTrackingBefore = 0
+    var recipeTrackingAfter = 0
+    var bookTrackingBefore = 0
+    var bookTrackingAfter = 0
+    var duplicateRecipeRowsRemoved = 0
+    var duplicateBookRowsRemoved = 0
+    /// Tracking rows marked inactive because no matching public record exists
+    var staleRecipeRowsDeactivated = 0
+    var staleBookRowsDeactivated = 0
+    /// Local books with no active public share after the repair (e.g. Munira Pearson)
+    var booksNowUnshared: [String] = []
+
+    var summary: String {
+        var lines = [
+            "Recipes: \(recipeTrackingBefore) → \(recipeTrackingAfter) shared (\(duplicateRecipeRowsRemoved) duplicate records removed, \(staleRecipeRowsDeactivated) not found online).",
+            "Books: \(bookTrackingBefore) → \(bookTrackingAfter) shared (\(duplicateBookRowsRemoved) duplicate records removed, \(staleBookRowsDeactivated) not found online)."
+        ]
+        if !booksNowUnshared.isEmpty {
+            lines.append("Not shared yet — share these again: " + booksNowUnshared.sorted().joined(separator: ", ") + ".")
+        }
+        lines.append("No recipe, book or public copy was deleted.")
+        return lines.joined(separator: "\n")
+    }
+}
+
+extension CloudKitSharingService {
+
+    /// Rebuilds the local SharedRecipe / SharedRecipeBook tracking to match the public database:
+    /// - keeps ONE tracking row per recipe and per book (the one whose cloudRecordID exists publicly,
+    ///   else the newest), deleting the extra local rows;
+    /// - marks a row inactive when its public record no longer exists, so the item shows as unshared;
+    /// - only ever deletes/edits local tracking rows. Public CloudKit records, recipes and books are untouched.
+    /// With `dryRun` nothing is saved, so the report can be shown for confirmation first.
+    func repairSharingRecords(modelContext: ModelContext, dryRun: Bool) async throws -> SharingRepairReport {
+        guard let currentUserID = currentUserID else { throw SharingError.notAuthenticated }
+        var report = SharingRepairReport()
+
+        // What is actually public for this user
+        let publicRecipeRecords = try await fetchAllCloudKitRecords(type: CloudKitRecordType.sharedRecipe)
+            .filter { ($0["sharedBy"] as? String) == currentUserID }
+        let publicBookRecords = try await fetchAllCloudKitRecords(type: CloudKitRecordType.sharedRecipeBook)
+            .filter { ($0["sharedBy"] as? String) == currentUserID }
+        let publicRecipeNames = Set(publicRecipeRecords.map { $0.recordID.recordName })
+        let publicBookNames = Set(publicBookRecords.map { $0.recordID.recordName })
+
+        // ---- Recipes ----
+        let recipeRows = try modelContext.fetch(FetchDescriptor<SharedRecipe>())
+            .filter { $0.sharedByUserID == nil || $0.sharedByUserID == currentUserID }
+        report.recipeTrackingBefore = recipeRows.filter { $0.isActive && $0.sharedByUserID == currentUserID }.count
+        var recipeGroups: [String: [SharedRecipe]] = [:]
+        for row in recipeRows {
+            let key = row.recipeID?.uuidString ?? "cloud:" + (row.cloudRecordID ?? row.id.uuidString)
+            recipeGroups[key, default: []].append(row)
+        }
+        var keptRecipeRows: [SharedRecipe] = []
+        for (_, rows) in recipeGroups {
+            let ranked = rows.sorted { a, b in
+                let aLive = a.cloudRecordID.map(publicRecipeNames.contains) ?? false
+                let bLive = b.cloudRecordID.map(publicRecipeNames.contains) ?? false
+                if aLive != bLive { return aLive }
+                if a.isActive != b.isActive { return a.isActive }
+                return a.sharedDate > b.sharedDate
+            }
+            guard let keep = ranked.first else { continue }
+            keptRecipeRows.append(keep)
+            for extra in ranked.dropFirst() {
+                report.duplicateRecipeRowsRemoved += 1
+                if !dryRun { modelContext.delete(extra) }
+            }
+            let live = keep.cloudRecordID.map(publicRecipeNames.contains) ?? false
+            if keep.isActive && !live {
+                report.staleRecipeRowsDeactivated += 1
+                if !dryRun { keep.isActive = false }
+            }
+        }
+        report.recipeTrackingAfter = keptRecipeRows.filter {
+            $0.sharedByUserID == currentUserID && ($0.cloudRecordID.map(publicRecipeNames.contains) ?? false)
+        }.count
+
+        // ---- Books ----
+        let bookRows = try modelContext.fetch(FetchDescriptor<SharedRecipeBook>())
+            .filter { $0.sharedByUserID == nil || $0.sharedByUserID == currentUserID }
+        report.bookTrackingBefore = bookRows.filter { $0.isActive && $0.sharedByUserID == currentUserID }.count
+        var bookGroups: [String: [SharedRecipeBook]] = [:]
+        for row in bookRows {
+            let key = row.bookID?.uuidString ?? "cloud:" + (row.cloudRecordID ?? row.id.uuidString)
+            bookGroups[key, default: []].append(row)
+        }
+        var liveBookIDs = Set<UUID>()
+        for (_, rows) in bookGroups {
+            let ranked = rows.sorted { a, b in
+                let aLive = a.cloudRecordID.map(publicBookNames.contains) ?? false
+                let bLive = b.cloudRecordID.map(publicBookNames.contains) ?? false
+                if aLive != bLive { return aLive }
+                if a.isActive != b.isActive { return a.isActive }
+                return a.sharedDate > b.sharedDate
+            }
+            guard let keep = ranked.first else { continue }
+            for extra in ranked.dropFirst() {
+                report.duplicateBookRowsRemoved += 1
+                if !dryRun { modelContext.delete(extra) }
+            }
+            let live = keep.cloudRecordID.map(publicBookNames.contains) ?? false
+            if live, keep.sharedByUserID == currentUserID {
+                report.bookTrackingAfter += 1
+                if let id = keep.bookID { liveBookIDs.insert(id) }
+            }
+            if keep.isActive && !live {
+                report.staleBookRowsDeactivated += 1
+                if !dryRun { keep.isActive = false }
+            }
+        }
+
+        // Local books that are not (or no longer) public — candidates to share again
+        let books = (try? modelContext.fetch(FetchDescriptor<Book>())) ?? []
+        report.booksNowUnshared = books
+            .filter { ($0.isImported ?? false) == false }
+            .filter { book in guard let id = book.id else { return false }; return !liveBookIDs.contains(id) }
+            .map { $0.displayName }
+
+        if !dryRun {
+            try modelContext.save()
+            AppLog.info("🔧 Sharing records repaired:\n\(report.summary)", category: .sharing)
+        }
+        return report
     }
 }

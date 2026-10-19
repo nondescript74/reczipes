@@ -289,6 +289,8 @@ class RecipeBackupManager {
             
             if let existing = existingRecipe {
                 AppLog.info("Overwriting existing recipe '\(recipe.safeTitle)'", category: .backup)
+                // Book safety: the restored copy keeps the SAME id, so any book that lists
+                // this recipe still resolves to it — a same-id replacement, not a loss.
                 // Delete the existing recipe (images will be overwritten)
                 modelContext.delete(existing)
                 updatedCount += 1
@@ -464,7 +466,10 @@ class RecipeBackupManager {
         
         var newCount = 0
         var updatedCount = 0
-        let skippedCount = 0
+        var skippedCount = 0
+        // Book members are never deleted by a restore (BookMembershipGuard): this path
+        // gives the restored copy a NEW id, so replacing a book member would orphan it.
+        let bookGuard = BookMembershipGuard(context: modelContext)
         
         for recipeBackup in package.recipes {
             let recipeData = recipeBackup.recipe
@@ -476,6 +481,11 @@ class RecipeBackupManager {
             let existingRecipe = existingRecipes.first { $0.id == recipe.id }
             
             if let existing = existingRecipe {
+                if bookGuard.isProtected(existing.id) {
+                    bookGuard.logSkip(recipeTitle: existing.safeTitle, recipeID: existing.id, operation: "Backup restore (overwrite)")
+                    skippedCount += 1
+                    continue
+                }
                 switch overwriteMode {
                     
                 default:
@@ -669,6 +679,14 @@ struct BookBackup: Codable {
     let color: String?
     let isShared: Bool
     let cloudRecordID: String?
+    /// Book content (optional so older .bookbackup files still decode)
+    /// JSON of [BookImage] — covers + interior pictures with captions, WITH bytes
+    /// (read from the book's BookPicture records; a local file has room for them)
+    let imagesData: Data?
+    /// JSON of [BookGlossaryEntry]
+    let glossaryData: Data?
+    /// JSON of [BookSection] — contents rows (headings, recipes, pictures)
+    let tableOfContentsData: Data?
     
     init(from book: Book) {
         self.id = book.id ?? UUID()
@@ -682,6 +700,10 @@ struct BookBackup: Codable {
         self.color = book.color
         self.isShared = book.isShared ?? false
         self.cloudRecordID = book.cloudRecordID
+        let pictures = book.images
+        self.imagesData = pictures.isEmpty ? book.imagesData : (try? JSONEncoder().encode(pictures))
+        self.glossaryData = book.glossaryData
+        self.tableOfContentsData = book.tableOfContentsData
     }
     
     init(
@@ -695,7 +717,10 @@ struct BookBackup: Codable {
         recipeIDs: [UUID],
         color: String?,
         isShared: Bool,
-        cloudRecordID: String?
+        cloudRecordID: String?,
+        imagesData: Data? = nil,
+        glossaryData: Data? = nil,
+        tableOfContentsData: Data? = nil
     ) {
         self.id = id
         self.name = name
@@ -708,6 +733,9 @@ struct BookBackup: Codable {
         self.color = color
         self.isShared = isShared
         self.cloudRecordID = cloudRecordID
+        self.imagesData = imagesData
+        self.glossaryData = glossaryData
+        self.tableOfContentsData = tableOfContentsData
     }
 }
 
@@ -828,7 +856,7 @@ class BookBackupManager {
                     
                 case .overwrite:
                     AppLog.info("Overwriting existing Book '\(bookBackup.name)'", category: .backup)
-                    modelContext.delete(existing)
+                    BookPictureStore.deleteBook(existing, in: modelContext)
                     updatedCount += 1
                 }
 
@@ -852,7 +880,10 @@ class BookBackupManager {
                     recipeIDs: bookBackup.recipeIDs,
                     color: bookBackup.color,
                     isShared: bookBackup.isShared,
-                    cloudRecordID: nil // Clear CloudKit record for new copy
+                    cloudRecordID: nil, // Clear CloudKit record for new copy
+                    imagesData: bookBackup.imagesData,
+                    glossaryData: bookBackup.glossaryData,
+                    tableOfContentsData: bookBackup.tableOfContentsData
                 )
             }
             
@@ -874,6 +905,11 @@ class BookBackupManager {
                 AppLog.debug("Set cover image data (\(coverImageData.count / 1024)KB) for '\(bookToImport.name)'", category: .backup)
             }
             
+            // Book content: pictures, glossary, contents
+            newBook.imagesData = bookToImport.imagesData
+            newBook.glossaryData = bookToImport.glossaryData
+            newBook.tableOfContentsData = bookToImport.tableOfContentsData
+            
             // Set CloudKit properties
             newBook.isShared = bookToImport.isShared
             newBook.cloudRecordID = bookToImport.cloudRecordID
@@ -885,6 +921,9 @@ class BookBackupManager {
             newBook.lastSyncedToCloud = nil
             
             modelContext.insert(newBook)
+            // Inline pictures from the backup become BookPicture records
+            // (imagesData is rewritten as metadata only; undecodable data is left in place)
+            BookPictureMigration.migrate(book: newBook, in: modelContext)
             AppLog.debug("Imported Book '\(bookToImport.name)' with \(bookToImport.recipeIDs.count) recipes", category: .backup)
         }
         

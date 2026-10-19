@@ -159,7 +159,7 @@ struct RecipeExportImportBackupTests {
     func testBackupDirectoryCreation() async throws {
         // Create a test recipe
         let schema = Schema([RecipeX.self, Book.self, VersionHistoryRecord.self])
-        let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+        let configuration = ModelConfiguration(UUID().uuidString, schema: schema, isStoredInMemoryOnly: true, cloudKitDatabase: .none)
         let container = try ModelContainer(for: schema, configurations: [configuration])
         let context = container.mainContext
 
@@ -186,7 +186,7 @@ struct RecipeExportImportBackupTests {
     func testBackupSavedToCorrectLocation() async throws {
         // Create a test recipe
         let schema = Schema([RecipeX.self, Book.self, VersionHistoryRecord.self])
-        let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+        let configuration = ModelConfiguration(UUID().uuidString, schema: schema, isStoredInMemoryOnly: true, cloudKitDatabase: .none)
         let container = try ModelContainer(for: schema, configurations: [configuration])
         let context = container.mainContext
 
@@ -214,7 +214,7 @@ struct RecipeExportImportBackupTests {
     @MainActor
     func testBackupFileNaming() async throws {
         let schema = Schema([RecipeX.self, Book.self, VersionHistoryRecord.self])
-        let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+        let configuration = ModelConfiguration(UUID().uuidString, schema: schema, isStoredInMemoryOnly: true, cloudKitDatabase: .none)
         let container = try ModelContainer(for: schema, configurations: [configuration])
         let context = container.mainContext
         
@@ -310,7 +310,7 @@ struct RecipeExportImportBackupTests {
         
         // Create a test recipe
         let schema = Schema([RecipeX.self, Book.self, VersionHistoryRecord.self])
-        let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+        let configuration = ModelConfiguration(UUID().uuidString, schema: schema, isStoredInMemoryOnly: true, cloudKitDatabase: .none)
         let container = try ModelContainer(for: schema, configurations: [configuration])
         let context = container.mainContext
         
@@ -463,7 +463,7 @@ struct RecipeExportImportBackupTests {
     @MainActor
     func testCreateBackupSingleRecipe() async throws {
         let schema = Schema([RecipeX.self, Book.self, VersionHistoryRecord.self])
-        let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+        let configuration = ModelConfiguration(UUID().uuidString, schema: schema, isStoredInMemoryOnly: true, cloudKitDatabase: .none)
         let container = try ModelContainer(for: schema, configurations: [configuration])
         let context = container.mainContext
         
@@ -491,7 +491,7 @@ struct RecipeExportImportBackupTests {
     @MainActor
     func testCreateBackupMultipleRecipes() async throws {
         let schema = Schema([RecipeX.self, Book.self, VersionHistoryRecord.self])
-        let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+        let configuration = ModelConfiguration(UUID().uuidString, schema: schema, isStoredInMemoryOnly: true, cloudKitDatabase: .none)
         let container = try ModelContainer(for: schema, configurations: [configuration])
         let context = container.mainContext
         
@@ -529,7 +529,7 @@ struct RecipeExportImportBackupTests {
     @MainActor
     func testBackupFileIsValidJSON() async throws {
         let schema = Schema([RecipeX.self, Book.self, VersionHistoryRecord.self])
-        let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+        let configuration = ModelConfiguration(UUID().uuidString, schema: schema, isStoredInMemoryOnly: true, cloudKitDatabase: .none)
         let container = try ModelContainer(for: schema, configurations: [configuration])
         let context = container.mainContext
         

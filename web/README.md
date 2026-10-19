@@ -115,3 +115,5 @@ fixtures/sample.json sample data in CloudKit response shape (scripts/make-fixtur
 test/                node:test suite
 MVP.md               the MVP definition — Z's to fill in
 ```
+
+**Book pictures (app builds from 2026-10-17).** The app no longer puts picture bytes in the book record. Each picture is its own public `SharedBookPicture` record (`bookID`, `bookRecordName`, `pictureID`, `kind` cover|interior, `title`, `caption`, `order`, `sourcePage`, `linkedRecipeIDs`, `image` CKAsset, `imageHash`); `bookData.images` keeps metadata only. The store queries `SharedBookPicture` alongside the other two types and joins pictures to books by `bookRecordName` (fallback `bookID`); a failed picture query logs and leaves books without pictures rather than failing the load. Legacy inline `bookImages` still decode for older shares.

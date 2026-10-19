@@ -45,6 +45,8 @@ struct ContentView: View {
     @State private var lastCommunitySync: Date?
     @State private var isSyncingCommunityRecipes = false
     @State private var syncProgress: String = ""
+    /// Set when a delete is refused because the recipe is in a book (BookMembershipGuard)
+    @State private var protectedDeleteMessage: String?
     private let syncInterval: TimeInterval = 300 // 5 minutes
     
     // Active allergen profile
@@ -308,6 +310,14 @@ struct ContentView: View {
             
             mainNavigationView
         }
+        .alert("Recipe Is in a Book", isPresented: Binding(
+            get: { protectedDeleteMessage != nil },
+            set: { if !$0 { protectedDeleteMessage = nil } }
+        )) {
+            Button("OK", role: .cancel) { protectedDeleteMessage = nil }
+        } message: {
+            Text(protectedDeleteMessage ?? "")
+        }
     }
     
     // MARK: - Main Navigation View
@@ -352,6 +362,10 @@ struct ContentView: View {
             // Small delay so the list renders first
             try? await Task.sleep(for: .seconds(2))
             await autoCleanDuplicates()
+            // Book pictures: move any inline picture bytes (older builds, or books
+            // synced from a device on an older build) into BookPicture records.
+            // Idempotent and cheap when nothing is inline.
+            BookPictureMigration.migrateAll(in: modelContext)
         }
     }
 
@@ -376,7 +390,13 @@ struct ContentView: View {
         // Reuse the shared detection logic
         // Exact copies only (fingerprint / source URL). Same-title recipes are left
         // for the user to review in Settings → Maintenance → Duplicate Recipe Detector.
-        let clusters = DuplicateRecipeDetectorView.buildDuplicateClusters(from: allRecipes, includeTitleMatches: false)
+        // Recipes in a book are never auto-removed; book copies are preferred as the keeper.
+        let bookGuard = BookMembershipGuard(context: modelContext)
+        let clusters = DuplicateRecipeDetectorView.buildDuplicateClusters(
+            from: allRecipes,
+            includeTitleMatches: false,
+            bookRecipeIDs: bookGuard.protectedRecipeIDs
+        )
 
         guard !clusters.isEmpty else {
             DuplicateScanTracker.recordCleanScan(recipeCount: allRecipes.count)
@@ -390,6 +410,10 @@ struct ContentView: View {
         for cluster in clusters {
             let keep = cluster.canonical
             for dupe in cluster.duplicatesToDelete {
+                guard bookGuard.canRemoveDuplicate(dupe.id, keeping: keep.id) else {
+                    bookGuard.logSkip(recipeTitle: dupe.safeTitle, recipeID: dupe.id, operation: "Launch duplicate auto-clean")
+                    continue
+                }
                 AppLog.info("🗑️ Auto-removing duplicate: '\(dupe.safeTitle)' (ID: \(String(describing: dupe.id)))", category: .cloudKit)
                 if let dupID = dupe.id, let keepID = keep.id {
                     DuplicateRecipeDetectorView.repointBooks(from: dupID, to: keepID, in: books)
@@ -1054,6 +1078,14 @@ struct ContentView: View {
     }
     
     private func deleteRecipe(_ recipe: RecipeX) {
+        // Book members are never deleted from everyday UI — the user must remove
+        // the recipe from its book(s) first (BookMembershipGuard).
+        let bookGuard = BookMembershipGuard(books: books)
+        if bookGuard.isProtected(recipe.id) {
+            bookGuard.logSkip(recipeTitle: recipe.safeTitle, recipeID: recipe.id, operation: "Delete Recipe")
+            protectedDeleteMessage = bookGuard.refusalMessage(recipeTitle: recipe.safeTitle, recipeID: recipe.id)
+            return
+        }
         withAnimation {
             AppLog.info("Deleting recipe: \(recipe.safeTitle) (ID: \(recipe.safeID))", category: .recipe)
             

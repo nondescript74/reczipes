@@ -198,13 +198,17 @@ class ImagePreprocessor {
     ///   - image: The input image to reduce
     ///   - maxSizeBytes: Maximum size in bytes (default 20KB for text extraction)
     /// - Returns: Data representation of the reduced image, or nil if failed
-    func reduceImageSize(_ image: PlatformImage, maxSizeBytes: Int = 20_000) -> Data? {
-        AppLog.info("Reducing image size, target: \(maxSizeBytes) bytes (~\(maxSizeBytes / 1024)KB)", category: .image)
+    /// Budget for images sent to Claude for recipe extraction. The old 20 KB / 1024 px target
+    /// crushed dense or photographed book pages until the model invented recipes (2026-10-18:
+    /// "Sour Dough", "Chocolate Truffles" from A Spicy Touch 3 pages). 1568 px is the long side
+    /// the API uses without further downscaling.
+    static let extractionMaxDimension: CGFloat = 1568
+    static let extractionMaxBytes: Int = 600_000
+
+    func reduceImageSize(_ image: PlatformImage, maxSizeBytes: Int = 20_000, maxDimension: CGFloat = 1024) -> Data? {
+        AppLog.info("Reducing image size, target: \(maxSizeBytes) bytes (~\(maxSizeBytes / 1024)KB), max \(Int(maxDimension)) px", category: .image)
         AppLog.debug("Original image size: \(image.size.width) x \(image.size.height)", category: .image)
 
-        // For small targets (like 10-20KB), we need aggressive resizing first
-        // Text recognition works well even with heavily reduced images
-        let maxDimension: CGFloat = 1024 // Maximum width or height
         var workingImage = image
 
         // First pass: Resize to reasonable dimensions if needed
@@ -218,8 +222,10 @@ class ImagePreprocessor {
             }
         }
 
-        // Try aggressive compression first on resized image
-        let compressionQualities: [CGFloat] = [0.5, 0.4, 0.3, 0.2, 0.15, 0.1]
+        // Large budgets keep text crisp; small budgets fall back to aggressive compression
+        let compressionQualities: [CGFloat] = maxSizeBytes >= 200_000
+            ? [0.85, 0.75, 0.65, 0.5, 0.4, 0.3]
+            : [0.5, 0.4, 0.3, 0.2, 0.15, 0.1]
 
         for quality in compressionQualities {
             if let data = jpegData(workingImage, quality: quality) {

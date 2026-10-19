@@ -27,7 +27,7 @@ struct SharingWorkflowTests {
             SharedRecipeBook.self,
             SharingPreferences.self
         ])
-        let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+        let configuration = ModelConfiguration(UUID().uuidString, schema: schema, isStoredInMemoryOnly: true, cloudKitDatabase: .none)
         return try ModelContainer(for: schema, configurations: [configuration])
     }
     
@@ -102,7 +102,7 @@ struct SharingWorkflowTests {
         
         private func createTestModelContainer() throws -> ModelContainer {
             let schema = Schema([SharingPreferences.self])
-            let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+            let configuration = ModelConfiguration(UUID().uuidString, schema: schema, isStoredInMemoryOnly: true, cloudKitDatabase: .none)
             return try ModelContainer(for: schema, configurations: [configuration])
         }
     }
@@ -408,7 +408,7 @@ struct SharingWorkflowTests {
                 SharedRecipe.self,
                 SharedRecipeBook.self
             ])
-            let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+            let configuration = ModelConfiguration(UUID().uuidString, schema: schema, isStoredInMemoryOnly: true, cloudKitDatabase: .none)
             return try ModelContainer(for: schema, configurations: [configuration])
         }
     }
@@ -498,7 +498,7 @@ struct SharingWorkflowTests {
                 SharedRecipe.self,
                 SharedRecipeBook.self
             ])
-            let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+            let configuration = ModelConfiguration(UUID().uuidString, schema: schema, isStoredInMemoryOnly: true, cloudKitDatabase: .none)
             return try ModelContainer(for: schema, configurations: [configuration])
         }
     }
@@ -641,7 +641,7 @@ struct SharingWorkflowTests {
                 SharedRecipe.self,
                 SharedRecipeBook.self
             ])
-            let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+            let configuration = ModelConfiguration(UUID().uuidString, schema: schema, isStoredInMemoryOnly: true, cloudKitDatabase: .none)
             return try ModelContainer(for: schema, configurations: [configuration])
         }
     }

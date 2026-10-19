@@ -319,6 +319,7 @@ struct DatabaseDuplicateCleanupView: View {
         do {
             var count = 0
             
+            let bookGuard = BookMembershipGuard(context: modelContext)
             // For each duplicate group, keep the newest and delete the rest
             for (_, recipes) in info.duplicateGroups {
                 // Sort by persistence date (newest first)
@@ -326,8 +327,16 @@ struct DatabaseDuplicateCleanupView: View {
                     (first.persistentModelID.hashValue) > (second.persistentModelID.hashValue)
                 }
                 
-                // Delete all except the first (newest)
+                // Delete all except the first (newest).
+                // Book safety (BookMembershipGuard): every row in this group has the SAME
+                // recipe UUID, so one row always survives and any book that lists the id
+                // still resolves. canRemoveDuplicate allows exactly that and nothing more.
+                let keepRow = sorted.first
                 for recipe in sorted.dropFirst() {
+                    guard bookGuard.canRemoveDuplicate(recipe.id, keeping: keepRow?.id) else {
+                        bookGuard.logSkip(recipeTitle: recipe.title ?? "", recipeID: recipe.id, operation: "Remove Duplicate Recipes (same ID)")
+                        continue
+                    }
                     modelContext.delete(recipe)
                     count += 1
                 }

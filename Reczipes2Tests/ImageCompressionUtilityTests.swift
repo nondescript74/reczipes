@@ -6,7 +6,12 @@
 //
 
 import Testing
+import CoreGraphics
+#if canImport(UIKit)
 import UIKit
+#elseif canImport(AppKit)
+import AppKit
+#endif
 @testable import Reczipes2
 
 /// Tests for the ImageCompressionUtility
@@ -17,13 +22,12 @@ struct ImageCompressionUtilityTests {
     func testCompressImageUnderTarget() throws {
         // Create a large test image
         let size = CGSize(width: 3000, height: 3000)
-        let renderer = UIGraphicsImageRenderer(size: size)
-        let testImage = renderer.image { context in
-            UIColor.blue.setFill()
+        let testImage = TestImageRenderer.image(size: size) { context in
+            TestColor.blue.setFill()
             context.fill(CGRect(origin: .zero, size: size))
 
             // Add some detail
-            UIColor.red.setFill()
+            TestColor.red.setFill()
             for i in 0..<100 {
                 let rect = CGRect(x: CGFloat(i * 30), y: CGFloat(i * 30), width: 50, height: 50)
                 context.fill(rect)
@@ -39,7 +43,7 @@ struct ImageCompressionUtilityTests {
         #expect(compressedData.count <= 100_000, "Compressed image should be under 100KB, got \(compressedData.count) bytes")
 
         // Verify we can decode it back
-        let decodedImage = UIImage(data: compressedData)
+        let decodedImage = PlatformImage(data: compressedData)
         #expect(decodedImage != nil, "Should be able to decode compressed image")
     }
 
@@ -48,9 +52,8 @@ struct ImageCompressionUtilityTests {
     func testSmallImageStaysSmall() throws {
         // Create a small test image
         let size = CGSize(width: 200, height: 200)
-        let renderer = UIGraphicsImageRenderer(size: size)
-        let testImage = renderer.image { context in
-            UIColor.green.setFill()
+        let testImage = TestImageRenderer.image(size: size) { context in
+            TestColor.green.setFill()
             context.fill(CGRect(origin: .zero, size: size))
         }
 
@@ -69,9 +72,8 @@ struct ImageCompressionUtilityTests {
     func testThumbnailCompression() throws {
         // Create a test image
         let size = CGSize(width: 2000, height: 2000)
-        let renderer = UIGraphicsImageRenderer(size: size)
-        let testImage = renderer.image { context in
-            UIColor.orange.setFill()
+        let testImage = TestImageRenderer.image(size: size) { context in
+            TestColor.orange.setFill()
             context.fill(CGRect(origin: .zero, size: size))
         }
 
@@ -90,13 +92,12 @@ struct ImageCompressionUtilityTests {
     func testBookCoverCompression() throws {
         // Create a test image
         let size = CGSize(width: 2000, height: 2000)
-        let renderer = UIGraphicsImageRenderer(size: size)
-        let testImage = renderer.image { context in
-            UIColor.purple.setFill()
+        let testImage = TestImageRenderer.image(size: size) { context in
+            TestColor.purple.setFill()
             context.fill(CGRect(origin: .zero, size: size))
 
             // Add more detail for book covers
-            UIColor.yellow.setFill()
+            TestColor.yellow.setFill()
             for i in 0..<200 {
                 let rect = CGRect(x: CGFloat(i * 10), y: CGFloat(i * 10), width: 30, height: 30)
                 context.fill(rect)
@@ -118,9 +119,8 @@ struct ImageCompressionUtilityTests {
     func testResizeIfNeeded() throws {
         // Create a very large test image
         let size = CGSize(width: 5000, height: 3000)
-        let renderer = UIGraphicsImageRenderer(size: size)
-        let testImage = renderer.image { context in
-            UIColor.gray.setFill()
+        let testImage = TestImageRenderer.image(size: size) { context in
+            TestColor.gray.setFill()
             context.fill(CGRect(origin: .zero, size: size))
         }
 

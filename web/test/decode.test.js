@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { readFileSync } from 'node:fs';
-import { decodeSharedRecipe, decodeSharedBook, swiftDateToISO, assetURL, newestPerId, summarize } from '../lib/decode.js';
+import { decodeSharedRecipe, decodeSharedBook, swiftDateToISO, assetURL, newestPerId, summarize, decodeSharedBookPicture, attachBookPictures } from '../lib/decode.js';
 import { createCloudKitClient } from '../lib/cloudkit.js';
 import { createStore } from '../lib/store.js';
 
@@ -189,4 +189,38 @@ test('pictures without an uploaded asset are dropped; list stays light', async (
   assert.equal(summary.glossaryCount, 2);
   const full = await store.getBook(summary.id);
   assert.deepEqual(full.sections.filter((s) => s.itemType === 'recipe').map((s) => s.available), [true, true]);
+});
+
+test('SharedBookPicture records attach to their book, covers first, overriding inline images', () => {
+  const book = {
+    recordName: 'BOOK-REC',
+    id: 'B1',
+    name: 'B',
+    images: [{ id: 'P2', title: 'inline old', caption: null, kind: 'interior', order: 5, url: 'https://x/old.jpg' }],
+  };
+  const pic = (fields) => ({
+    recordName: fields.pictureID,
+    recordType: 'SharedBookPicture',
+    fields: Object.fromEntries(
+      Object.entries({ ...fields, image: { value: { downloadURL: 'https://x/${f}' } } }).map(([k, v]) => [
+        k,
+        k === 'image' ? v : { value: v },
+      ]),
+    ),
+  });
+  const pictures = [
+    pic({ bookRecordName: 'BOOK-REC', bookID: 'b1', pictureID: 'p2', kind: 'interior', title: 'Foreword', order: 1 }),
+    pic({ bookRecordName: 'BOOK-REC', bookID: 'b1', pictureID: 'p1', kind: 'cover', title: 'Front', order: 9 }),
+    pic({ bookRecordName: 'OTHER', bookID: 'b9', pictureID: 'p3', kind: 'cover', title: 'Elsewhere', order: 0 }),
+  ].map(decodeSharedBookPicture);
+  assert.equal(pictures.filter(Boolean).length, 3);
+  const [out] = attachBookPictures([book], pictures);
+  assert.deepEqual(
+    out.images.map((i) => [i.id, i.kind, i.title]),
+    [
+      ['P1', 'cover', 'Front'],
+      ['P2', 'interior', 'Foreword'],
+    ],
+  );
+  assert.ok(out.images.every((i) => i.url && !('bookRecordName' in i)));
 });

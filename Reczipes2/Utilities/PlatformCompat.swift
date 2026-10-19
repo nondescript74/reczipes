@@ -576,6 +576,31 @@ enum MacFilePicker {
         guard panel.runModal() == .OK else { return [] }
         return panel.urls.compactMap { NSImage(contentsOf: $0) }
     }
+
+    /// Present an open panel for choosing one folder (e.g. a book package). Runs modally.
+    @MainActor
+    static func pickFolder(message: String? = nil) -> URL? {
+        let panel = NSOpenPanel()
+        panel.allowsMultipleSelection = false
+        panel.canChooseDirectories = true
+        panel.canChooseFiles = false
+        if let message { panel.message = message }
+        guard panel.runModal() == .OK else { return nil }
+        return panel.url
+    }
+
+    /// Present an open panel for choosing one file of the given types. Runs modally.
+    @MainActor
+    static func pickFile(types: [UTType], message: String? = nil) -> URL? {
+        let panel = NSOpenPanel()
+        panel.allowsMultipleSelection = false
+        panel.canChooseDirectories = false
+        panel.canChooseFiles = true
+        panel.allowedContentTypes = types
+        if let message { panel.message = message }
+        guard panel.runModal() == .OK else { return nil }
+        return panel.url
+    }
 }
 
 /// macOS share affordance backed by `NSSharingServicePicker`. Presents the

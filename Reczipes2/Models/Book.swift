@@ -314,9 +314,9 @@ extension Book {
     /// Whether this book has any content
     var hasContent: Bool {
         recipeCount > 0 ||
-        (imagesData != nil && !(try? JSONDecoder().decode([BookImage].self, from: imagesData!))!.isEmpty) ||
-        (instructionsData != nil && !(try? JSONDecoder().decode([BookInstruction].self, from: instructionsData!))!.isEmpty) ||
-        (glossaryData != nil && !(try? JSONDecoder().decode([BookGlossaryEntry].self, from: glossaryData!))!.isEmpty)
+        !imageMetadata.isEmpty ||
+        !instructions.isEmpty ||
+        !glossary.isEmpty
     }
     
     /// Whether this book is owned by the current user (not imported from someone else)
@@ -405,18 +405,92 @@ extension Book {
         markModified()
     }
     
-    /// Get images
+    /// Covers + interior pictures WITH bytes.
+    ///
+    /// Backed by `BookPicture` rows (one record per picture). Falls back to inline
+    /// bytes still in `imagesData` for a book that is not migrated yet or not yet
+    /// inserted into a context. See BookPicture.swift.
     var images: [BookImage] {
-        get {
-            guard let data = imagesData else { return [] }
-            return (try? JSONDecoder().decode([BookImage].self, from: data)) ?? []
+        pictures(in: modelContext)
+    }
+
+    /// Pictures with bytes, read through `context` (or the inline fallback).
+    func pictures(in context: ModelContext?) -> [BookImage] {
+        // Read imagesData first: it is rewritten on every picture change, so
+        // SwiftUI views reading `images` refresh when pictures change.
+        let inline = imagesData
+        if let context, let bookID = id {
+            let rows = BookPictureStore.images(bookID: bookID, in: context)
+            if !rows.isEmpty { return rows }
+        }
+        guard let inline else { return [] }
+        return ((try? JSONDecoder().decode([BookImage].self, from: inline)) ?? []).filter(\.hasBytes)
+    }
+
+    /// Picture metadata as stored in `imagesData` (no bytes; cheap, no fetch)
+    var imageMetadata: [BookImage] {
+        guard let data = imagesData else { return [] }
+        return ((try? JSONDecoder().decode([BookImage].self, from: data)) ?? []).map(\.metadataOnly)
+    }
+
+    /// Set images (kept in the given order values; does not touch the cover)
+    func setImages(_ images: [BookImage], in context: ModelContext? = nil) {
+        storeImages(images, in: context)
+        markModified()
+    }
+
+    /// Cover pictures in order (several allowed; the first is the primary cover)
+    var coverImages: [BookImage] {
+        images.filter(\.isCover).sorted { $0.order < $1.order }
+    }
+
+    /// Interior pictures in order (kind "interior" or nil)
+    var interiorImages: [BookImage] {
+        images.filter { !$0.isCover }.sorted { $0.order < $1.order }
+    }
+
+    /// Stores images (order = position) and keeps `coverImageData` equal to a
+    /// downscaled copy of the first cover picture (when there is one), so list
+    /// thumbnails, older views, sharing and the web keep working.
+    func setImagesUpdatingPrimaryCover(_ newImages: [BookImage], in context: ModelContext? = nil) {
+        let ordered = newImages.enumerated().map { index, image -> BookImage in
+            var copy = image
+            copy.order = index
+            return copy
+        }
+        storeImages(ordered, in: context)
+        if let firstCover = ordered.first(where: \.isCover) {
+            let source: BookImage? = firstCover.hasBytes
+                ? Optional(firstCover)
+                : pictures(in: context ?? modelContext).first(where: { $0.id == firstCover.id })
+            if let source { updatePrimaryCover(from: source) }
+        }
+        markModified()
+    }
+
+    /// Sets `coverImageData` to a list-sized copy of `image` (only when it changed)
+    func updatePrimaryCover(from image: BookImage) {
+        guard image.hasBytes else { return }
+        let thumbnail = BookImageProcessing.coverThumbnail(from: image.imageData) ?? image.imageData
+        if thumbnail != coverImageData {
+            coverImageData = thumbnail
+            coverImageHash = Self.calculateImageHash(from: thumbnail)
         }
     }
-    
-    /// Set images
-    func setImages(_ images: [BookImage]) {
-        imagesData = try? JSONEncoder().encode(images)
-        markModified()
+
+    /// Writes pictures as `BookPicture` rows + metadata-only `imagesData`.
+    /// Without a context (book not inserted yet) the pictures stay inline and
+    /// `BookPictureMigration` moves them on the next launch.
+    private func storeImages(_ images: [BookImage], in context: ModelContext?) {
+        if let context = context ?? modelContext, let bookID = id, BookPictureStore.isAvailable(in: context) {
+            BookPictureStore.replace(bookID: bookID, with: images, in: context)
+            imagesData = BookPictureStore.metadataJSON(for: images)
+        } else {
+            imagesData = images.isEmpty ? nil : (try? JSONEncoder().encode(images))
+            if !images.isEmpty {
+                AppLog.warning("📷 Book '\(displayName)' has no model context; \(images.count) picture(s) kept inline until the next launch migration", category: .storage)
+            }
+        }
     }
     
     /// Get instructions
@@ -588,14 +662,30 @@ struct BookRecipePreview: Codable, Identifiable {
     let cookTimeMinutes: Int?
 }
 
-/// Image item in a book
-struct BookImage: Codable, Identifiable {
-    let id: UUID
-    let title: String?
-    let caption: String?
-    let imageData: Data
-    let order: Int
-    let dateAdded: Date
+/// Image item in a book (covers and interior pictures).
+///
+/// New fields are optional with nil defaults so JSON written by older builds
+/// (and older .bookbackup / CloudKit payloads) still decodes.
+nonisolated struct BookImage: Codable, Identifiable, Equatable {
+    var id: UUID
+    var title: String?
+    var caption: String?
+    var imageData: Data
+    var order: Int
+    var dateAdded: Date
+    /// "cover" or "interior"; nil means interior (older data)
+    var kind: String? = nil
+    /// Page in the printed book this picture faces, e.g. "page 16", "back cover"
+    var sourcePage: String? = nil
+    /// Recipes shown in this picture
+    var linkedRecipeIDs: [UUID]? = nil
+    /// File name it was imported from (lets a re-import replace instead of duplicate)
+    var sourceFile: String? = nil
+
+    nonisolated static let coverKind = "cover"
+    nonisolated static let interiorKind = "interior"
+
+    var isCover: Bool { kind == Self.coverKind }
 }
 
 /// Instruction/how-to item in a book
@@ -610,14 +700,18 @@ struct BookInstruction: Codable, Identifiable {
 }
 
 /// Glossary entry in a book
-struct BookGlossaryEntry: Codable, Identifiable {
-    let id: UUID
-    let term: String
-    let definition: String
-    let imageData: Data?
-    let relatedTerms: [String]?
-    let order: Int
-    let dateAdded: Date
+struct BookGlossaryEntry: Codable, Identifiable, Equatable {
+    var id: UUID
+    var term: String
+    var definition: String
+    var imageData: Data?
+    var relatedTerms: [String]?
+    var order: Int
+    var dateAdded: Date
+    /// Local / Gujarati name, e.g. "elaychi" for Cardamom (optional)
+    var localName: String? = nil
+    /// Page in the printed book (optional)
+    var sourcePage: String? = nil
 }
 
 /// Custom content item in a book
@@ -631,11 +725,25 @@ struct BookContentItem: Codable, Identifiable {
     let dateAdded: Date
 }
 
-/// Section in table of contents
-struct BookSection: Codable, Identifiable {
-    let id: UUID
-    let title: String
-    let order: Int
-    let itemType: String // "recipe", "image", "instruction", "glossary", "custom"
-    let itemID: UUID
+/// One row of the book's contents, in reading order.
+///
+/// itemType: "heading" (chapter / sub-heading; itemID is a fresh UUID),
+/// "recipe" (itemID = RecipeX id), "image" (itemID = BookImage id),
+/// "glossary", "index", "instruction", "custom".
+struct BookSection: Codable, Identifiable, Equatable {
+    var id: UUID
+    var title: String
+    var order: Int
+    var itemType: String
+    var itemID: UUID
+    /// Heading depth: 0 = chapter, 1 = sub-heading (nil = 0)
+    var level: Int? = nil
+    /// Page in the printed book (optional, informational only — never used for the index)
+    var sourcePage: String? = nil
+
+    nonisolated static let headingType = "heading"
+    nonisolated static let recipeType = "recipe"
+    nonisolated static let imageType = "image"
+    nonisolated static let glossaryType = "glossary"
+    nonisolated static let indexType = "index"
 }

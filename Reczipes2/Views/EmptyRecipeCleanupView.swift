@@ -35,7 +35,7 @@ struct EmptyRecipeCleanupView: View {
     
     private var operationList: some View {
         VStack(alignment: .leading, spacing: 4) {
-            Text("• Remove recipes from all books")
+            Text("• Skip recipes that are in a book (remove them from the book first)")
             Text("• Unshare recipes from CloudKit")
             Text("• Delete from local storage and iCloud")
         }
@@ -227,8 +227,11 @@ struct EmptyRecipeCleanupView: View {
         
         var deletedCount = 0
         var failedCount = 0
-        var removedFromBooks = 0
+        var protectedCount = 0
         var unsharedCount = 0
+        // Recipes that are in a book are never deleted here, even if empty
+        // (BookMembershipGuard) — remove them from the book first.
+        let bookGuard = BookMembershipGuard(context: modelContext)
         
         let totalRecipes = emptyRecipes.count
         
@@ -236,18 +239,16 @@ struct EmptyRecipeCleanupView: View {
             currentRecipeName = recipe.title ?? "Untitled"
             currentProgress = Double(index) / Double(totalRecipes)
             
+            // Step 1: Book members are protected — skip them
+            if bookGuard.isProtected(recipe.id) {
+                bookGuard.logSkip(recipeTitle: currentRecipeName, recipeID: recipe.id, operation: "Empty recipe cleanup")
+                protectedCount += 1
+                continue
+            }
+
             AppLog.info("🗑️ Deleting empty recipe: \(currentRecipeName)", category: .storage)
             
             do {
-                // Step 1: Remove from all books
-                let booksContaining = booksContainingRecipe(recipe)
-                for book in booksContaining {
-                    if let recipeID = recipe.id {
-                        book.removeRecipe(recipeID)
-                        removedFromBooks += 1
-                        AppLog.info("📚 Removed recipe from book: \(book.displayName)", category: .storage)
-                    }
-                }
                 
                 // Step 2: Unshare from CloudKit if shared
                 if let cloudRecordID = recipe.cloudRecordID {
@@ -289,8 +290,8 @@ struct EmptyRecipeCleanupView: View {
         if deletedCount > 0 {
             resultsMessage += "✅ Successfully deleted \(deletedCount) recipe\(deletedCount == 1 ? "" : "s").\n"
         }
-        if removedFromBooks > 0 {
-            resultsMessage += "📚 Removed from \(removedFromBooks) book assignment\(removedFromBooks == 1 ? "" : "s").\n"
+        if protectedCount > 0 {
+            resultsMessage += "📚 Kept \(protectedCount) recipe\(protectedCount == 1 ? "" : "s") that \(protectedCount == 1 ? "is" : "are") in a book. Remove from the book first to delete.\n"
         }
         if unsharedCount > 0 {
             resultsMessage += "☁️ Unshared \(unsharedCount) recipe\(unsharedCount == 1 ? "" : "s") from CloudKit.\n"
@@ -306,7 +307,7 @@ struct EmptyRecipeCleanupView: View {
         emptyRecipes.removeAll()
         await scanForEmptyRecipes()
         
-        AppLog.info("📊 Cleanup complete: \(deletedCount) deleted, \(failedCount) failed, \(removedFromBooks) book removals, \(unsharedCount) unshared", category: .storage)
+        AppLog.info("📊 Cleanup complete: \(deletedCount) deleted, \(failedCount) failed, \(protectedCount) kept (in a book), \(unsharedCount) unshared", category: .storage)
     }
     
     // MARK: - Helpers

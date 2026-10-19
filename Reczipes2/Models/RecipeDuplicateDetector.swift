@@ -16,6 +16,8 @@ struct DuplicateGroup: Identifiable {
     let fingerprint: String
     let title: String
     let recipes: [RecipeX ]
+    /// Recipes that are in at least one book (never deleted — BookMembershipGuard)
+    var bookRecipeIDs: Set<UUID> = []
     
     var duplicateCount: Int {
         recipes.count
@@ -23,8 +25,11 @@ struct DuplicateGroup: Identifiable {
     
     /// The canonical (preferred) recipe to keep
     var canonical: RecipeX  {
-        // Sort by creation date, keep oldest
+        // Prefer a copy that is in a book, then keep oldest
         recipes.sorted { recipe1, recipe2 in
+            let b1 = recipe1.id.map { bookRecipeIDs.contains($0) } ?? false
+            let b2 = recipe2.id.map { bookRecipeIDs.contains($0) } ?? false
+            if b1 != b2 { return b1 }
             let date1 = recipe1.dateCreated ?? recipe1.dateAdded
             let date2 = recipe2.dateCreated ?? recipe2.dateAdded
             let aDate = Date()
@@ -32,9 +37,12 @@ struct DuplicateGroup: Identifiable {
         }.first!
     }
     
-    /// Recipes that should be deleted (all except canonical)
+    /// Recipes that should be deleted (all except canonical, never a book member)
     var duplicatesToDelete: [RecipeX ] {
-        recipes.filter { $0.id != canonical.id }
+        let keepID = canonical.id
+        return recipes.filter { r in
+            r.id != keepID && !(r.id.map { bookRecipeIDs.contains($0) } ?? false)
+        }
     }
 }
 
@@ -205,6 +213,8 @@ struct RecipeDuplicateDetectorView: View {
         print("🔍 Starting duplicate analysis...")
         print("📊 Total recipes in database: \(allRecipes.count)")
         
+        let bookRecipeIDs = BookMembershipGuard(context: modelContext).protectedRecipeIDs
+
         // Group recipes by content fingerprint
         var recipesByFingerprint: [String: [RecipeX ]] = [:]
         for recipe in allRecipes {
@@ -219,7 +229,8 @@ struct RecipeDuplicateDetectorView: View {
                 DuplicateGroup(
                     fingerprint: fingerprint,
                     title: recipes.first?.title ?? "Untitled",
-                    recipes: recipes
+                    recipes: recipes,
+                    bookRecipeIDs: bookRecipeIDs
                 )
             }
             .sorted { $0.title < $1.title }
@@ -258,7 +269,12 @@ struct RecipeDuplicateDetectorView: View {
         print("🗑️ Deleting \(toDelete.count) duplicates of '\(group.title)'")
         print("✅ Keeping canonical recipe ID: \(String(describing: group.canonical.id))")
         
+        let bookGuard = BookMembershipGuard(context: modelContext)
         for recipe in toDelete {
+            guard !bookGuard.isProtected(recipe.id) else {
+                bookGuard.logSkip(recipeTitle: recipe.title ?? "", recipeID: recipe.id, operation: "Duplicate group delete")
+                continue
+            }
             print("   🗑️ Deleting duplicate ID: \(String(describing: recipe.id))")
             modelContext.delete(recipe)
         }
@@ -280,6 +296,11 @@ struct RecipeDuplicateDetectorView: View {
             print("⚠️ Cannot delete canonical recipe")
             return
         }
+        let bookGuard = BookMembershipGuard(context: modelContext)
+        guard !bookGuard.isProtected(recipe.id) else {
+            bookGuard.logSkip(recipeTitle: recipe.title ?? "", recipeID: recipe.id, operation: "Duplicate single delete")
+            return
+        }
         
         print("🗑️ Deleting single recipe: \(String(describing: recipe.title)) (ID: \(String(describing: recipe.id)))")
         modelContext.delete(recipe)
@@ -299,12 +320,15 @@ struct RecipeDuplicateDetectorView: View {
         print("🗑️ Cleaning up ALL duplicates...")
         
         var totalDeleted = 0
+        let bookGuard = BookMembershipGuard(context: modelContext)
         for group in duplicateGroups {
-            let toDelete = group.duplicatesToDelete
-            totalDeleted += toDelete.count
-            
-            for recipe in toDelete {
+            for recipe in group.duplicatesToDelete {
+                guard !bookGuard.isProtected(recipe.id) else {
+                    bookGuard.logSkip(recipeTitle: recipe.title ?? "", recipeID: recipe.id, operation: "Clean up all duplicates")
+                    continue
+                }
                 modelContext.delete(recipe)
+                totalDeleted += 1
             }
         }
         

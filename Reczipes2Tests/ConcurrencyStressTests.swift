@@ -13,7 +13,13 @@ import OSLog
 import SwiftUI
 @testable import Reczipes2
 
+// The app target defaults to MainActor isolation (SWIFT_DEFAULT_ACTOR_ISOLATION =
+// MainActor); this test target does not. `DiagnosticLogger.shared`, its read APIs and
+// the global log* helpers are therefore main-actor isolated, so the suite runs on the
+// main actor and only genuinely `nonisolated` APIs (DiagnosticLogger.debug/info/...,
+// AppLog.*, LoggingHelper.shouldLog) are hammered from background tasks.
 @Suite("Concurrency Stress Tests", .serialized)
+@MainActor
 struct ConcurrencyStressTests {
 
     private let logger = Logger(subsystem: "com.reczipes.tests", category: "concurrency-stress")
@@ -54,11 +60,13 @@ struct ConcurrencyStressTests {
 
         await withDiscardingTaskGroup { group in
             for i in 0..<iterations {
-                group.addTask {
-                    logDebug("Global debug \(i)", category: "general")
-                    logInfo("Global info \(i)", category: "general")
-                    logWarning("Global warning \(i)", category: "general")
-                    logError("Global error \(i)", category: "general")
+                group.addTask { @MainActor in
+                    // `file:` picks the DiagnosticLogger.swift overloads; LoggingHelpers.swift
+                    // declares logDebug/logInfo/logError(_:category:) too, which is ambiguous.
+                    logDebug("Global debug \(i)", category: "general", file: #file)
+                    logInfo("Global info \(i)", category: "general", file: #file)
+                    logWarning("Global warning \(i)", category: "general", file: #file)
+                    logError("Global error \(i)", category: "general", file: #file)
                 }
             }
         }
@@ -80,9 +88,9 @@ struct ConcurrencyStressTests {
                     diagLogger.info("Concurrent write \(i)", category: "general")
                 }
             }
-            // Readers
+            // Readers (main-actor isolated APIs)
             for _ in 0..<20 {
-                group.addTask {
+                group.addTask { @MainActor in
                     _ = diagLogger.getLogFileURL()
                     _ = diagLogger.getLogFileSize()
                     _ = diagLogger.getFormattedLogFileSize()

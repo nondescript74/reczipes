@@ -7,6 +7,7 @@
 
 import SwiftUI
 import SwiftData
+import UniformTypeIdentifiers
 
 struct BookDetailView: View {
     @Environment(\.dismiss) private var dismiss
@@ -27,6 +28,16 @@ struct BookDetailView: View {
     @State private var showingExportError = false
     @State private var isUpdatingPublicCopy = false
     @State private var publicCopyMessage: String?
+    /// Which part of the book is shown (recipe pager, contents, pictures, glossary, index)
+    @State private var viewMode: BookViewMode = .recipes
+    @State private var showingPackageImporter = false
+    @State private var isImportingPackage = false
+    @State private var packageSummaryText: String?
+
+    /// Tabs offered for this book (Glossary only when the book has one)
+    private var availableModes: [BookViewMode] {
+        BookViewMode.allCases.filter { $0 != .glossary || !book.glossary.isEmpty }
+    }
     @State private var showingRemoveMissing = false
 
     /// True when this book has an active public share (shown on the community/web catalogue).
@@ -64,11 +75,38 @@ struct BookDetailView: View {
     
     var body: some View {
         NavigationStack {
-            ZStack {
-                if bookRecipes.isEmpty {
-                    emptyBookView
-                } else {
-                    recipePageView
+            VStack(spacing: 0) {
+                Picker("Show", selection: $viewMode) {
+                    ForEach(availableModes) { mode in
+                        Text(mode.rawValue).tag(mode)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .labelsHidden()
+                .padding(.horizontal)
+                .padding(.vertical, 8)
+
+                switch viewMode {
+                case .recipes:
+                    if bookRecipes.isEmpty {
+                        emptyBookView
+                    } else {
+                        recipePageView
+                    }
+                case .contents:
+                    BookContentsView(
+                        book: book,
+                        recipes: bookRecipes,
+                        bookColor: bookColor,
+                        onOpenRecipe: openRecipe,
+                        onOpenMode: { viewMode = $0 }
+                    )
+                case .pictures:
+                    BookPicturesView(book: book)
+                case .glossary:
+                    BookGlossaryView(entries: book.glossary)
+                case .index:
+                    BookIndexView(recipes: bookRecipes, onOpenRecipe: openRecipe)
                 }
             }
             .navigationTitle(book.displayName)
@@ -98,6 +136,14 @@ struct BookDetailView: View {
                             .disabled(isUpdatingPublicCopy)
                         }
 
+                        Button {
+                            startPackageImport()
+                        } label: {
+                            Label(isImportingPackage ? "Importing Book Package…" : "Import Book Package…",
+                                  systemImage: "shippingbox")
+                        }
+                        .disabled(isImportingPackage)
+
                         if !missingRecipeIDs.isEmpty {
                             Button {
                                 showingRemoveMissing = true
@@ -122,6 +168,38 @@ struct BookDetailView: View {
             }
             .sheet(isPresented: $showingBookEditor) {
                 BookEditorView(book: book)
+            }
+            .fileImporter(isPresented: $showingPackageImporter, allowedContentTypes: [.folder]) { result in
+                switch result {
+                case .success(let url):
+                    runPackageImport(at: url)
+                case .failure(let error):
+                    packageSummaryText = "Couldn't open the folder: \(error.localizedDescription)"
+                }
+            }
+            .sheet(isPresented: Binding(
+                get: { packageSummaryText != nil },
+                set: { if !$0 { packageSummaryText = nil } }
+            )) {
+                NavigationStack {
+                    ScrollView {
+                        Text(packageSummaryText ?? "")
+                            .textSelection(.enabled)
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                            .padding()
+                    }
+                    .navigationTitle("Book Package")
+                    .platformNavigationBarTitleDisplayMode(.inline)
+                    .toolbar {
+                        ToolbarItem(placement: .confirmationAction) {
+                            Button("Done") { packageSummaryText = nil }
+                        }
+                    }
+                }
+                .macOSSheetFrame()
+            }
+            .onChange(of: availableModes) { _, modes in
+                if !modes.contains(viewMode) { viewMode = .recipes }
             }
             .confirmationDialog("Remove Missing Recipe Links?", isPresented: $showingRemoveMissing, titleVisibility: .visible) {
                 Button("Remove \(missingRecipeIDs.count) Link\(missingRecipeIDs.count == 1 ? "" : "s")", role: .destructive) {
@@ -261,6 +339,41 @@ struct BookDetailView: View {
         }
     }
     
+    // MARK: - Navigation between tabs
+
+    /// Shows the given recipe in the pager (used by Contents and Index).
+    private func openRecipe(_ recipeID: UUID) {
+        guard let index = bookRecipes.firstIndex(where: { $0.id == recipeID }) else { return }
+        currentPage = index
+        viewMode = .recipes
+    }
+
+    // MARK: - Book package import
+
+    private func startPackageImport() {
+        #if os(macOS)
+        if let url = MacFilePicker.pickFolder(message: "Choose a book package folder (with book_structure.json)") {
+            runPackageImport(at: url)
+        }
+        #else
+        showingPackageImporter = true
+        #endif
+    }
+
+    private func runPackageImport(at url: URL) {
+        isImportingPackage = true
+        defer { isImportingPackage = false }
+        let scoped = url.startAccessingSecurityScopedResource()
+        defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+        do {
+            let summary = try BookPackageImporter.importPackage(at: url, into: book, context: modelContext)
+            packageSummaryText = summary.text
+        } catch {
+            AppLog.error("Book package import failed: \(error)", category: .recipe)
+            packageSummaryText = "Import failed: \(error.localizedDescription)"
+        }
+    }
+
     // MARK: - Export
     
     /// Overwrites this book's public record with its current recipe list, in place.

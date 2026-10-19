@@ -570,7 +570,10 @@ class RecipeBookExportService {
             dateCreated: book.dateCreated ?? Date(),
             dateModified: book.dateModified ?? Date(),
             recipeIDs: book.recipeIDs ?? [],
-            color: book.color
+            color: book.color,
+            images: includeImages && !book.images.isEmpty ? book.images : nil,
+            glossary: book.glossary.isEmpty ? nil : book.glossary,
+            tableOfContents: book.tableOfContents.isEmpty ? nil : book.tableOfContents
         )
         
         // Convert RecipeX to ExportableRecipe
@@ -702,6 +705,7 @@ class RecipeBookExportService {
         } else if let existingBook = existingBooks.first, replaceExisting {
             // Replace existing book
             AppLog.info("Replacing existing book", category: .batch)
+            // Same book id: its BookPicture rows are replaced by BookContentTransfer below
             modelContext.delete(existingBook)
         }
         
@@ -746,6 +750,7 @@ class RecipeBookExportService {
         )
         
         modelContext.insert(newBook)
+        BookContentTransfer.apply(exportPackage.book, to: newBook, context: modelContext)
         
         // Import or update recipes
         for recipeModel in exportPackage.recipes {
@@ -856,6 +861,7 @@ class RecipeBookExportService {
         )
         
         modelContext.insert(newBook)
+        BookContentTransfer.apply(exportPackage.book, to: newBook, recipeIDMap: recipeIDMapping, context: modelContext)
         
         // Import recipes
         for recipe in newRecipes {

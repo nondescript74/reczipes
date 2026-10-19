@@ -42,6 +42,10 @@ class RecipeBookImportService {
         let dateModified: Date
         let recipeIDs: [UUID]
         let color: String?
+        /// Book content (pictures, glossary, contents) — optional so older packages decode.
+        var images: [BookImage]? = nil
+        var glossary: [BookGlossaryEntry]? = nil
+        var tableOfContents: [BookSection]? = nil
     }
     
     /// Exportable recipe data
@@ -230,7 +234,8 @@ class RecipeBookImportService {
         case .replace:
             if let existing = existingBook {
                 wasReplaced = true
-                // Delete existing book and all its recipes
+                // Delete the existing book record only (its recipes are never deleted).
+                // Its BookPicture rows share the book id and are replaced by the import below.
                 modelContext.delete(existing)
                 AppLog.info("Deleted existing book: \(existing.name ?? "Untitled")", category: .batch)
             }
@@ -378,7 +383,12 @@ class RecipeBookImportService {
             isImported: true
         )
         
+        let contentIDMap = Dictionary(
+            zip(exportPackage.recipes.map(\.id), importedRecipeIDs).map { ($0, $1) },
+            uniquingKeysWith: { first, _ in first }
+        )
         modelContext.insert(book)
+        BookContentTransfer.apply(exportPackage.book, to: book, recipeIDMap: contentIDMap, context: modelContext)
         
         return (book: book, newRecipes: newRecipes, updatedRecipes: updatedRecipes, images: imagesImported)
     }

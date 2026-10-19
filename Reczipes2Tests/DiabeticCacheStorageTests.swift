@@ -31,8 +31,10 @@ struct DiabeticCacheStorageTests {
         ])
         
         let configuration = ModelConfiguration(
+            UUID().uuidString,
             schema: schema,
-            isStoredInMemoryOnly: true
+            isStoredInMemoryOnly: true,
+            cloudKitDatabase: .none
         )
         
         return try ModelContainer(

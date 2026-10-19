@@ -103,33 +103,48 @@ struct DuplicateCluster: Identifiable {
     }
 
     var copyCount: Int { recipes.count }
-    var extraCount: Int { recipes.count - 1 }
+    /// Extra copies that may actually be removed (copies in a book never are).
+    var extraCount: Int { duplicatesToDelete.count }
 
     /// Only exact copies are merged by "Merge Exact Copies" and by the launch auto-clean.
-    var isSafeToBulkDelete: Bool { confidence == .exactCopy }
+    var isSafeToBulkDelete: Bool { confidence == .exactCopy && !isProtectedGroup }
 
     /// Stable key for this group (survives re-scans), used for keeper overrides.
     var stableKey: String {
         recipes.compactMap { $0.id?.uuidString }.sorted().joined(separator: "|")
     }
 
-    /// The suggested recipe to keep: most complete, then in a book, then oldest.
+    /// The suggested recipe to keep: in a book first (book members can never be
+    /// removed — BookMembershipGuard), then most complete, then oldest.
     var canonical: RecipeX {
         recipes.sorted { r1, r2 in
-            let s1 = Self.completenessScore(r1)
-            let s2 = Self.completenessScore(r2)
-            if s1 != s2 { return s1 > s2 }
             let b1 = r1.id.map { bookRecipeIDs.contains($0) } ?? false
             let b2 = r2.id.map { bookRecipeIDs.contains($0) } ?? false
             if b1 != b2 { return b1 }
+            let s1 = Self.completenessScore(r1)
+            let s2 = Self.completenessScore(r2)
+            if s1 != s2 { return s1 > s2 }
             return (r1.dateAdded ?? .distantFuture) < (r2.dateAdded ?? .distantFuture)
         }.first!
     }
 
+    /// Copies other than the keeper that are in NO book (only these may be removed).
     var duplicatesToDelete: [RecipeX] {
         let keep = canonical
-        return recipes.filter { $0.id != keep.id }
+        return recipes.filter { $0.id != keep.id && !isInBook($0) }
     }
+
+    /// Whether this recipe is in at least one book.
+    func isInBook(_ recipe: RecipeX) -> Bool {
+        recipe.id.map { bookRecipeIDs.contains($0) } ?? false
+    }
+
+    /// Number of copies that are in a book (never removed).
+    var protectedCount: Int { recipes.filter(isInBook).count }
+
+    /// True when every copy is in a book: nothing may be removed, the group is
+    /// left alone and shown as protected.
+    var isProtectedGroup: Bool { !recipes.isEmpty && recipes.allSatisfy { isInBook($0) } }
 
     var reasonLabels: [String] {
         matchReasons.sorted(by: { $0.sortOrder < $1.sortOrder }).map(\.label)
@@ -232,7 +247,7 @@ struct DuplicateRecipeDetectorView: View {
             }
             Button("Cancel", role: .cancel) { }
         } message: {
-            Text("Removes \(exactCopyCount) extra copies that match exactly (same content or same web link), keeping one of each. Books that held a removed copy get the kept copy instead, and the removed copy's website copy is taken down. Groups matched by title or ingredients are NOT touched — review those one at a time. This cannot be undone.")
+            Text("Removes \(exactCopyCount) extra copies that match exactly (same content or same web link), keeping one of each. Copies that are in a book are never removed. Each removed copy's website copy is taken down. Groups matched by title or ingredients are NOT touched — review those one at a time. This cannot be undone.")
         }
         .alert("Keep This Copy?", isPresented: .init(
             get: { keepConfirmation != nil },
@@ -247,7 +262,7 @@ struct DuplicateRecipeDetectorView: View {
             Button("Cancel", role: .cancel) { keepConfirmation = nil }
         } message: {
             if let pending = keepConfirmation {
-                Text("Keeps '\(pending.recipe.title ?? "this recipe")' and removes the other \(pending.cluster.copyCount - 1) cop\(pending.cluster.copyCount - 1 == 1 ? "y" : "ies") in this group. Their books get this copy instead; their website copies are taken down.")
+                Text("Keeps '\(pending.recipe.title ?? "this recipe")' and removes the other copies in this group that are in no book. Copies that are in a book are never removed. Website copies of removed copies are taken down.")
             }
         }
         .alert("Duplicates", isPresented: Binding(
@@ -305,7 +320,7 @@ struct DuplicateRecipeDetectorView: View {
         } header: {
             Text("Actions")
         } footer: {
-            Text("A shared title alone never counts as a duplicate. \"Likely\" and \"Possible\" groups are for review only: compare the ingredients, then remove one copy or use \"Keep This\". Removing a copy moves its book memberships to the kept copy.")
+            Text("A shared title alone never counts as a duplicate. \"Likely\" and \"Possible\" groups are for review only: compare the ingredients, then remove one copy or use \"Keep This\". Copies that are in a book are never removed — remove them from the book first.")
                 .font(.caption)
         }
     }
@@ -402,6 +417,9 @@ struct DuplicateRecipeDetectorView: View {
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     HStack(spacing: 4) {
+                        if cluster.isProtectedGroup {
+                            badge("Protected — all in books", color: .blue)
+                        }
                         badge(cluster.confidence.label, color: cluster.confidence.color)
                         ForEach(cluster.reasonLabels, id: \.self) { label in
                             let reason = cluster.matchReasons.first(where: { $0.label == label })
@@ -412,8 +430,8 @@ struct DuplicateRecipeDetectorView: View {
 
                 Spacer()
 
-                Image(systemName: cluster.isSafeToBulkDelete ? "exclamationmark.triangle.fill" : "eye.circle.fill")
-                    .foregroundStyle(cluster.isSafeToBulkDelete ? Color.appWarning : Color.secondary)
+                Image(systemName: cluster.isProtectedGroup ? "lock.shield.fill" : (cluster.isSafeToBulkDelete ? "exclamationmark.triangle.fill" : "eye.circle.fill"))
+                    .foregroundStyle(cluster.isProtectedGroup ? Color.blue : (cluster.isSafeToBulkDelete ? Color.appWarning : Color.secondary))
             }
         }
     }
@@ -442,7 +460,14 @@ struct DuplicateRecipeDetectorView: View {
         HStack(alignment: .top, spacing: 12) {
             VStack(alignment: .leading, spacing: 4) {
                 HStack {
-                    if isKeeper {
+                    if inBook && !isKeeper {
+                        Image(systemName: "lock.shield.fill")
+                            .foregroundStyle(Color.blue)
+                        Text("IN A BOOK — PROTECTED")
+                            .font(.caption2)
+                            .fontWeight(.bold)
+                            .foregroundStyle(Color.blue)
+                    } else if isKeeper {
                         Image(systemName: "checkmark.circle.fill")
                             .foregroundStyle(Color.appSuccess)
                         Text("KEEP")
@@ -501,7 +526,7 @@ struct DuplicateRecipeDetectorView: View {
 
             Spacer()
 
-            if !isKeeper {
+            if !isKeeper && !cluster.isProtectedGroup {
                 VStack(spacing: 8) {
                     Button {
                         if let rid = recipe.id {
@@ -514,13 +539,15 @@ struct DuplicateRecipeDetectorView: View {
                     }
                     .buttonStyle(.bordered)
 
-                    Button {
-                        selectedRecipe = recipe
-                    } label: {
-                        Image(systemName: "trash")
-                            .foregroundStyle(Color.appCritical)
+                    if !inBook {
+                        Button {
+                            selectedRecipe = recipe
+                        } label: {
+                            Image(systemName: "trash")
+                                .foregroundStyle(Color.appCritical)
+                        }
+                        .buttonStyle(.borderless)
                     }
-                    .buttonStyle(.borderless)
                 }
             }
         }
@@ -536,7 +563,7 @@ struct DuplicateRecipeDetectorView: View {
                 selectedRecipe = nil
             }
         } message: {
-            Text("Removes this copy of '\(recipe.title ?? "Unknown Recipe")'. Its books get the kept copy instead; its website copy is taken down. Can't be undone.")
+            Text("Removes this copy of '\(recipe.title ?? "Unknown Recipe")'. It is in no book. Its website copy is taken down. Can't be undone.")
         }
     }
 
@@ -821,8 +848,16 @@ struct DuplicateRecipeDetectorView: View {
     /// Removes `duplicate` after moving its book memberships to `keep` and taking down its
     /// public copy. Nothing in a book is lost: each book that listed the duplicate lists the
     /// kept copy instead (once).
-    private func mergeCopy(_ duplicate: RecipeX, into keep: RecipeX) async {
-        guard let dupID = duplicate.id, let keepID = keep.id, dupID != keepID else { return }
+    @discardableResult
+    private func mergeCopy(_ duplicate: RecipeX, into keep: RecipeX) async -> Bool {
+        guard let dupID = duplicate.id, let keepID = keep.id, dupID != keepID else { return false }
+
+        // A copy that is in any book is never removed (BookMembershipGuard).
+        let bookGuard = BookMembershipGuard(books: allBooks)
+        guard bookGuard.canRemoveDuplicate(dupID, keeping: keepID) else {
+            bookGuard.logSkip(recipeTitle: duplicate.title ?? "", recipeID: dupID, operation: "Duplicate merge")
+            return false
+        }
 
         Self.repointBooks(from: dupID, to: keepID, in: allBooks)
 
@@ -839,18 +874,24 @@ struct DuplicateRecipeDetectorView: View {
         do {
             try modelContext.save()
             AppLog.info("Merged duplicate '\(duplicate.title ?? "")' (\(dupID)) into \(keepID)", category: .recipe)
+            return true
         } catch {
             AppLog.error("Failed to save after merging duplicate: \(error)", category: .recipe)
+            return false
         }
     }
 
     /// Keeps the chosen copy and merges every other copy in its group into it
     private func keepOnly(_ keep: RecipeX, in cluster: DuplicateCluster) async {
+        var skipped = 0
         for other in cluster.recipes where other.id != keep.id {
-            await mergeCopy(other, into: keep)
+            if !(await mergeCopy(other, into: keep)) { skipped += 1 }
         }
         keeperOverrides[cluster.stableKey] = nil
         findDuplicates()
+        if skipped > 0 {
+            mergeMessage = "\(skipped) cop\(skipped == 1 ? "y was" : "ies were") kept because \(skipped == 1 ? "it is" : "they are") in a book. Remove a copy from its book first if you really want it gone."
+        }
     }
 
     /// Merges every exact-copy group (content fingerprint or same http(s) link).
@@ -859,16 +900,20 @@ struct DuplicateRecipeDetectorView: View {
         isMerging = true
         defer { isMerging = false }
         var merged = 0
+        var protectedSkipped = 0
         for cluster in clusters where cluster.isSafeToBulkDelete {
             let keep = keeper(for: cluster)
             for duplicate in cluster.recipes where duplicate.id != keep.id {
-                await mergeCopy(duplicate, into: keep)
-                merged += 1
+                if await mergeCopy(duplicate, into: keep) {
+                    merged += 1
+                } else {
+                    protectedSkipped += 1
+                }
             }
         }
         monitor.duplicatesDetected = 0
         findDuplicates()
-        mergeMessage = "Merged \(merged) extra copies. Books now point at the kept copies. Use Update Public Copy on any book you want refreshed on the website."
+        mergeMessage = "Merged \(merged) extra copies." + (protectedSkipped > 0 ? " Kept \(protectedSkipped) cop\(protectedSkipped == 1 ? "y" : "ies") that are in a book." : "")
     }
 }
 

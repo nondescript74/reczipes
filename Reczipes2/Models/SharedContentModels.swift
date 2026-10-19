@@ -63,6 +63,15 @@ struct CloudKitRecipeBook: Codable, Identifiable {
     let sharedByUserID: String
     let sharedByUserName: String?
     let sharedDate: Date
+
+    // Book content (optional; absent in books shared by older builds).
+    // Read by the website — contract in Docs/BOOK_CONTENT_AND_DELETE_GUARD.md.
+    /// Picture metadata, NO bytes; each image is a SharedBookPicture record (`pictureRecordName`)
+    var images: [BookPictureMetadata]? = nil
+    /// Contents rows (headings, recipes, pictures)
+    var tableOfContents: [BookSection]? = nil
+    /// Glossary (entry images stripped)
+    var glossary: [BookGlossaryEntry]? = nil
 }
 
 // MARK: - Sharing Result

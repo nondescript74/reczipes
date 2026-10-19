@@ -202,6 +202,53 @@ function decodeBookContent(record, data) {
   return { sections, images, glossary };
 }
 
+// One public `SharedBookPicture` record per book picture (app builds from 2026-10-17;
+// BookPicturePublisher.swift). The book record's bookData.images then holds metadata
+// only, so pictures are joined to their book by bookRecordName / bookID in the store.
+//   fields: bookID, bookRecordName, pictureID, kind, title, caption, order, sourcePage,
+//           linkedRecipeIDs, image (CKAsset), imageHash
+export function decodeSharedBookPicture(record) {
+  if (!record || record.serverErrorCode) return null;
+  const url = assetURL(record, 'image');
+  if (!url) return null;
+  const linked = fieldValue(record, 'linkedRecipeIDs');
+  const order = fieldValue(record, 'order');
+  return {
+    recordName: record.recordName,
+    bookID: upperId(fieldValue(record, 'bookID')),
+    bookRecordName: str(fieldValue(record, 'bookRecordName')),
+    id: upperId(fieldValue(record, 'pictureID')) ?? record.recordName,
+    title: str(fieldValue(record, 'title')),
+    caption: str(fieldValue(record, 'caption')),
+    kind: fieldValue(record, 'kind') === 'cover' ? 'cover' : 'interior',
+    order: Number.isFinite(order) ? order : 0,
+    sourcePage: str(fieldValue(record, 'sourcePage')),
+    linkedRecipeIDs: (Array.isArray(linked) ? linked : []).map(upperId).filter(Boolean),
+    url,
+  };
+}
+
+// Attaches picture records to their books: pictures override the legacy inline
+// bookData.images/bookImages of the same book (same ids), covers first, then by order.
+export function attachBookPictures(books, pictures) {
+  const byRecord = new Map();
+  const byBookID = new Map();
+  for (const p of pictures) {
+    if (p.bookRecordName) (byRecord.get(p.bookRecordName) ?? byRecord.set(p.bookRecordName, []).get(p.bookRecordName)).push(p);
+    else if (p.bookID) (byBookID.get(p.bookID) ?? byBookID.set(p.bookID, []).get(p.bookID)).push(p);
+  }
+  const rank = (img) => (img.kind === 'cover' ? 0 : 1);
+  return books.map((b) => {
+    const own = byRecord.get(b.recordName) ?? byBookID.get(b.id.toUpperCase()) ?? [];
+    if (!own.length) return b;
+    const ids = new Set(own.map((p) => p.id));
+    const images = [...own, ...b.images.filter((img) => !ids.has(img.id))]
+      .map(({ bookID, bookRecordName, recordName, ...img }) => img)
+      .sort((x, y) => rank(x) - rank(y) || byOrder(x, y));
+    return { ...b, images };
+  });
+}
+
 // The list view needs a light summary, not the whole recipe.
 export function summarize(recipe) {
   const ingredientNames = recipe.ingredientSections.flatMap((s) => s.ingredients.map((i) => i.name));

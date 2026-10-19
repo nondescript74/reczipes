@@ -92,7 +92,7 @@ struct RecipeExportImportIntegrationTests {
         
         // Create in-memory ModelContainer for this test
         let schema = Schema([RecipeX.self, Book.self])
-        let configuration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: true)
+        let configuration = ModelConfiguration(UUID().uuidString, schema: schema, isStoredInMemoryOnly: true, cloudKitDatabase: .none)
         let container = try ModelContainer(for: schema, configurations: [configuration])
         let context = container.mainContext
         
@@ -135,7 +135,7 @@ struct RecipeExportImportIntegrationTests {
     func testCompleteBackupRestoreWorkflow() async throws {
         // Step 1: Create original recipes
         let exportSchema = Schema([RecipeX.self, Book.self])
-        let exportConfig = ModelConfiguration(schema: exportSchema, isStoredInMemoryOnly: true)
+        let exportConfig = ModelConfiguration(UUID().uuidString, schema: exportSchema, isStoredInMemoryOnly: true, cloudKitDatabase: .none)
         let exportContainer = try ModelContainer(for: exportSchema, configurations: [exportConfig])
         let exportContext = exportContainer.mainContext
         
@@ -187,7 +187,7 @@ struct RecipeExportImportIntegrationTests {
         
         // Step 4: Create new context (simulating app reinstall or new device)
         let importSchema = Schema([RecipeX.self, Book.self])
-        let importConfig = ModelConfiguration(schema: importSchema, isStoredInMemoryOnly: true)
+        let importConfig = ModelConfiguration(UUID().uuidString, schema: importSchema, isStoredInMemoryOnly: true, cloudKitDatabase: .none)
         let importContainer = try ModelContainer(for: importSchema, configurations: [importConfig])
         let importContext = importContainer.mainContext
         
@@ -233,7 +233,7 @@ struct RecipeExportImportIntegrationTests {
     func testBackupRestoreWithRelationships() async throws {
         // Create recipes with complex data
         let exportSchema = Schema([RecipeX.self, Book.self])
-        let exportConfig = ModelConfiguration(schema: exportSchema, isStoredInMemoryOnly: true)
+        let exportConfig = ModelConfiguration(UUID().uuidString, schema: exportSchema, isStoredInMemoryOnly: true, cloudKitDatabase: .none)
         let exportContainer = try ModelContainer(for: exportSchema, configurations: [exportConfig])
         let exportContext = exportContainer.mainContext
         
@@ -288,7 +288,7 @@ struct RecipeExportImportIntegrationTests {
         
         // Import to new context
         let importSchema = Schema([RecipeX.self, Book.self])
-        let importConfig = ModelConfiguration(schema: importSchema, isStoredInMemoryOnly: true)
+        let importConfig = ModelConfiguration(UUID().uuidString, schema: importSchema, isStoredInMemoryOnly: true, cloudKitDatabase: .none)
         let importContainer = try ModelContainer(for: importSchema, configurations: [importConfig])
         let importContext = importContainer.mainContext
         

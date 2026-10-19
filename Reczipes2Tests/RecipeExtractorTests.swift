@@ -7,7 +7,12 @@
 
 import Testing
 import Foundation
+import CoreGraphics
+#if canImport(UIKit)
 import UIKit
+#elseif canImport(AppKit)
+import AppKit
+#endif
 @testable import Reczipes2
 
 @Suite("Recipe Extractor Tests")
@@ -30,7 +35,7 @@ struct RecipeExtractorTests {
         
         // Verify processed image can be decoded
         if let processedData = processedData {
-            let processedImage = UIImage(data: processedData)
+            let processedImage = PlatformImage(data: processedData)
             #expect(processedImage != nil, "Processed data should create valid image")
         }
     }
@@ -215,28 +220,27 @@ extension RecipeExtractorViewModel {
 class TestImageGenerator {
     
     /// Generate a simple test image with text
-    static func generateTestRecipeImage() -> UIImage? {
+    static func generateTestRecipeImage() -> PlatformImage? {
         let size = CGSize(width: 400, height: 600)
-        let renderer = UIGraphicsImageRenderer(size: size)
         
-        return renderer.image { context in
+        return TestImageRenderer.image(size: size) { context in
             // Background
-            UIColor.white.setFill()
+            TestColor.white.setFill()
             context.fill(CGRect(origin: .zero, size: size))
             
             // Title
             let title = "Test Recipe"
             let titleAttributes: [NSAttributedString.Key: Any] = [
-                .font: UIFont.boldSystemFont(ofSize: 24),
-                .foregroundColor: UIColor.black
+                .font: TestFont.boldSystemFont(ofSize: 24),
+                .foregroundColor: TestColor.black
             ]
             title.draw(at: CGPoint(x: 20, y: 20), withAttributes: titleAttributes)
             
             // Ingredients
             let ingredients = "Ingredients:\n• 1 cup flour\n• 2 eggs\n• 1 tsp salt"
             let bodyAttributes: [NSAttributedString.Key: Any] = [
-                .font: UIFont.systemFont(ofSize: 16),
-                .foregroundColor: UIColor.black
+                .font: TestFont.systemFont(ofSize: 16),
+                .foregroundColor: TestColor.black
             ]
             ingredients.draw(at: CGPoint(x: 20, y: 60), withAttributes: bodyAttributes)
             

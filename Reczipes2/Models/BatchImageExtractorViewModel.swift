@@ -310,7 +310,7 @@ class BatchImageExtractorViewModel: ObservableObject {
             currentStatus = "Extracting recipe from image \(imageIndex + 1)..."
             
             // Reduce image size to 10-20KB before sending (text extraction only)
-            guard let imageData = imagePreprocessor.reduceImageSize(image, maxSizeBytes: 20_000) else {
+            guard let imageData = imagePreprocessor.reduceImageSize(image, maxSizeBytes: ImagePreprocessor.extractionMaxBytes, maxDimension: ImagePreprocessor.extractionMaxDimension) else {
                 throw NSError(
                     domain: "BatchExtraction",
                     code: -1,
@@ -497,7 +497,7 @@ class BatchImageExtractorViewModel: ObservableObject {
         // Convert images to Data and queue them for background processing
         var imageDataQueue: [(data: Data, index: Int)] = []
         for (image, index) in processedImages {
-            if let imageData = imagePreprocessor.reduceImageSize(image, maxSizeBytes: 20_000) {
+            if let imageData = imagePreprocessor.reduceImageSize(image, maxSizeBytes: ImagePreprocessor.extractionMaxBytes, maxDimension: ImagePreprocessor.extractionMaxDimension) {
                 imageDataQueue.append((data: imageData, index: index))
             }
         }
