@@ -45,6 +45,20 @@ final class Reczipes2UITests: XCTestCase {
         sleep(1)
         
         // Verify main UI elements are present
+#if os(macOS)
+        // On macOS the six tabs render as a tab group in the window toolbar,
+        // not as a tab bar, so match them by label whatever their element type.
+        // The launch splash can hold the window for a few seconds.
+        let macTabs = ["Recipes", "Books", "Meals", "Cooking", "Extract", "Settings"]
+        func tab(_ name: String) -> XCUIElement {
+            app.descendants(matching: .any).matching(NSPredicate(format: "label == %@", name)).firstMatch
+        }
+        XCTAssertTrue(app.windows.firstMatch.waitForExistence(timeout: 10), "Main window should exist")
+        XCTAssertTrue(tab(macTabs[0]).waitForExistence(timeout: 15), "Recipes tab should exist")
+        for tabName in macTabs {
+            XCTAssertTrue(tab(tabName).exists, "\(tabName) tab should exist")
+        }
+#else
         let tabBar = app.tabBars.firstMatch
         XCTAssertTrue(tabBar.waitForExistence(timeout: 5), "Tab bar should exist")
         logger.info("✅ Tab bar found")
@@ -60,6 +74,7 @@ final class Reczipes2UITests: XCTestCase {
             let tab = app.tabBars.buttons[tabName]
             XCTAssertTrue(tab.exists, "\(tabName) tab should exist as a top-level tab")
         }
+#endif
 
         logger.info("✅ All always-visible tabs found")
         logger.info("✅ testExample completed successfully")

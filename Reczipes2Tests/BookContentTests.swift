@@ -175,8 +175,9 @@ struct BookContentTests {
 
     @MainActor
     private func makeContainer() throws -> ModelContainer {
-        let config = ModelConfiguration(isStoredInMemoryOnly: true)
-        return try ModelContainer(for: Book.self, BookPicture.self, configurations: config)
+        let schema = Schema([Book.self, BookPicture.self])
+        let config = ModelConfiguration(UUID().uuidString, schema: schema, isStoredInMemoryOnly: true, cloudKitDatabase: .none)
+        return try ModelContainer(for: schema, configurations: config)
     }
 
     @Test("Metadata-only picture JSON stays small and still decodes as [BookImage]")

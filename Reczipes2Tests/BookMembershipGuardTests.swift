@@ -79,6 +79,7 @@ struct BookMembershipGuardTests {
     }
 
     @Test("List phrase joins names naturally")
+    @MainActor
     func listPhrase() {
         #expect(BookMembershipGuard.listPhrase([]) == "")
         #expect(BookMembershipGuard.listPhrase(["A"]) == "'A'")
