@@ -466,7 +466,10 @@ class CloudKitSharingService: ObservableObject {
     
     // MARK: - Share Recipe
     
-    func shareRecipe(_ recipe: RecipeX, modelContext: ModelContext) async throws -> String {
+    /// Shares a recipe publicly. With `refreshExisting: true`, an already-shared recipe's
+    /// public record is overwritten in place with the recipe's current content (same record
+    /// id, nothing deleted), e.g. after the recipe was edited. Mirrors `shareRecipeBook`.
+    func shareRecipe(_ recipe: RecipeX, modelContext: ModelContext, refreshExisting: Bool = false) async throws -> String {
         guard isCloudKitAvailable else {
             throw SharingError.cloudKitUnavailable()
         }
@@ -483,14 +486,22 @@ class CloudKitSharingService: ObservableObject {
             }
         )
         
+        var existingRecordToUpdate: CKRecord?
+        var existingTracking: SharedRecipe?
         if let existingShared = try? modelContext.fetch(existingDescriptor).first,
            let cloudRecordID = existingShared.cloudRecordID {
             // Verify it still exists in CloudKit
             do {
                 let recordID = CKRecord.ID(recordName: cloudRecordID)
-                _ = try await publicDatabase.record(for: recordID)
-                AppLog.info("Recipe '\(recipe.safeTitle)' is already shared (verified in CloudKit)", category: .sharing)
-                return cloudRecordID
+                let fetched = try await publicDatabase.record(for: recordID)
+                if refreshExisting {
+                    existingRecordToUpdate = fetched
+                    existingTracking = existingShared
+                    AppLog.info("Recipe '\(recipe.safeTitle)' is shared; refreshing its public record in place", category: .sharing)
+                } else {
+                    AppLog.info("Recipe '\(recipe.safeTitle)' is already shared (verified in CloudKit)", category: .sharing)
+                    return cloudRecordID
+                }
             } catch {
                 // Record doesn't exist in CloudKit anymore - clean up and reshare
                 AppLog.warning("CloudKit record missing for tracked share - will reshare", category: .sharing)
@@ -512,15 +523,16 @@ class CloudKitSharingService: ObservableObject {
                let recipeData = record["recipeData"] as? String,
                let jsonData = recipeData.data(using: .utf8),
                let cloudRecipe = try? JSONDecoder().decode(CloudKitRecipe.self, from: jsonData),
-               cloudRecipe.id == recipe.safeID {
-                // Found duplicate - delete it
+               cloudRecipe.id == recipe.safeID,
+               record.recordID != existingRecordToUpdate?.recordID {
+                // Found duplicate - delete it (never the record being refreshed in place)
                 _ = try? await publicDatabase.deleteRecord(withID: record.recordID)
                 AppLog.info("Deleted duplicate CloudKit record for recipe '\(recipe.safeTitle)'", category: .sharing)
             }
         }
         
-        // Create CloudKit record
-        let record = CKRecord(recordType: CloudKitRecordType.sharedRecipe)
+        // Create CloudKit record, or reuse the existing one when refreshing in place
+        let record = existingRecordToUpdate ?? CKRecord(recordType: CloudKitRecordType.sharedRecipe)
         
         let cloudRecipe = CloudKitRecipe(
             id: recipe.safeID,
@@ -557,6 +569,15 @@ class CloudKitSharingService: ObservableObject {
         
         // Save to public database
         let savedRecord = try await publicDatabase.save(record)
+        
+        if let existingTracking {
+            // Refreshed in place: same record id, so the existing tracking stays valid
+            existingTracking.recipeTitle = recipe.safeTitle
+            existingTracking.recipeImageName = recipe.imageName
+            try modelContext.save()
+            AppLog.info("Refreshed public copy of recipe: \(recipe.safeTitle)", category: .sharing)
+            return savedRecord.recordID.recordName
+        }
         
         // Track locally
         let sharedRecipe = SharedRecipe(
