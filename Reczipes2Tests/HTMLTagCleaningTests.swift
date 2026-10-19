@@ -194,6 +194,11 @@ struct HTMLTagCleaningTests {
             } else {
                 Issue.record("Expected HTTP error, got: \(error)")
             }
+        } catch let error as URLError {
+            // No reachable network (e.g. Xcode Cloud blocks outside hosts): the
+            // status code can't be checked, but the URL must still have been accepted.
+            #expect(error.code != .badURL && error.code != .unsupportedURL,
+                    "Clean URL should not be rejected as invalid, got: \(error.code)")
         }
     }
     

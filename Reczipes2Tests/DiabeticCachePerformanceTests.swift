@@ -514,7 +514,8 @@ struct DiabeticCachePerformanceTests {
         logger.info("📊 Unique hashes: \(hashes.count) (should be 1)")
         
         #expect(hashes.count == 1, "All hashes should be identical")
-        #expect(duration < 10.0, "Should complete in under 10 seconds")
+        // Wall-clock bound; shared CI simulators run several times slower than a Mac.
+        #expect(duration < 30.0, "Should complete in under 30 seconds")
         
         logger.info("✅ Test passed")
     }
