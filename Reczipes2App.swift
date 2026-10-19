@@ -658,6 +658,10 @@ struct MainTabView: View {
         // The ModelContainerManager will automatically upgrade to CloudKit if available
         await CloudKitSyncMonitor.shared.checkAccountStatus()
 
+        // Clear same-ID book copies left by CloudKit / community sync
+        CloudKitDuplicateMonitor.shared.configure(with: modelContext)
+        CloudKitDuplicateMonitor.shared.mergeDuplicateBooksNow(in: modelContext)
+
         // Start auto-sync if enabled
         if sharingService.autoSyncEnabled {
             await sharingService.startAutoSync(modelContext: modelContext)
@@ -697,6 +701,7 @@ struct MainTabView: View {
         Task { @MainActor in
             switch newPhase {
             case .active:
+                CloudKitDuplicateMonitor.shared.mergeDuplicateBooksNow(in: modelContext)
                 // App became active - restart auto-sync if enabled
                 if sharingService.autoSyncEnabled {
                     await sharingService.startAutoSync(modelContext: modelContext)

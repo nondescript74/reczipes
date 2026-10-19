@@ -2173,7 +2173,25 @@ class CloudKitSharingService: ObservableObject {
     /// Sync community recipe books from CloudKit to local SwiftData
     /// This allows shared books to appear in the Books view's "Shared" tab
     /// Phase 4: Enhanced with recipe previews and thumbnail downloads
+    /// The community-books sync in flight, if any. Callers (auto-sync, the Books
+    /// screen, Sharing Settings) join it instead of starting a second, parallel
+    /// run — two runs used to both see a book as missing and both insert it.
+    private var communityBooksSyncTask: Task<Void, Error>?
+
     func syncCommunityBooksToLocal(modelContext: ModelContext) async throws {
+        if let running = communityBooksSyncTask {
+            AppLog.info("📚 SYNC: Community books sync already running — joining it", category: .sharing)
+            return try await running.value
+        }
+        let task = Task { @MainActor in
+            try await self.performCommunityBooksSync(modelContext: modelContext)
+        }
+        communityBooksSyncTask = task
+        defer { communityBooksSyncTask = nil }
+        try await task.value
+    }
+
+    private func performCommunityBooksSync(modelContext: ModelContext) async throws {
         guard isCloudKitAvailable else {
             throw SharingError.cloudKitUnavailable()
         }
@@ -2219,7 +2237,8 @@ class CloudKitSharingService: ObservableObject {
         }
         
         for book in allRecipeBooks {
-            existingRecipeBooksByID[book.id!] = book
+            guard let bookID = book.id else { continue }
+            existingRecipeBooksByID[bookID] = book
         }
         
         for preview in allPreviews {
@@ -2277,6 +2296,17 @@ class CloudKitSharingService: ObservableObject {
             }
             
             // Check if RecipeBook entity exists
+            // Fresh check by ID: the snapshot above was taken before the network
+            // awaits, and another path may have inserted this book since.
+            if existingRecipeBooksByID[cloudBook.id] == nil {
+                let lookupID: UUID? = cloudBook.id
+                var lookup = FetchDescriptor<Book>(predicate: #Predicate<Book> { $0.id == lookupID })
+                lookup.fetchLimit = 1
+                if let found = try? modelContext.fetch(lookup).first {
+                    existingRecipeBooksByID[cloudBook.id] = found
+                }
+            }
+
             let book: Book
             if let existingRecipeBook = existingRecipeBooksByID[cloudBook.id] {
                 book = existingRecipeBook
@@ -2328,6 +2358,8 @@ class CloudKitSharingService: ObservableObject {
                 book.ownerDisplayName = cloudBook.sharedByUserName
                 
                 modelContext.insert(book)
+                // Remember it: two public records can carry the same book ID
+                existingRecipeBooksByID[cloudBook.id] = book
                 addedCount += 1
                 AppLog.info("📚   Created RecipeBook: '\(cloudBook.name)' by \(cloudBook.sharedByUserName ?? "Unknown")", category: .sharing)
             }
@@ -2377,6 +2409,7 @@ class CloudKitSharingService: ObservableObject {
                 )
                 
                 modelContext.insert(newSharedBook)
+                existingSharedBooksByID[cloudBook.id] = newSharedBook
                 AppLog.info("📚   Created SharedRecipeBook tracking: '\(cloudBook.name)' by \(cloudBook.sharedByUserName ?? "Unknown")", category: .sharing)
             }
             
@@ -2463,6 +2496,10 @@ class CloudKitSharingService: ObservableObject {
                         // Only delete the book container.
                         AppLog.info("📚     Deleting RecipeBook entity and its pictures", category: .sharing)
                         BookPictureStore.deleteBook(recipeBook, in: modelContext)
+                        // Delete every other copy with this ID too, or they linger as ghosts
+                        for extra in allRecipeBooks where extra.id == bookID && extra !== recipeBook {
+                            modelContext.delete(extra)
+                        }
                     } else {
                         // RecipeBook might have already been deleted, but tracking remains
                         AppLog.warning("📚     RecipeBook entity not found (might have been already deleted)", category: .sharing)
@@ -2483,6 +2520,7 @@ class CloudKitSharingService: ObservableObject {
         do {
             try modelContext.save()
             AppLog.info("✅ SYNC COMPLETE: Enhanced community books sync finished", category: .sharing)
+            CloudKitDuplicateMonitor.shared.mergeDuplicateBooksNow(in: modelContext)
         } catch {
             AppLog.error("❌ Failed to save sync changes: \(error)", category: .sharing)
             // Try to rollback to prevent partial state

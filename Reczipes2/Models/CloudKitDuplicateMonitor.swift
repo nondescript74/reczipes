@@ -8,6 +8,7 @@
 
 import Foundation
 import SwiftData
+import CoreData
 import Combine
 
 // MARK: - Duplicate Scan Throttle
@@ -93,6 +94,22 @@ class CloudKitDuplicateMonitor: ObservableObject {
     // MARK: - CloudKit Notifications
     
     private func setupNotifications() {
+        // The real CloudKit mirroring signal. SwiftData's CloudKit store posts this
+        // (the NSCloudKitMirroringDelegate* names below are never posted by iOS, so
+        // before this the book merge never ran on its own). Merge book copies after
+        // each finished import — that is when other devices' copies arrive.
+        NotificationCenter.default.publisher(for: NSPersistentCloudKitContainer.eventChangedNotification)
+            .filter { notification in
+                guard let event = notification.userInfo?[NSPersistentCloudKitContainer.eventNotificationUserInfoKey]
+                        as? NSPersistentCloudKitContainer.Event else { return false }
+                return event.type == .import && event.endDate != nil
+            }
+            .debounce(for: .seconds(2), scheduler: DispatchQueue.main)
+            .sink { [weak self] _ in
+                Task { @MainActor in self?.mergeDuplicateBooksNow() }
+            }
+            .store(in: &cancellables)
+
         // Notification when CloudKit sync will reset (token expired)
         NotificationCenter.default.publisher(for: NSNotification.Name("NSCloudKitMirroringDelegateWillResetSyncNotificationName"))
             .receive(on: DispatchQueue.main)
@@ -328,6 +345,15 @@ class CloudKitDuplicateMonitor: ObservableObject {
     }
 
     // MARK: - Book Duplicate Cleanup
+
+    /// Book-only duplicate merge. Cheap (books are few) and safe to call often:
+    /// at launch, on foreground, after a CloudKit import and after community sync.
+    /// Does NOT run the recipe duplicate scan. Uses the live container's context
+    /// by default, so it still works after the container is recreated
+    /// (local → CloudKit upgrade).
+    func mergeDuplicateBooksNow(in context: ModelContext? = nil) {
+        mergeDuplicateBooks(in: context ?? ModelContainerManager.shared.container.mainContext)
+    }
 
     /// Merge duplicate Book records that share the same book ID.
     ///

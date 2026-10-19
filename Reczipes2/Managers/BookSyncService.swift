@@ -316,6 +316,13 @@ class BookSyncService: ObservableObject {
         }
         
         if options.createLocalCopy {
+            let lookupID: UUID? = cloudBook.id
+            var lookup = FetchDescriptor<Book>(predicate: #Predicate<Book> { $0.id == lookupID })
+            lookup.fetchLimit = 1
+            if let existing = try? modelContext.fetch(lookup).first {
+                logger.info("Book already stored locally, not adding a copy: \(existing.displayName)")
+                return existing
+            }
             modelContext.insert(book)
             if !downloadedImages.isEmpty {
                 book.setImagesUpdatingPrimaryCover(downloadedImages, in: modelContext)
