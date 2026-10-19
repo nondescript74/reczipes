@@ -98,7 +98,10 @@ class CloudKitDuplicateMonitor: ObservableObject {
         // (the NSCloudKitMirroringDelegate* names below are never posted by iOS, so
         // before this the book merge never ran on its own). Merge book copies after
         // each finished import — that is when other devices' copies arrive.
+        // Hop to main FIRST: CloudKit posts this on its own background queue, and
+        // closures in this @MainActor class are checked to run on main (crashes otherwise).
         NotificationCenter.default.publisher(for: NSPersistentCloudKitContainer.eventChangedNotification)
+            .receive(on: DispatchQueue.main)
             .filter { notification in
                 guard let event = notification.userInfo?[NSPersistentCloudKitContainer.eventNotificationUserInfoKey]
                         as? NSPersistentCloudKitContainer.Event else { return false }
