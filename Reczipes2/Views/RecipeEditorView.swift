@@ -355,7 +355,28 @@ struct RecipeEditorView: View {
             print("❌ Failed to save recipe: \(error)")
         }
         
+        refreshPublicCopyIfShared()
         dismiss()
+    }
+    
+    /// If this recipe is publicly shared, overwrite its public record in place with the
+    /// edited content (same record id; nothing unshared). Unshared recipes are left alone.
+    private func refreshPublicCopyIfShared() {
+        guard let recipeID = recipe.id else { return }
+        let descriptor = FetchDescriptor<SharedRecipe>(
+            predicate: #Predicate<SharedRecipe> { $0.recipeID == recipeID && $0.isActive == true }
+        )
+        guard let tracked = try? modelContext.fetch(descriptor), !tracked.isEmpty else { return }
+        let recipe = self.recipe
+        let modelContext = self.modelContext
+        Task { @MainActor in
+            do {
+                _ = try await CloudKitSharingService.shared.shareRecipe(recipe, modelContext: modelContext, refreshExisting: true)
+                AppLog.info("Refreshed public copy of edited recipe '\(recipe.safeTitle)'", category: .sharing)
+            } catch {
+                AppLog.error("Failed to refresh public copy of edited recipe '\(recipe.safeTitle)': \(error)", category: .sharing)
+            }
+        }
     }
 }
 
@@ -1028,18 +1049,19 @@ struct NotesEditorView: View {
                                 hasUnsavedChanges: $hasUnsavedChanges
                             )
                         } label: {
+                            let current = note.wrappedValue
                             HStack(spacing: 12) {
-                                Image(systemName: "circle")   // note.iconName
-                                    .foregroundColor(.secondary)
+                                Image(systemName: current.type.icon)
+                                    .foregroundColor(current.type.color)
                                     .frame(width: 30)
                                 
                                 VStack(alignment: .leading, spacing: 4) {
-                                    Text("This is a note")
+                                    Text(current.type.displayName)
                                         .font(.caption)
                                         .foregroundColor(.secondary)
                                     
-//                                    Text(note.text.isEmpty ? "New Note" : note.text)
-//                                        .lineLimit(2)
+                                    Text(current.text.isEmpty ? "New Note" : current.text)
+                                        .lineLimit(2)
                                 }
                             }
                         }
