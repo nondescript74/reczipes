@@ -125,4 +125,22 @@ struct BookMembershipGuardTests {
         #expect(cluster.extraCount == 0)
         #expect(!cluster.isSafeToBulkDelete)
     }
+
+    @Test("Same-book merge is allowed only when every book listing the copy also lists the keeper")
+    @MainActor
+    func sameBookMerge() {
+        let keep = UUID(), copy = UUID(), other = UUID()
+        // Both copies in one book: allowed
+        #expect(BookMembershipGuard.everyBookListingCopyAlsoListsKeeper(
+            copyID: copy, keepID: keep, books: [[keep, copy, other]]))
+        // Copy also in a second book that lacks the keeper: refused (that book would lose the recipe)
+        #expect(!BookMembershipGuard.everyBookListingCopyAlsoListsKeeper(
+            copyID: copy, keepID: keep, books: [[keep, copy], [copy, other]]))
+        // Two books with the same name are still told apart (lists, not names)
+        #expect(!BookMembershipGuard.everyBookListingCopyAlsoListsKeeper(
+            copyID: copy, keepID: keep, books: [[keep], [copy]]))
+        // Copy in no book: nothing to lose
+        #expect(BookMembershipGuard.everyBookListingCopyAlsoListsKeeper(
+            copyID: copy, keepID: keep, books: [[keep, other]]))
+    }
 }

@@ -12,7 +12,11 @@
 //  explicit admin action in CloudKitRecipeManagerView (Settings → Sharing →
 //  Manage CloudKit Recipes → "Delete a Book Recipe (Admin)…"), which shows the books, requires the
 //  recipe title to be typed, removes the id from those books and only then
-//  deletes the recipe (see `forceDeleteBookMember`).
+//  deletes the recipe (see `forceDeleteBookMember`). One narrower path exists
+//  (2026-10-19, operator ruling): the Duplicate Detector may merge a copy that
+//  is in a book into another copy of the same recipe ONLY when every book that
+//  lists the copy also lists the keeper (`everyBookListingCopyAlsoListsKeeper`),
+//  after the user confirms that group — the books keep the recipe, once.
 //
 //  Every code path that deletes a RecipeX must consult this guard first:
 //    - bulk / automatic paths: skip the recipe and log it
@@ -102,6 +106,21 @@ struct BookMembershipGuard {
     func canRemoveDuplicate(_ copyID: UUID?, keeping keepID: UUID?) -> Bool {
         if let copyID, let keepID, copyID == keepID { return true }
         return !isProtected(copyID)
+    }
+
+    /// May `copyID`, which is in one or more books, be merged into `keepID`?
+    /// True only when EVERY book that lists the copy also lists the keeper, so
+    /// after the merge each of those books still shows the recipe (as the kept
+    /// copy) and no book loses an entry. Used by the Duplicate Detector's
+    /// "Merge Copies in the Same Book" action, which the user confirms per group.
+    /// - Parameter books: each book's recipe ids (identity by list, not by name —
+    ///   two books may share a name).
+    static func everyBookListingCopyAlsoListsKeeper(copyID: UUID, keepID: UUID, books: [[UUID]]) -> Bool {
+        if copyID == keepID { return true }
+        for ids in books where ids.contains(copyID) {
+            if !ids.contains(keepID) { return false }
+        }
+        return true
     }
 
     // MARK: - User-facing text

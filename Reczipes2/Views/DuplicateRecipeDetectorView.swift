@@ -217,6 +217,7 @@ struct DuplicateRecipeDetectorView: View {
     @Query private var recipeXEntities: [RecipeX]
     @Query private var allBooks: [Book]
     @Query private var sharedRecipes: [SharedRecipe]
+    @Query private var sharedBooks: [SharedRecipeBook]
     @StateObject private var monitor = CloudKitDuplicateMonitor.shared
 
     @State private var clusters: [DuplicateCluster] = []
@@ -228,12 +229,20 @@ struct DuplicateRecipeDetectorView: View {
     /// User-chosen keeper per group (keyed by DuplicateCluster.stableKey)
     @State private var keeperOverrides: [String: UUID] = [:]
     @State private var keepConfirmation: (cluster: DuplicateCluster, recipe: RecipeX)?
+    /// Groups the user marked "Not the Same Recipe" (DuplicateCluster.stableKey, one per line).
+    /// A group whose copies change gets a new key and shows again. Stored on this device.
+    @AppStorage("duplicateDetector.notSameGroups") private var notSameGroupsRaw: String = ""
+    @State private var showNotSameGroups = false
+    @State private var withinBookConfirmation: DuplicateCluster?
+    @State private var showingSameIDConfirmation = false
 
     var body: some View {
         List {
             statisticsSection
             actionsSection
+            sameIDSection
             duplicateGroupsSection
+            notSameGroupsSection
         }
         .navigationTitle("Duplicate Detector")
         .platformNavigationBarTitleDisplayMode(.inline)
@@ -265,6 +274,35 @@ struct DuplicateRecipeDetectorView: View {
                 Text("Keeps '\(pending.recipe.title ?? "this recipe")' and removes the other copies in this group that are in no book. Copies that are in a book are never removed. Website copies of removed copies are taken down.")
             }
         }
+        .alert("Merge Copies in the Same Book?", isPresented: .init(
+            get: { withinBookConfirmation != nil },
+            set: { if !$0 { withinBookConfirmation = nil } }
+        )) {
+            Button("Merge", role: .destructive) {
+                if let cluster = withinBookConfirmation {
+                    Task { await mergeWithinBooks(cluster) }
+                }
+                withinBookConfirmation = nil
+            }
+            Button("Cancel", role: .cancel) { withinBookConfirmation = nil }
+        } message: {
+            if let cluster = withinBookConfirmation {
+                let keep = keeper(for: cluster)
+                Text("Keeps '\(keep.title ?? "this recipe")' (\(Self.summary(keep))) and removes the other \(cluster.copyCount - 1 == 1 ? "copy" : "copies"). Every book that lists a removed copy already lists the kept one, so each book still has this recipe, once. Website copies of removed copies are taken down and shared books are refreshed. Can't be undone.")
+            }
+        }
+        .confirmationDialog(
+            "Remove Extra Stored Copies?",
+            isPresented: $showingSameIDConfirmation,
+            titleVisibility: .visible
+        ) {
+            Button("Remove \(sameIDExtraCount) Extra Copies", role: .destructive) {
+                removeSameIDExtras()
+            }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("These recipes are stored more than once under the same ID. One copy of each is kept; extras are removed only when their content is identical. Books and website copies are unaffected (they refer to the ID, which stays).")
+        }
         .alert("Duplicates", isPresented: Binding(
             get: { mergeMessage != nil },
             set: { if !$0 { mergeMessage = nil } }
@@ -289,7 +327,7 @@ struct DuplicateRecipeDetectorView: View {
             HStack {
                 statisticView(title: "Total Recipes", value: "\(allRecipes.count)", color: nil)
                 Spacer()
-                statisticView(title: "Groups to Review", value: "\(clusters.count)", color: clusters.isEmpty ? .green : .orange)
+                statisticView(title: "Groups to Review", value: "\(visibleClusters.count)", color: visibleClusters.isEmpty ? .green : .orange)
                 Spacer()
                 statisticView(title: "Exact Copies", value: "\(exactCopyCount)", color: exactCopyCount == 0 ? .green : .red)
             }
@@ -359,13 +397,13 @@ struct DuplicateRecipeDetectorView: View {
 
     @ViewBuilder
     private var duplicateGroupsSection: some View {
-        if !clusters.isEmpty {
+        if !visibleClusters.isEmpty {
             Section {
-                ForEach(clusters) { cluster in
+                ForEach(visibleClusters) { cluster in
                     duplicateClusterRow(cluster)
                 }
             } header: {
-                Text("Duplicate Groups (\(clusters.count))")
+                Text("Duplicate Groups (\(visibleClusters.count))")
             }
         } else if isAnalyzing {
             Section {
@@ -403,6 +441,7 @@ struct DuplicateRecipeDetectorView: View {
             })) { recipe in
                 recipeRow(recipe, in: cluster, keep: keep)
             }
+            groupActions(cluster, keep: keep)
         } label: {
             HStack {
                 VStack(alignment: .leading, spacing: 4) {
@@ -445,6 +484,189 @@ struct DuplicateRecipeDetectorView: View {
             .foregroundStyle(color)
             .clipShape(Capsule())
     }
+
+    // MARK: - Not the Same Recipe / same-book merge
+
+    private var notSameGroups: Set<String> {
+        Set(notSameGroupsRaw.split(separator: "\n").map(String.init))
+    }
+
+    private func setNotSame(_ cluster: DuplicateCluster, _ notSame: Bool) {
+        var keys = notSameGroups
+        if notSame { keys.insert(cluster.stableKey) } else { keys.remove(cluster.stableKey) }
+        notSameGroupsRaw = keys.sorted().joined(separator: "\n")
+    }
+
+    /// Exact copies are never hidden: identical content is the same recipe.
+    private func isMarkedNotSame(_ cluster: DuplicateCluster) -> Bool {
+        cluster.confidence != .exactCopy && notSameGroups.contains(cluster.stableKey)
+    }
+
+    private var visibleClusters: [DuplicateCluster] { clusters.filter { !isMarkedNotSame($0) } }
+    private var notSameClusters: [DuplicateCluster] { clusters.filter { isMarkedNotSame($0) } }
+
+    /// Some copy is in a book, and every book listing any copy also lists the keeper.
+    private func canMergeWithinBooks(_ cluster: DuplicateCluster, keep: RecipeX) -> Bool {
+        guard cluster.protectedCount > 0, let keepID = keep.id else { return false }
+        let bookLists = allBooks.map { $0.recipeIDs ?? [] }
+        return cluster.recipes.allSatisfy { copy in
+            guard let copyID = copy.id else { return false }
+            return BookMembershipGuard.everyBookListingCopyAlsoListsKeeper(copyID: copyID, keepID: keepID, books: bookLists)
+        }
+    }
+
+    static func summary(_ recipe: RecipeX) -> String {
+        let ingredients = recipe.ingredientSections.reduce(0) { $0 + $1.ingredients.count }
+        let steps = recipe.instructionSections.reduce(0) { $0 + $1.steps.count }
+        return "\(ingredients) ingredients, \(steps) steps"
+    }
+
+    @ViewBuilder
+    private func groupActions(_ cluster: DuplicateCluster, keep: RecipeX) -> some View {
+        if cluster.confidence != .exactCopy {
+            if isMarkedNotSame(cluster) {
+                Button {
+                    setNotSame(cluster, false)
+                } label: {
+                    Label("Show as Possible Duplicate Again", systemImage: "arrow.uturn.backward")
+                }
+            } else {
+                Button {
+                    setNotSame(cluster, true)
+                } label: {
+                    Label("Not the Same Recipe — Keep All", systemImage: "checkmark.circle")
+                }
+            }
+        }
+        if cluster.isProtectedGroup && canMergeWithinBooks(cluster, keep: keep) {
+            Button(role: .destructive) {
+                withinBookConfirmation = cluster
+            } label: {
+                Label("Merge Copies in the Same Book…", systemImage: "arrow.triangle.merge")
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var notSameGroupsSection: some View {
+        if !notSameClusters.isEmpty {
+            Section {
+                Toggle("Show groups marked not the same (\(notSameClusters.count))", isOn: $showNotSameGroups)
+                if showNotSameGroups {
+                    ForEach(notSameClusters) { cluster in
+                        duplicateClusterRow(cluster)
+                    }
+                }
+            } header: {
+                Text("Marked Not the Same")
+            }
+        }
+    }
+
+    /// Merges every other copy in a protected group into the keeper, when every book that
+    /// lists a copy also lists the keeper. The user confirmed this group.
+    private func mergeWithinBooks(_ cluster: DuplicateCluster) async {
+        let keep = keeper(for: cluster)
+        guard canMergeWithinBooks(cluster, keep: keep) else {
+            mergeMessage = "Not merged: a book lists a copy but not the kept recipe."
+            return
+        }
+        let removedIDs = Set(cluster.recipes.compactMap(\.id)).subtracting([keep.id].compactMap { $0 })
+        let touchedBooks = allBooks.filter { book in
+            (book.recipeIDs ?? []).contains { removedIDs.contains($0) }
+        }
+        var merged = 0
+        for other in cluster.recipes where other.id != keep.id {
+            if await mergeCopy(other, into: keep, withinBooks: true) { merged += 1 }
+        }
+        keeperOverrides[cluster.stableKey] = nil
+        // Refresh the public copy of any shared book that listed a removed copy (in place).
+        for book in touchedBooks {
+            let isShared = sharedBooks.contains { $0.bookID == book.id && $0.isActive }
+            guard isShared else { continue }
+            do {
+                _ = try await CloudKitSharingService.shared.shareRecipeBook(book, modelContext: modelContext, refreshExisting: true)
+            } catch {
+                AppLog.warning("Could not refresh public copy of book '\(book.displayName)' after merge: \(error)", category: .sharing)
+            }
+        }
+        findDuplicates()
+        mergeMessage = "Merged \(merged) cop\(merged == 1 ? "y" : "ies") of '\(keep.title ?? "")' in \(BookMembershipGuard.listPhrase(touchedBooks.map(\.displayName)))."
+    }
+
+    // MARK: - Same recipe stored twice under one ID
+
+    /// Recipes stored more than once under the SAME id (e.g. after a sync reset).
+    /// The groups above are keyed by id, so they cannot show these.
+    private var sameIDGroups: [[RecipeX]] {
+        Dictionary(grouping: recipeXEntities.filter { $0.id != nil }, by: { $0.id! })
+            .values
+            .filter { $0.count > 1 }
+            .sorted { ($0.first?.title ?? "") < ($1.first?.title ?? "") }
+    }
+
+    private var sameIDExtraCount: Int { sameIDGroups.reduce(0) { $0 + $1.count - 1 } }
+
+    /// Same content as the user sees it (decoded, so encoding differences don't matter).
+    static func sameContent(_ a: RecipeX, _ b: RecipeX) -> Bool {
+        a.title == b.title && a.headerNotes == b.headerNotes && a.recipeYield == b.recipeYield
+            && a.reference == b.reference
+            && a.ingredientSections == b.ingredientSections
+            && a.instructionSections == b.instructionSections
+            && a.notes == b.notes
+    }
+
+    @ViewBuilder
+    private var sameIDSection: some View {
+        let groups = sameIDGroups
+        if !groups.isEmpty {
+            Section {
+                ForEach(groups, id: \.first!.persistentModelID) { group in
+                    HStack {
+                        Text(group.first?.title ?? "Untitled")
+                        Spacer()
+                        Text("stored \(group.count)×")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                }
+                Button(role: .destructive) {
+                    showingSameIDConfirmation = true
+                } label: {
+                    Label("Remove Extra Stored Copies (\(sameIDExtraCount))", systemImage: "square.on.square.dashed")
+                }
+            } header: {
+                Text("Same Recipe Stored Twice (\(groups.count))")
+            } footer: {
+                Text("Same ID, so books and the website already treat each as one recipe. Only identical extras are removed.")
+            }
+        }
+    }
+
+    private func removeSameIDExtras() {
+        var removed = 0
+        var differing = 0
+        for group in sameIDGroups {
+            guard let keep = group.max(by: { DuplicateCluster.completenessScore($0) < DuplicateCluster.completenessScore($1) }) else { continue }
+            for other in group where other.persistentModelID != keep.persistentModelID {
+                if Self.sameContent(keep, other) {
+                    modelContext.delete(other)
+                    removed += 1
+                } else {
+                    differing += 1
+                }
+            }
+        }
+        do {
+            try modelContext.save()
+            AppLog.info("Removed \(removed) extra stored copies (same id); kept \(differing) that differ", category: .recipe)
+        } catch {
+            AppLog.error("Failed to save after removing same-id copies: \(error)", category: .recipe)
+        }
+        findDuplicates()
+        mergeMessage = "Removed \(removed) extra stored cop\(removed == 1 ? "y" : "ies")." + (differing > 0 ? " Kept \(differing) whose content differs — review them." : "")
+    }
+
 
     // MARK: - Row Views
 
@@ -790,7 +1012,8 @@ struct DuplicateRecipeDetectorView: View {
 
     /// Fraction of ingredient lines that have a counterpart in the other recipe
     /// (name words at least half shared), relative to the longer list.
-    static func ingredientSimilarity(_ a: [Set<String>], _ b: [Set<String>]) -> Double {
+    /// Pure function of its arguments — nonisolated so tests and background code can call it.
+    nonisolated static func ingredientSimilarity(_ a: [Set<String>], _ b: [Set<String>]) -> Double {
         guard !a.isEmpty, !b.isEmpty else { return 0 }
         var used = Set<Int>()
         var matched = 0
@@ -849,12 +1072,16 @@ struct DuplicateRecipeDetectorView: View {
     /// public copy. Nothing in a book is lost: each book that listed the duplicate lists the
     /// kept copy instead (once).
     @discardableResult
-    private func mergeCopy(_ duplicate: RecipeX, into keep: RecipeX) async -> Bool {
+    private func mergeCopy(_ duplicate: RecipeX, into keep: RecipeX, withinBooks: Bool = false) async -> Bool {
         guard let dupID = duplicate.id, let keepID = keep.id, dupID != keepID else { return false }
 
-        // A copy that is in any book is never removed (BookMembershipGuard).
+        // A copy that is in any book is never removed (BookMembershipGuard) — except by the
+        // user-confirmed same-book merge, and only when every book listing it lists the keeper.
         let bookGuard = BookMembershipGuard(books: allBooks)
-        guard bookGuard.canRemoveDuplicate(dupID, keeping: keepID) else {
+        let allowed = withinBooks
+            ? BookMembershipGuard.everyBookListingCopyAlsoListsKeeper(copyID: dupID, keepID: keepID, books: allBooks.map { $0.recipeIDs ?? [] })
+            : bookGuard.canRemoveDuplicate(dupID, keeping: keepID)
+        guard allowed else {
             bookGuard.logSkip(recipeTitle: duplicate.title ?? "", recipeID: dupID, operation: "Duplicate merge")
             return false
         }
