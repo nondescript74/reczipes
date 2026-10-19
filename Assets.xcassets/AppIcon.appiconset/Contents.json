@@ -1,563 +1,563 @@
 {
-  "images" : [
+  "images": [
     {
-      "filename" : "thanksgiving_40.png",
-      "idiom" : "universal",
-      "platform" : "ios",
-      "scale" : "2x",
-      "size" : "20x20"
+      "idiom": "universal",
+      "platform": "ios",
+      "scale": "2x",
+      "size": "20x20",
+      "filename": "reczipes_40.png"
     },
     {
-      "filename" : "thanksgiving_60.png",
-      "idiom" : "universal",
-      "platform" : "ios",
-      "scale" : "3x",
-      "size" : "20x20"
+      "idiom": "universal",
+      "platform": "ios",
+      "scale": "3x",
+      "size": "20x20",
+      "filename": "reczipes_60.png"
     },
     {
-      "filename" : "thanksgiving_58.png",
-      "idiom" : "universal",
-      "platform" : "ios",
-      "scale" : "2x",
-      "size" : "29x29"
+      "idiom": "universal",
+      "platform": "ios",
+      "scale": "2x",
+      "size": "29x29",
+      "filename": "reczipes_58.png"
     },
     {
-      "filename" : "thanksgiving_87.png",
-      "idiom" : "universal",
-      "platform" : "ios",
-      "scale" : "3x",
-      "size" : "29x29"
+      "idiom": "universal",
+      "platform": "ios",
+      "scale": "3x",
+      "size": "29x29",
+      "filename": "reczipes_87.png"
     },
     {
-      "filename" : "thanksgiving_76.png",
-      "idiom" : "universal",
-      "platform" : "ios",
-      "scale" : "2x",
-      "size" : "38x38"
+      "idiom": "universal",
+      "platform": "ios",
+      "scale": "2x",
+      "size": "38x38",
+      "filename": "reczipes_76.png"
     },
     {
-      "filename" : "thanksgiving_114.png",
-      "idiom" : "universal",
-      "platform" : "ios",
-      "scale" : "3x",
-      "size" : "38x38"
+      "idiom": "universal",
+      "platform": "ios",
+      "scale": "3x",
+      "size": "38x38",
+      "filename": "reczipes_114.png"
     },
     {
-      "filename" : "thanksgiving_80.png",
-      "idiom" : "universal",
-      "platform" : "ios",
-      "scale" : "2x",
-      "size" : "40x40"
+      "idiom": "universal",
+      "platform": "ios",
+      "scale": "2x",
+      "size": "40x40",
+      "filename": "reczipes_80.png"
     },
     {
-      "filename" : "thanksgiving_120.png",
-      "idiom" : "universal",
-      "platform" : "ios",
-      "scale" : "3x",
-      "size" : "40x40"
+      "idiom": "universal",
+      "platform": "ios",
+      "scale": "3x",
+      "size": "40x40",
+      "filename": "reczipes_120.png"
     },
     {
-      "filename" : "thanksgiving_120 1.png",
-      "idiom" : "universal",
-      "platform" : "ios",
-      "scale" : "2x",
-      "size" : "60x60"
+      "idiom": "universal",
+      "platform": "ios",
+      "scale": "2x",
+      "size": "60x60",
+      "filename": "reczipes_120.png"
     },
     {
-      "filename" : "thanksgiving_180.png",
-      "idiom" : "universal",
-      "platform" : "ios",
-      "scale" : "3x",
-      "size" : "60x60"
+      "idiom": "universal",
+      "platform": "ios",
+      "scale": "3x",
+      "size": "60x60",
+      "filename": "reczipes_180.png"
     },
     {
-      "filename" : "thanksgiving_128.png",
-      "idiom" : "universal",
-      "platform" : "ios",
-      "scale" : "2x",
-      "size" : "64x64"
+      "idiom": "universal",
+      "platform": "ios",
+      "scale": "2x",
+      "size": "64x64",
+      "filename": "reczipes_128.png"
     },
     {
-      "filename" : "thanksgiving_192.png",
-      "idiom" : "universal",
-      "platform" : "ios",
-      "scale" : "3x",
-      "size" : "64x64"
+      "idiom": "universal",
+      "platform": "ios",
+      "scale": "3x",
+      "size": "64x64",
+      "filename": "reczipes_192.png"
     },
     {
-      "filename" : "thanksgiving_136.png",
-      "idiom" : "universal",
-      "platform" : "ios",
-      "scale" : "2x",
-      "size" : "68x68"
+      "idiom": "universal",
+      "platform": "ios",
+      "scale": "2x",
+      "size": "68x68",
+      "filename": "reczipes_136.png"
     },
     {
-      "filename" : "thanksgiving_152.png",
-      "idiom" : "universal",
-      "platform" : "ios",
-      "scale" : "2x",
-      "size" : "76x76"
+      "idiom": "universal",
+      "platform": "ios",
+      "scale": "2x",
+      "size": "76x76",
+      "filename": "reczipes_152.png"
     },
     {
-      "filename" : "thanksgiving_167.png",
-      "idiom" : "universal",
-      "platform" : "ios",
-      "scale" : "2x",
-      "size" : "83.5x83.5"
+      "idiom": "universal",
+      "platform": "ios",
+      "scale": "2x",
+      "size": "83.5x83.5",
+      "filename": "reczipes_167.png"
     },
     {
-      "filename" : "thanksgiving_1024 1.png",
-      "idiom" : "universal",
-      "platform" : "ios",
-      "size" : "1024x1024"
+      "idiom": "universal",
+      "platform": "ios",
+      "size": "1024x1024",
+      "filename": "reczipes_1024.png"
     },
     {
-      "appearances" : [
+      "idiom": "universal",
+      "platform": "ios",
+      "scale": "2x",
+      "size": "20x20",
+      "appearances": [
         {
-          "appearance" : "luminosity",
-          "value" : "dark"
+          "appearance": "luminosity",
+          "value": "dark"
         }
-      ],
-      "idiom" : "universal",
-      "platform" : "ios",
-      "scale" : "2x",
-      "size" : "20x20"
+      ]
     },
     {
-      "appearances" : [
+      "idiom": "universal",
+      "platform": "ios",
+      "scale": "3x",
+      "size": "20x20",
+      "appearances": [
         {
-          "appearance" : "luminosity",
-          "value" : "dark"
+          "appearance": "luminosity",
+          "value": "dark"
         }
-      ],
-      "idiom" : "universal",
-      "platform" : "ios",
-      "scale" : "3x",
-      "size" : "20x20"
+      ]
     },
     {
-      "appearances" : [
+      "idiom": "universal",
+      "platform": "ios",
+      "scale": "2x",
+      "size": "29x29",
+      "appearances": [
         {
-          "appearance" : "luminosity",
-          "value" : "dark"
+          "appearance": "luminosity",
+          "value": "dark"
         }
-      ],
-      "idiom" : "universal",
-      "platform" : "ios",
-      "scale" : "2x",
-      "size" : "29x29"
+      ]
     },
     {
-      "appearances" : [
+      "idiom": "universal",
+      "platform": "ios",
+      "scale": "3x",
+      "size": "29x29",
+      "appearances": [
         {
-          "appearance" : "luminosity",
-          "value" : "dark"
+          "appearance": "luminosity",
+          "value": "dark"
         }
-      ],
-      "idiom" : "universal",
-      "platform" : "ios",
-      "scale" : "3x",
-      "size" : "29x29"
+      ]
     },
     {
-      "appearances" : [
+      "idiom": "universal",
+      "platform": "ios",
+      "scale": "2x",
+      "size": "38x38",
+      "appearances": [
         {
-          "appearance" : "luminosity",
-          "value" : "dark"
+          "appearance": "luminosity",
+          "value": "dark"
         }
-      ],
-      "idiom" : "universal",
-      "platform" : "ios",
-      "scale" : "2x",
-      "size" : "38x38"
+      ]
     },
     {
-      "appearances" : [
+      "idiom": "universal",
+      "platform": "ios",
+      "scale": "3x",
+      "size": "38x38",
+      "appearances": [
         {
-          "appearance" : "luminosity",
-          "value" : "dark"
+          "appearance": "luminosity",
+          "value": "dark"
         }
-      ],
-      "idiom" : "universal",
-      "platform" : "ios",
-      "scale" : "3x",
-      "size" : "38x38"
+      ]
     },
     {
-      "appearances" : [
+      "idiom": "universal",
+      "platform": "ios",
+      "scale": "2x",
+      "size": "40x40",
+      "appearances": [
         {
-          "appearance" : "luminosity",
-          "value" : "dark"
+          "appearance": "luminosity",
+          "value": "dark"
         }
-      ],
-      "idiom" : "universal",
-      "platform" : "ios",
-      "scale" : "2x",
-      "size" : "40x40"
+      ]
     },
     {
-      "appearances" : [
+      "idiom": "universal",
+      "platform": "ios",
+      "scale": "3x",
+      "size": "40x40",
+      "appearances": [
         {
-          "appearance" : "luminosity",
-          "value" : "dark"
+          "appearance": "luminosity",
+          "value": "dark"
         }
-      ],
-      "idiom" : "universal",
-      "platform" : "ios",
-      "scale" : "3x",
-      "size" : "40x40"
+      ]
     },
     {
-      "appearances" : [
+      "idiom": "universal",
+      "platform": "ios",
+      "scale": "2x",
+      "size": "60x60",
+      "appearances": [
         {
-          "appearance" : "luminosity",
-          "value" : "dark"
+          "appearance": "luminosity",
+          "value": "dark"
         }
-      ],
-      "idiom" : "universal",
-      "platform" : "ios",
-      "scale" : "2x",
-      "size" : "60x60"
+      ]
     },
     {
-      "appearances" : [
+      "idiom": "universal",
+      "platform": "ios",
+      "scale": "3x",
+      "size": "60x60",
+      "appearances": [
         {
-          "appearance" : "luminosity",
-          "value" : "dark"
+          "appearance": "luminosity",
+          "value": "dark"
         }
-      ],
-      "idiom" : "universal",
-      "platform" : "ios",
-      "scale" : "3x",
-      "size" : "60x60"
+      ]
     },
     {
-      "appearances" : [
+      "idiom": "universal",
+      "platform": "ios",
+      "scale": "2x",
+      "size": "64x64",
+      "appearances": [
         {
-          "appearance" : "luminosity",
-          "value" : "dark"
+          "appearance": "luminosity",
+          "value": "dark"
         }
-      ],
-      "idiom" : "universal",
-      "platform" : "ios",
-      "scale" : "2x",
-      "size" : "64x64"
+      ]
     },
     {
-      "appearances" : [
+      "idiom": "universal",
+      "platform": "ios",
+      "scale": "3x",
+      "size": "64x64",
+      "appearances": [
         {
-          "appearance" : "luminosity",
-          "value" : "dark"
+          "appearance": "luminosity",
+          "value": "dark"
         }
-      ],
-      "idiom" : "universal",
-      "platform" : "ios",
-      "scale" : "3x",
-      "size" : "64x64"
+      ]
     },
     {
-      "appearances" : [
+      "idiom": "universal",
+      "platform": "ios",
+      "scale": "2x",
+      "size": "68x68",
+      "appearances": [
         {
-          "appearance" : "luminosity",
-          "value" : "dark"
+          "appearance": "luminosity",
+          "value": "dark"
         }
-      ],
-      "idiom" : "universal",
-      "platform" : "ios",
-      "scale" : "2x",
-      "size" : "68x68"
+      ]
     },
     {
-      "appearances" : [
+      "idiom": "universal",
+      "platform": "ios",
+      "scale": "2x",
+      "size": "76x76",
+      "appearances": [
         {
-          "appearance" : "luminosity",
-          "value" : "dark"
+          "appearance": "luminosity",
+          "value": "dark"
         }
-      ],
-      "idiom" : "universal",
-      "platform" : "ios",
-      "scale" : "2x",
-      "size" : "76x76"
+      ]
     },
     {
-      "appearances" : [
+      "idiom": "universal",
+      "platform": "ios",
+      "scale": "2x",
+      "size": "83.5x83.5",
+      "appearances": [
         {
-          "appearance" : "luminosity",
-          "value" : "dark"
+          "appearance": "luminosity",
+          "value": "dark"
         }
-      ],
-      "idiom" : "universal",
-      "platform" : "ios",
-      "scale" : "2x",
-      "size" : "83.5x83.5"
+      ]
     },
     {
-      "appearances" : [
+      "idiom": "universal",
+      "platform": "ios",
+      "size": "1024x1024",
+      "filename": "reczipes_dark_1024.png",
+      "appearances": [
         {
-          "appearance" : "luminosity",
-          "value" : "dark"
+          "appearance": "luminosity",
+          "value": "dark"
         }
-      ],
-      "filename" : "thanksgiving_1024 3.png",
-      "idiom" : "universal",
-      "platform" : "ios",
-      "size" : "1024x1024"
+      ]
     },
     {
-      "appearances" : [
+      "idiom": "universal",
+      "platform": "ios",
+      "scale": "2x",
+      "size": "20x20",
+      "appearances": [
         {
-          "appearance" : "luminosity",
-          "value" : "tinted"
+          "appearance": "luminosity",
+          "value": "tinted"
         }
-      ],
-      "idiom" : "universal",
-      "platform" : "ios",
-      "scale" : "2x",
-      "size" : "20x20"
+      ]
     },
     {
-      "appearances" : [
+      "idiom": "universal",
+      "platform": "ios",
+      "scale": "3x",
+      "size": "20x20",
+      "appearances": [
         {
-          "appearance" : "luminosity",
-          "value" : "tinted"
+          "appearance": "luminosity",
+          "value": "tinted"
         }
-      ],
-      "idiom" : "universal",
-      "platform" : "ios",
-      "scale" : "3x",
-      "size" : "20x20"
+      ]
     },
     {
-      "appearances" : [
+      "idiom": "universal",
+      "platform": "ios",
+      "scale": "2x",
+      "size": "29x29",
+      "appearances": [
         {
-          "appearance" : "luminosity",
-          "value" : "tinted"
+          "appearance": "luminosity",
+          "value": "tinted"
         }
-      ],
-      "idiom" : "universal",
-      "platform" : "ios",
-      "scale" : "2x",
-      "size" : "29x29"
+      ]
     },
     {
-      "appearances" : [
+      "idiom": "universal",
+      "platform": "ios",
+      "scale": "3x",
+      "size": "29x29",
+      "appearances": [
         {
-          "appearance" : "luminosity",
-          "value" : "tinted"
+          "appearance": "luminosity",
+          "value": "tinted"
         }
-      ],
-      "idiom" : "universal",
-      "platform" : "ios",
-      "scale" : "3x",
-      "size" : "29x29"
+      ]
     },
     {
-      "appearances" : [
+      "idiom": "universal",
+      "platform": "ios",
+      "scale": "2x",
+      "size": "38x38",
+      "appearances": [
         {
-          "appearance" : "luminosity",
-          "value" : "tinted"
+          "appearance": "luminosity",
+          "value": "tinted"
         }
-      ],
-      "idiom" : "universal",
-      "platform" : "ios",
-      "scale" : "2x",
-      "size" : "38x38"
+      ]
     },
     {
-      "appearances" : [
+      "idiom": "universal",
+      "platform": "ios",
+      "scale": "3x",
+      "size": "38x38",
+      "appearances": [
         {
-          "appearance" : "luminosity",
-          "value" : "tinted"
+          "appearance": "luminosity",
+          "value": "tinted"
         }
-      ],
-      "idiom" : "universal",
-      "platform" : "ios",
-      "scale" : "3x",
-      "size" : "38x38"
+      ]
     },
     {
-      "appearances" : [
+      "idiom": "universal",
+      "platform": "ios",
+      "scale": "2x",
+      "size": "40x40",
+      "appearances": [
         {
-          "appearance" : "luminosity",
-          "value" : "tinted"
+          "appearance": "luminosity",
+          "value": "tinted"
         }
-      ],
-      "idiom" : "universal",
-      "platform" : "ios",
-      "scale" : "2x",
-      "size" : "40x40"
+      ]
     },
     {
-      "appearances" : [
+      "idiom": "universal",
+      "platform": "ios",
+      "scale": "3x",
+      "size": "40x40",
+      "appearances": [
         {
-          "appearance" : "luminosity",
-          "value" : "tinted"
+          "appearance": "luminosity",
+          "value": "tinted"
         }
-      ],
-      "idiom" : "universal",
-      "platform" : "ios",
-      "scale" : "3x",
-      "size" : "40x40"
+      ]
     },
     {
-      "appearances" : [
+      "idiom": "universal",
+      "platform": "ios",
+      "scale": "2x",
+      "size": "60x60",
+      "appearances": [
         {
-          "appearance" : "luminosity",
-          "value" : "tinted"
+          "appearance": "luminosity",
+          "value": "tinted"
         }
-      ],
-      "idiom" : "universal",
-      "platform" : "ios",
-      "scale" : "2x",
-      "size" : "60x60"
+      ]
     },
     {
-      "appearances" : [
+      "idiom": "universal",
+      "platform": "ios",
+      "scale": "3x",
+      "size": "60x60",
+      "appearances": [
         {
-          "appearance" : "luminosity",
-          "value" : "tinted"
+          "appearance": "luminosity",
+          "value": "tinted"
         }
-      ],
-      "idiom" : "universal",
-      "platform" : "ios",
-      "scale" : "3x",
-      "size" : "60x60"
+      ]
     },
     {
-      "appearances" : [
+      "idiom": "universal",
+      "platform": "ios",
+      "scale": "2x",
+      "size": "64x64",
+      "appearances": [
         {
-          "appearance" : "luminosity",
-          "value" : "tinted"
+          "appearance": "luminosity",
+          "value": "tinted"
         }
-      ],
-      "idiom" : "universal",
-      "platform" : "ios",
-      "scale" : "2x",
-      "size" : "64x64"
+      ]
     },
     {
-      "appearances" : [
+      "idiom": "universal",
+      "platform": "ios",
+      "scale": "3x",
+      "size": "64x64",
+      "appearances": [
         {
-          "appearance" : "luminosity",
-          "value" : "tinted"
+          "appearance": "luminosity",
+          "value": "tinted"
         }
-      ],
-      "idiom" : "universal",
-      "platform" : "ios",
-      "scale" : "3x",
-      "size" : "64x64"
+      ]
     },
     {
-      "appearances" : [
+      "idiom": "universal",
+      "platform": "ios",
+      "scale": "2x",
+      "size": "68x68",
+      "appearances": [
         {
-          "appearance" : "luminosity",
-          "value" : "tinted"
+          "appearance": "luminosity",
+          "value": "tinted"
         }
-      ],
-      "idiom" : "universal",
-      "platform" : "ios",
-      "scale" : "2x",
-      "size" : "68x68"
+      ]
     },
     {
-      "appearances" : [
+      "idiom": "universal",
+      "platform": "ios",
+      "scale": "2x",
+      "size": "76x76",
+      "appearances": [
         {
-          "appearance" : "luminosity",
-          "value" : "tinted"
+          "appearance": "luminosity",
+          "value": "tinted"
         }
-      ],
-      "idiom" : "universal",
-      "platform" : "ios",
-      "scale" : "2x",
-      "size" : "76x76"
+      ]
     },
     {
-      "appearances" : [
+      "idiom": "universal",
+      "platform": "ios",
+      "scale": "2x",
+      "size": "83.5x83.5",
+      "appearances": [
         {
-          "appearance" : "luminosity",
-          "value" : "tinted"
+          "appearance": "luminosity",
+          "value": "tinted"
         }
-      ],
-      "idiom" : "universal",
-      "platform" : "ios",
-      "scale" : "2x",
-      "size" : "83.5x83.5"
+      ]
     },
     {
-      "appearances" : [
+      "idiom": "universal",
+      "platform": "ios",
+      "size": "1024x1024",
+      "filename": "reczipes_tinted_1024.png",
+      "appearances": [
         {
-          "appearance" : "luminosity",
-          "value" : "tinted"
+          "appearance": "luminosity",
+          "value": "tinted"
         }
-      ],
-      "filename" : "thanksgiving_1024 2.png",
-      "idiom" : "universal",
-      "platform" : "ios",
-      "size" : "1024x1024"
+      ]
     },
     {
-      "filename" : "thanksgiving_16.png",
-      "idiom" : "mac",
-      "scale" : "1x",
-      "size" : "16x16"
+      "idiom": "mac",
+      "scale": "1x",
+      "size": "16x16",
+      "filename": "reczipes_16.png"
     },
     {
-      "filename" : "thanksgiving_32 1.png",
-      "idiom" : "mac",
-      "scale" : "2x",
-      "size" : "16x16"
+      "idiom": "mac",
+      "scale": "2x",
+      "size": "16x16",
+      "filename": "reczipes_32.png"
     },
     {
-      "filename" : "thanksgiving_32.png",
-      "idiom" : "mac",
-      "scale" : "1x",
-      "size" : "32x32"
+      "idiom": "mac",
+      "scale": "1x",
+      "size": "32x32",
+      "filename": "reczipes_32.png"
     },
     {
-      "filename" : "thanksgiving_64.png",
-      "idiom" : "mac",
-      "scale" : "2x",
-      "size" : "32x32"
+      "idiom": "mac",
+      "scale": "2x",
+      "size": "32x32",
+      "filename": "reczipes_64.png"
     },
     {
-      "filename" : "thanksgiving_128 1.png",
-      "idiom" : "mac",
-      "scale" : "1x",
-      "size" : "128x128"
+      "idiom": "mac",
+      "scale": "1x",
+      "size": "128x128",
+      "filename": "reczipes_128.png"
     },
     {
-      "filename" : "thanksgiving_256 2.png",
-      "idiom" : "mac",
-      "scale" : "2x",
-      "size" : "128x128"
+      "idiom": "mac",
+      "scale": "2x",
+      "size": "128x128",
+      "filename": "reczipes_256.png"
     },
     {
-      "filename" : "thanksgiving_256.png",
-      "idiom" : "mac",
-      "scale" : "1x",
-      "size" : "256x256"
+      "idiom": "mac",
+      "scale": "1x",
+      "size": "256x256",
+      "filename": "reczipes_256.png"
     },
     {
-      "filename" : "thanksgiving_512 2.png",
-      "idiom" : "mac",
-      "scale" : "2x",
-      "size" : "256x256"
+      "idiom": "mac",
+      "scale": "2x",
+      "size": "256x256",
+      "filename": "reczipes_512.png"
     },
     {
-      "filename" : "thanksgiving_512.png",
-      "idiom" : "mac",
-      "scale" : "1x",
-      "size" : "512x512"
+      "idiom": "mac",
+      "scale": "1x",
+      "size": "512x512",
+      "filename": "reczipes_512.png"
     },
     {
-      "filename" : "thanksgiving_1024.png",
-      "idiom" : "mac",
-      "scale" : "2x",
-      "size" : "512x512"
+      "idiom": "mac",
+      "scale": "2x",
+      "size": "512x512",
+      "filename": "reczipes_1024.png"
     }
   ],
-  "info" : {
-    "author" : "xcode",
-    "version" : 1
+  "info": {
+    "author": "xcode",
+    "version": 1
   }
 }
