@@ -38,7 +38,8 @@ struct ContentView: View {
     @State private var cachedNutritionalScores: [UUID: NutritionalScore] = [:]
     
     // Content filter for showing mine/shared (default to mine)
-    @State private var contentFilter: ContentFilterMode = .mine
+    // Remembered across tab switches / view rebuilds (was @State, reset to Mine)
+    @AppStorage("recipesContentFilter") private var contentFilter: ContentFilterMode = .mine
     @Query private var sharedRecipes: [SharedRecipe]
     
     // Auto-sync tracking for shared recipes

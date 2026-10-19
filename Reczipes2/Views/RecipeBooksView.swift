@@ -22,7 +22,8 @@ struct RecipeBooksView: View {
     @State private var showingImport = false
     @State private var showingAutoFile = false
     @State private var refreshID = UUID()
-    @State private var contentFilter: ContentFilterMode = .mine
+    // Remembered across tab switches / view rebuilds (was @State, reset to Mine)
+    @AppStorage("booksContentFilter") private var contentFilter: ContentFilterMode = .mine
     @State private var lastSyncDate: Date?
     
     // Sync interval: 5 minutes

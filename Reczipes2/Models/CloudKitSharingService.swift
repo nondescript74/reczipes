@@ -2275,12 +2275,14 @@ class CloudKitSharingService: ObservableObject {
             AppLog.info("📚 Processing book: '\(cloudBook.name)' (\(cloudBook.recipeIDs.count) recipes)", category: .sharing)
             
             // Step 2: Download cover image
+            var downloadedCoverData: Data?
             if let coverImageAsset = record["coverImage"] as? CKAsset,
                let coverImageURL = coverImageAsset.fileURL,
                let coverImageData = try? Data(contentsOf: coverImageURL) {
                 // Save cover image to local storage
                 let coverImageName = "shared_cover_\(cloudBook.id).jpg"
                 try? saveImageToDocuments(data: coverImageData, filename: coverImageName)
+                downloadedCoverData = coverImageData
                 AppLog.info("📚   ✅ Downloaded cover image: \(coverImageName)", category: .sharing)
             }
             
@@ -2367,6 +2369,17 @@ class CloudKitSharingService: ObservableObject {
             // Contents, glossary and pictures published with the book (newer builds)
             await applyPublishedBookContent(cloudBook, to: book, modelContext: modelContext)
             
+            // The book cards draw coverImageData only; the file in Documents alone
+            // left every community book without a cover.
+            // Stored list-sized (covers can be large), and only when it changed.
+            if let cover = downloadedCoverData {
+                let thumbnail = BookImageProcessing.coverThumbnail(from: cover) ?? cover
+                if book.coverImageData != thumbnail {
+                    book.coverImageData = thumbnail
+                    book.coverImageHash = Book.calculateImageHash(from: thumbnail)
+                }
+            }
+
             // Check if SharedRecipeBook tracking entry exists
             if let existingSharedBook = existingSharedBooksByID[cloudBook.id] {
                 // Update existing tracking entry if needed
