@@ -15,6 +15,9 @@ struct BookDetailView: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     @Query private var savedRecipes: [RecipeX]
     @Query private var sharedBooks: [SharedRecipeBook]
+    /// Community recipes (shared by other users) — a shared book's recipes live here,
+    /// not in the user's own RecipeX library.
+    @Query private var cachedRecipes: [CachedSharedRecipe]
     
     let book: Book
     
@@ -62,8 +65,18 @@ struct BookDetailView: View {
     /// library hasn't loaded, so an empty store never looks like "all missing".
     private var missingRecipeIDs: [UUID] {
         guard let recipeIDs = book.recipeIDs, !savedRecipes.isEmpty else { return [] }
-        let existing = Set(savedRecipes.compactMap(\.id))
+        // Community recipes count as present: a shared book's recipes are all
+        // community recipes, and must never be offered for link removal.
+        let existing = Set(savedRecipes.compactMap(\.id)).union(cachedRecipes.map(\.id))
         return recipeIDs.filter { !existing.contains($0) }
+    }
+
+    /// Community (cached shared) recipes for this book's ids, by id
+    private var communityRecipesByID: [UUID: CachedSharedRecipe] {
+        guard let ids = book.recipeIDs, !ids.isEmpty else { return [:] }
+        let wanted = Set(ids)
+        return Dictionary(cachedRecipes.filter { wanted.contains($0.id) }.map { ($0.id, $0) },
+                          uniquingKeysWith: { a, _ in a })
     }
 
     private var bookColor: Color {
@@ -88,7 +101,11 @@ struct BookDetailView: View {
 
                 switch viewMode {
                 case .recipes:
-                    if bookRecipes.isEmpty {
+                    if bookRecipes.isEmpty, !(book.recipeIDs ?? []).isEmpty,
+                       !communityRecipesByID.isEmpty || !book.recipePreviews.isEmpty {
+                        // Shared book: its recipes are community recipes, not in this library
+                        communityRecipeListView
+                    } else if bookRecipes.isEmpty {
                         emptyBookView
                     } else {
                         recipePageView
@@ -266,6 +283,41 @@ struct BookDetailView: View {
         }
     }
     
+    // MARK: - Community Recipe List (shared books)
+
+    /// Read-only list of a shared book's recipes, in book order, from the
+    /// community cache. Recipes not downloaded yet show their preview title.
+    private var communityRecipeListView: some View {
+        let cached = communityRecipesByID
+        let previewTitles = Dictionary(book.recipePreviews.map { ($0.id, $0.title) },
+                                       uniquingKeysWith: { a, _ in a })
+        let ids = book.recipeIDs ?? []
+        return List {
+            Section {
+                ForEach(Array(ids.enumerated()), id: \.offset) { _, recipeID in
+                    if let recipe = cached[recipeID] {
+                        NavigationLink {
+                            CachedRecipeDetailView(cachedRecipe: recipe)
+                        } label: {
+                            Text(recipe.title)
+                        }
+                    } else {
+                        VStack(alignment: .leading, spacing: 2) {
+                            Text(previewTitles[recipeID] ?? "Recipe")
+                            Text("Not downloaded yet")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                        }
+                    }
+                }
+            } footer: {
+                if let owner = book.ownerDisplayName {
+                    Text("Shared by \(owner)")
+                }
+            }
+        }
+    }
+
     // MARK: - Empty Book View
     
     private var emptyBookView: some View {

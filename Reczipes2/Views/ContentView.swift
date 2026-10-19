@@ -531,7 +531,7 @@ struct ContentView: View {
                 }
         } else if let cachedRecipe = recipe as? CachedSharedRecipe {
             CachedRecipeDetailView(cachedRecipe: cachedRecipe)
-                .id("\(cachedRecipe.id)-\(cachedRecipe.imageName ?? "no-image")")
+                .id("\(cachedRecipe.id)-\(cachedRecipe.imageName ?? "no-image")-\(cachedRecipe.imageData?.count ?? 0)")
         }
     }
     
@@ -815,11 +815,11 @@ struct ContentView: View {
                     placeholderImage
                 }
             } else if let cachedRecipe = recipe as? CachedSharedRecipe {
-                // CachedSharedRecipe only has imageName
-                if let imageName = cachedRecipe.imageName {
+                // Community sync stores the image bytes in imageData (often no file)
+                if cachedRecipe.imageData != nil || cachedRecipe.imageName != nil {
                     RecipeImageView(
-                        imageName: imageName,
-                        imageData: nil,
+                        imageName: cachedRecipe.imageName,
+                        imageData: cachedRecipe.imageData,
                         size: CGSize(width: 50, height: 50),
                         cornerRadius: 6
                     )

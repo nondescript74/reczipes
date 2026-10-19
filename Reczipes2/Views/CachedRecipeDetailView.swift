@@ -64,11 +64,11 @@ struct CachedRecipeDetailView: View {
                 .padding()
                 
                 // Image (if available)
-                if let imageName = cachedRecipe.imageName {
+                if cachedRecipe.imageData != nil || cachedRecipe.imageName != nil {
                     GeometryReader { geometry in
                         RecipeImageView(
-                            imageName: imageName,
-                            imageData: nil,
+                            imageName: cachedRecipe.imageName,
+                            imageData: cachedRecipe.imageData,
                             size: CGSize(width: geometry.size.width - 32, height: 250),
                             cornerRadius: 12
                         )
