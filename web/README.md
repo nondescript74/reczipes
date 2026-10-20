@@ -73,8 +73,8 @@ Same pattern as the Japan 2027 trip page and hvhoa-jena: **two locks, one door.*
 1. **Cloudflare (the edge).** DNS `CNAME reczipes → nqdp8rwy.up.railway.app`, **Proxied**, plus `TXT _railway-verify.reczipes`
    (Railway's domain check). Zero Trust → Access → Applications → self-hosted **`Reczipes`**
    (`reczipes.industriallystrong.com`, session 24 h, all identity providers = one-time PIN by e-mail), policy
-   **`Reczipes guests`** — Allow · Emails. On 2026-10-20 it was a copy of the Japan 2027 guest list (9 e-mails, operator: "the same
-   user list for now"); it is its own policy, so the two lists can now differ.
+   **`Reczipes guests`** — Allow · Emails. On 2026-10-20 it was set to the Japan 2027 guest list (operator: "the same user list for now") —
+   10 e-mails, read back after saving; it is its own policy, so the two lists can now differ.
    **To let someone in:** add their e-mail to `Reczipes guests`. **To remove:** delete it (their session lasts until it expires).
 2. **This process (the origin).** `lib/access-guard.js` (ported from `eml-corpus-tree/server/access-guard.mjs`, with the
    JPNTWN2027 viewer's changes) verifies the Access JWT itself — RS256 against the team certs, `iss`, `aud`, `exp`/`nbf`, an
