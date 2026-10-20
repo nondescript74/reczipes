@@ -7,6 +7,7 @@ import path from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { createCloudKitClient } from './lib/cloudkit.js';
 import { createStore } from './lib/store.js';
+import { accessGuard, whoami } from './lib/access-guard.js';
 
 const here = path.dirname(fileURLToPath(import.meta.url));
 const PUBLIC_DIR = path.join(here, 'public');
@@ -71,7 +72,7 @@ async function serveStatic(res, urlPath) {
     const ext = path.extname(file);
     send(res, 200, body, {
       'content-type': MIME[ext] ?? 'application/octet-stream',
-      'cache-control': ext === '.html' ? 'no-cache' : 'public, max-age=300',
+      'cache-control': ext === '.html' ? 'no-cache' : 'private, max-age=300',
     });
     return true;
   } catch {
@@ -79,7 +80,14 @@ async function serveStatic(res, urlPath) {
   }
 }
 
+// Every request except /healthz passes the Access guard first (lib/access-guard.js).
+const guard = accessGuard();
+
 async function handle(req, res) {
+  let allowed = false;
+  await guard(req, res, () => { allowed = true; });
+  if (!allowed) return; // the guard has already answered (refusal or legacy-host redirect)
+
   const url = new URL(req.url, 'http://localhost');
   const p = url.pathname;
 
@@ -87,23 +95,25 @@ async function handle(req, res) {
 
   if (p === '/healthz') return sendJSON(res, 200, { ok: true });
 
+  if (p === '/api/access/whoami') return sendJSON(res, 200, whoami(req));
+
   if (p === '/api/status') {
     return sendJSON(res, 200, { ...(await store.status()), container: CONTAINER, environment: useFixtures ? null : CK_ENV });
   }
 
   if (p.startsWith('/api/')) {
     try {
-      if (p === '/api/recipes') return sendJSON(res, 200, await store.listRecipes(), 'public, max-age=60');
-      if (p === '/api/books') return sendJSON(res, 200, await store.listBooks(), 'public, max-age=60');
+      if (p === '/api/recipes') return sendJSON(res, 200, await store.listRecipes(), 'private, max-age=60');
+      if (p === '/api/books') return sendJSON(res, 200, await store.listBooks(), 'private, max-age=60');
       const mb = p.match(/^\/api\/books\/([A-Za-z0-9-]{1,64})$/);
       if (mb) {
         const b = await store.getBook(mb[1]);
-        return b ? sendJSON(res, 200, b, 'public, max-age=60') : sendJSON(res, 404, { error: 'Book not found' });
+        return b ? sendJSON(res, 200, b, 'private, max-age=60') : sendJSON(res, 404, { error: 'Book not found' });
       }
       const m = p.match(/^\/api\/recipes\/([A-Za-z0-9-]{1,64})$/);
       if (m) {
         const r = await store.getRecipe(m[1]);
-        return r ? sendJSON(res, 200, r, 'public, max-age=60') : sendJSON(res, 404, { error: 'Recipe not found' });
+        return r ? sendJSON(res, 200, r, 'private, max-age=60') : sendJSON(res, 404, { error: 'Recipe not found' });
       }
       return sendJSON(res, 404, { error: 'Not found' });
     } catch (err) {

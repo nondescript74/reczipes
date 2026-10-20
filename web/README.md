@@ -1,7 +1,8 @@
 # Reczipes web
 
 Reczipes in any browser — Safari, Chrome, Brave, Firefox, on any computer or phone, no Apple device needed.
-Lane 37 (Reczipes2), **Web workstream**. Status: **Phase 0 LIVE** at https://reczipes-production.up.railway.app (Railway project `reczipes-web`), reading the
+Lane 37 (Reczipes2), **Web workstream**. Status: **LIVE, sign-in required** at **https://reczipes.industriallystrong.com** (from 2026-10-20;
+behind Cloudflare Access — see *Who can see it*). The old address `reczipes-production.up.railway.app` redirects there. Railway project `reczipes-web`, reading the
 CloudKit **Production** public database. As of 2026-10-17 12:15 MT: 888 `SharedRecipe` records → **729 recipes shown**
 (155 merged-library copies folded), **19 books**; *A Spicy Touch* shows 118 recipes. Live state: `GET /api/status`.
 
@@ -15,7 +16,7 @@ CloudKit **Production** public database. As of 2026-10-17 12:15 MT: 888 `SharedR
   - **Index** — A–Z of the book's *current* recipes with letter jumps, generated on every load (never stored page numbers).
   - **Contents**, **Pictures**, **Glossary** — shown only when the app published them with the book (see *Book content*).
   The recipe page's back link returns to the book view it came from.
-- Light and dark mode, phone to desktop, keyboard accessible. No account, no sign-in, read-only.
+- Light and dark mode, phone to desktop, keyboard accessible. Read-only. Sign-in is a one-time code e-mailed by Cloudflare (see below).
 
 ## How it gets recipes
 
@@ -65,12 +66,35 @@ ever deleted.
 
 `GET /api/status` reports the source, counts, load time and last error.
 
+## Who can see it — Cloudflare Access (from 2026-10-20)
+
+Same pattern as the Japan 2027 trip page and hvhoa-jena: **two locks, one door.**
+
+1. **Cloudflare (the edge).** DNS `CNAME reczipes → nqdp8rwy.up.railway.app`, **Proxied**, plus `TXT _railway-verify.reczipes`
+   (Railway's domain check). Zero Trust → Access → Applications → self-hosted **`Reczipes`**
+   (`reczipes.industriallystrong.com`, session 24 h, all identity providers = one-time PIN by e-mail), policy
+   **`Reczipes guests`** — Allow · Emails. On 2026-10-20 it was a copy of the Japan 2027 guest list (9 e-mails, operator: "the same
+   user list for now"); it is its own policy, so the two lists can now differ.
+   **To let someone in:** add their e-mail to `Reczipes guests`. **To remove:** delete it (their session lasts until it expires).
+2. **This process (the origin).** `lib/access-guard.js` (ported from `eml-corpus-tree/server/access-guard.mjs`, with the
+   JPNTWN2027 viewer's changes) verifies the Access JWT itself — RS256 against the team certs, `iss`, `aud`, `exp`/`nbf`, an
+   e-mail claim — on **every** request except `/healthz`. Railway also answers on its own hostnames, which Cloudflare never sees;
+   this is what keeps those closed. Fails closed: missing configuration ⇒ `403 GUARD_NOT_CONFIGURED`.
+3. **The old address.** A request for `reczipes-production.up.railway.app` (`RECZIPES_LEGACY_HOSTS`) gets a `302` to the same path on
+   the new host, so old links and bookmarks reach the login. It never serves recipes. Any other host ⇒ `403 HOST_NOT_SERVED`.
+4. **Open tabs.** A page loaded before the switch keeps its old script; its next request fails and it shows "couldn't be loaded" —
+   a refresh takes the reader to the login. From this version on, the page reloads itself once (at most once a minute) when an API
+   call is redirected to the login or answered 401, so an expired session lands on the login by itself.
+
+Live counts now need a signed-in browser: `/api/status` is behind the login like everything else (only `/healthz` is open, and
+it says only `{"ok":true}`).
+
 ## Run it
 
 ```bash
 cd web
 npm start            # http://localhost:8080 — sample data unless CLOUDKIT_API_TOKEN is set
-npm test             # 17 tests: decoding, pagination, error handling, store behaviour
+npm test             # node:test — decoding, store, and the Access guard (refusals, legacy redirect, end-to-end socket)
 ```
 
 No dependencies (Node ≥ 20). No build step.
@@ -83,6 +107,13 @@ No dependencies (Node ≥ 20). No build step.
 | `CACHE_TTL_SECONDS` | `300` | |
 | `PORT` | `8080` | Railway sets this |
 | `RECZIPES_DATA` | — | `fixtures` forces sample data |
+| `RECZIPES_PUBLIC_HOST` | — | `reczipes.industriallystrong.com` (required for any non-local request) |
+| `CF_ACCESS_TEAM_DOMAIN` | — | `headydiscy.cloudflareaccess.com` |
+| `CF_ACCESS_AUD` | — | the `Reczipes` Access app's Application Audience (AUD) tag (Railway variable; not in the repo) |
+| `CF_ACCESS_EMAILS` | — | `ACCESS_POLICY` = the Access policy is the list; or a comma list, enforced here too |
+| `RECZIPES_LEGACY_HOSTS` | — | `reczipes-production.up.railway.app` — redirected to the public host |
+
+Locally (`npm start` / `npm run dev`) the browser on the same machine passes as *loopback* without a token.
 
 ## Operator steps to go live (only Z can do these)
 
@@ -90,7 +121,8 @@ No dependencies (Node ≥ 20). No build step.
    Tokens & Keys → API Tokens → new token (name it `reczipes-web`, sign-in callback not needed). Copy it.
 2. **Railway** (done 2026-10-15). Project `reczipes-web`, service from `nondescript74/reczipes` `main` (auto-deploys on push),
    **Root Directory `/web`**, **Healthcheck Path `/healthz`**, start command auto-detected (`npm start`), variable
-   `CLOUDKIT_API_TOKEN`, domain `reczipes-production.up.railway.app`. Railway no longer lets new services use a
+   `CLOUDKIT_API_TOKEN` (+ the five Access variables above, 2026-10-20), domains `reczipes-production.up.railway.app` (now redirect only) and
+   `reczipes.industriallystrong.com` (port 8080). Railway no longer lets new services use a
    `railway.json` config file, so these live in the service settings.
 3. Open `<domain>/api/status`: expect `"source":"cloudkit"`, `"lastError":null` and non-zero counts.
 4. In the app, share a recipe; within 5 minutes it appears on the site.
@@ -110,6 +142,7 @@ server.js            HTTP server, JSON API, static files, security headers
 lib/cloudkit.js      CloudKit Web Services public-DB query client (read-only, paginated)
 lib/decode.js        CloudKit records → recipe / book objects (mirrors the Swift Codable types)
 lib/store.js         cache, refresh, source/error reporting
+lib/access-guard.js  Cloudflare Access JWT verification, legacy-host redirect (the second lock)
 public/              the page (index.html, app.css, app.js — no framework)
 fixtures/sample.json sample data in CloudKit response shape (scripts/make-fixtures.mjs)
 test/                node:test suite

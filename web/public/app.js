@@ -23,12 +23,38 @@ function h(tag, attrs = {}, ...children) {
 
 let backTo = { href: '#/', label: 'All recipes' };
 const cache = new Map();
+
+// The site sits behind Cloudflare Access. When the sign-in lapses, an API call is redirected to the
+// Access login on another origin, which fetch reports as a network error (or the server answers 401).
+// Reload the page then, so the browser itself shows the login — at most once a minute, so a real
+// outage can't loop.
+function reloadForSignIn() {
+  try {
+    const last = Number(sessionStorage.getItem('reczipes.signinReload') || 0);
+    if (Date.now() - last < 60_000) return false;
+    sessionStorage.setItem('reczipes.signinReload', String(Date.now()));
+  } catch {
+    /* no storage: still reload once for this page load */
+    if (reloadForSignIn.done) return false;
+    reloadForSignIn.done = true;
+  }
+  location.reload();
+  return true;
+}
+
 async function getJSON(url) {
   if (cache.has(url)) return cache.get(url);
-  const p = fetch(url).then(async (res) => {
+  const p = fetch(url, { credentials: 'same-origin', redirect: 'manual' }).then(async (res) => {
+    if (res.type === 'opaqueredirect' || res.status === 401) {
+      reloadForSignIn();
+      throw Object.assign(new Error('Sign-in needed'), { status: 401 });
+    }
     const body = await res.json().catch(() => ({}));
     if (!res.ok) throw Object.assign(new Error(body.error || `HTTP ${res.status}`), { status: res.status });
     return body;
+  }, (err) => {
+    if (navigator.onLine !== false) reloadForSignIn(); // offline is not a sign-in problem
+    throw err;
   });
   cache.set(url, p);
   p.catch(() => cache.delete(url));
