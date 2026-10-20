@@ -747,3 +747,19 @@ struct BookSection: Codable, Identifiable, Equatable {
     nonisolated static let glossaryType = "glossary"
     nonisolated static let indexType = "index"
 }
+
+// MARK: - Ownership
+
+extension Book {
+    /// True when the book belongs to the person using the app: no owner recorded (created
+    /// before sharing existed) or the owner is the current iCloud user. This is the "Mine"
+    /// rule of the Books screen; the recipe "Add to Book" menu uses the same rule so it
+    /// never offers books other people shared.
+    nonisolated static func isOwnedByCurrentUser(ownerUserID: String?, currentUserID: String?) -> Bool {
+        ownerUserID == nil || ownerUserID == currentUserID
+    }
+
+    func isOwnedByCurrentUser(_ currentUserID: String?) -> Bool {
+        Book.isOwnedByCurrentUser(ownerUserID: ownerUserID, currentUserID: currentUserID)
+    }
+}

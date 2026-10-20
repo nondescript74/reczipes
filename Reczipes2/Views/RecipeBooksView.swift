@@ -42,15 +42,11 @@ struct RecipeBooksView: View {
         switch contentFilter {
         case .mine:
             // For Book models, use ownerUserID
-            result = result.filter { book in
-                book.ownerUserID == nil || book.ownerUserID == currentUserID
-            }
+            result = result.filter { $0.isOwnedByCurrentUser(currentUserID) }
             
         case .shared:
             // Show books owned by others
-            result = result.filter { book in
-                book.ownerUserID != nil && book.ownerUserID != currentUserID
-            }
+            result = result.filter { !$0.isOwnedByCurrentUser(currentUserID) }
         }
         
         // Apply search filter

@@ -924,6 +924,14 @@ struct ContentView: View {
         }
     }
 
+    /// The current user's own books, for the "Add to Book" menu. Same rule as the Books
+    /// screen's "Mine" filter: books other people shared are not offered as places to file
+    /// your recipes (they showed up as extra "Soups", "The Food Lab", … entries).
+    private var ownUniqueBooks: [Book] {
+        let currentUserID = CloudKitSharingService.shared.currentUserID
+        return uniqueBooks.filter { $0.isOwnedByCurrentUser(currentUserID) }
+    }
+
     /// Returns all books that contain the given recipe
     private func booksContaining(_ recipe: RecipeX) -> [Book] {
         uniqueBooks.filter { ($0.recipeIDs ?? []).contains(recipe.safeID) }
@@ -955,7 +963,7 @@ struct ContentView: View {
     private func ownedRecipeContextMenu(recipe: RecipeX) -> some View {
         // Add to Book submenu
         Menu {
-            if uniqueBooks.isEmpty {
+            if ownUniqueBooks.isEmpty {
                 Button {
                     // Switch to books tab to create a book
                     appState.currentTab = .books
@@ -963,7 +971,7 @@ struct ContentView: View {
                     Label("Create First Book", systemImage: "plus.circle")
                 }
             } else {
-                ForEach(uniqueBooks) { book in
+                ForEach(ownUniqueBooks) { book in
                     Button {
                         toggleRecipeInBook(recipe, book: book)
                     } label: {
