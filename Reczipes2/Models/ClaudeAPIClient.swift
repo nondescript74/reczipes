@@ -379,19 +379,11 @@ class ClaudeAPIClient {
             let errorMessage = parseAPIError(from: data)
             AppLog.error("API Error Response: \(errorMessage)", category: .network)
             
-            let detailedMessage: String
-            switch httpResponse.statusCode {
-            case 401:
-                detailedMessage = "Authentication failed. Please check your API key."
-            case 404:
-                detailedMessage = "Model '\(recipeExtractionModel)' not found. It may have been deprecated."
-            case 429:
-                detailedMessage = "Rate limit exceeded. Please try again later."
-            case 500...599:
-                detailedMessage = "Anthropic server error. Please try again later."
-            default:
-                detailedMessage = errorMessage
-            }
+            let detailedMessage = ClaudeAPIError.userMessage(
+                statusCode: httpResponse.statusCode,
+                apiMessage: errorMessage,
+                model: recipeExtractionModel
+            )
             
             throw ClaudeAPIError.apiError(statusCode: httpResponse.statusCode, message: detailedMessage)
         }
@@ -702,19 +694,11 @@ class ClaudeAPIClient {
             AppLog.error("Status Code: \(httpResponse.statusCode)", category: .network)
             
             // Provide more detailed error messages based on status code
-            let detailedMessage: String
-            switch httpResponse.statusCode {
-            case 401:
-                detailedMessage = "Authentication failed. Please check your API key."
-            case 404:
-                detailedMessage = "Model '\(recipeExtractionModel)' not found. It may have been deprecated."
-            case 429:
-                detailedMessage = "Rate limit exceeded. Please try again later."
-            case 500...599:
-                detailedMessage = "Anthropic server error. Please try again later."
-            default:
-                detailedMessage = errorMessage
-            }
+            let detailedMessage = ClaudeAPIError.userMessage(
+                statusCode: httpResponse.statusCode,
+                apiMessage: errorMessage,
+                model: recipeExtractionModel
+            )
             
             throw ClaudeAPIError.apiError(statusCode: httpResponse.statusCode, message: detailedMessage)
         }
@@ -1103,6 +1087,33 @@ extension ClaudeAPIClient {
 }
 
 // MARK: - Error Types
+
+extension ClaudeAPIError {
+    /// The text shown when Anthropic refuses an extraction request.
+    ///
+    /// A 401 does not always mean a bad key: on 2026-10-20 extraction failed with a 401
+    /// that was the Anthropic account's usage limit, and the old "Please check your API key"
+    /// sent the operator to the wrong place. So the message names both causes and keeps
+    /// Anthropic's own text. Kept self-contained (this file is also in the App Clip target).
+    nonisolated static func userMessage(statusCode: Int, apiMessage: String, model: String) -> String {
+        let detail = apiMessage.isEmpty ? "" : " Anthropic said: \(apiMessage)"
+        switch statusCode {
+        case 401:
+            return "Anthropic refused the request. Check that your API key is still valid and that your Anthropic account hasn't reached its usage or spend limit (Claude Console → Settings → Limits and Billing).\(detail)"
+        case 402, 403:
+            return "Anthropic refused the request. This is usually a billing, credit or usage-limit problem on your Anthropic account (Claude Console → Settings → Limits and Billing).\(detail)"
+        case 404:
+            return "Model '\(model)' not found. It may have been deprecated."
+        case 429:
+            return "Anthropic rate or usage limit reached. Wait a minute and try again, or raise your limits in the Claude Console.\(detail)"
+        case 500...599:
+            return "Anthropic server error. Please try again later."
+        default:
+            return apiMessage
+        }
+    }
+}
+
 
 enum ClaudeAPIError: LocalizedError {
     case invalidResponse
