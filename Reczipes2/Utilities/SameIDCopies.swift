@@ -11,6 +11,7 @@
 //
 
 import Foundation
+import SwiftData
 
 enum SameIDCopies {
     struct Plan {
