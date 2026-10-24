@@ -23,6 +23,9 @@ class CloudKitSharingService: ObservableObject {
     
     let container: CKContainer
     let publicDatabase: CKDatabase
+    /// Records the last `fetchAllCloudKitRecords` call could not read. A listing
+    /// with failures is incomplete, so nothing may be cleaned up on the strength of it.
+    private var lastFetchFailureCount = 0
     private let privateDatabase: CKDatabase
     
     @Published var isCloudKitAvailable = false
@@ -196,46 +199,75 @@ class CloudKitSharingService: ObservableObject {
         }
         
         // 4. Build status objects from CloudKit records
+        let fetchFailures = lastFetchFailureCount
+        var decodeFailures = 0
+        let localRecipeIDs = Set(try modelContext.fetch(FetchDescriptor<RecipeX>()).compactMap(\.id))
+        let bookGuard = BookMembershipGuard(context: modelContext)
         var statuses: [CloudKitRecipeStatus] = []
         var foundCloudRecordIDs = Set<String>()
+        var newestRecordIDByRecipeID: [UUID: (id: String, date: Date)] = [:]
         
         for record in myCloudKitRecords {
+            // Seen, even if it cannot be decoded below: its tracking row must not be
+            // dropped just because this device cannot read the record today.
+            foundCloudRecordIDs.insert(record.recordID.recordName)
             guard let recipeData = record["recipeData"] as? String,
                   let jsonData = recipeData.data(using: .utf8),
                   let cloudRecipe = try? JSONDecoder().decode(CloudKitRecipe.self, from: jsonData),
                   let sharedDate = record["sharedDate"] as? Date else {
+                decodeFailures += 1
                 AppLog.warning("📋 Skipping invalid CloudKit record: \(record.recordID.recordName)", category: .sharing)
                 continue
             }
             
             let cloudRecordID = record.recordID.recordName
-            foundCloudRecordIDs.insert(cloudRecordID)
+            if (newestRecordIDByRecipeID[cloudRecipe.id]?.date ?? .distantPast) <= sharedDate {
+                newestRecordIDByRecipeID[cloudRecipe.id] = (cloudRecordID, sharedDate)
+            }
             
             // Check for tracking by both recipe ID and cloud record ID
             let trackingRecord = trackingByRecipeID[cloudRecipe.id] ?? trackingByCloudRecordID[cloudRecordID]
             
-            let status = CloudKitRecipeStatus(
+            var status = CloudKitRecipeStatus(
                 recipe: cloudRecipe,
                 cloudRecordID: cloudRecordID,
                 sharedDate: sharedDate,
                 localTrackingRecord: trackingRecord
             )
-            
+            status.inLocalLibrary = localRecipeIDs.contains(cloudRecipe.id)
+            status.inBook = bookGuard.isProtected(cloudRecipe.id)
             statuses.append(status)
         }
         
-        // 5. Clean up orphaned tracking records (tracking records that point to deleted CloudKit records)
-        for tracking in allTracking {
-            if let cloudRecordID = tracking.cloudRecordID,
-               !foundCloudRecordIDs.contains(cloudRecordID),
-               tracking.sharedByUserID == currentUserID {
-                AppLog.warning("📋 Found orphaned tracking record for '\(tracking.recipeTitle)' - CloudKit record was deleted", category: .sharing)
-                orphanedTrackingRecords.append(tracking)
-            }
+        // 5. Tracking rows whose public record was not seen.
+        // This used to DELETE every such row on every load — including rows for records
+        // that failed to download or decode, and rows pointing at a record that had been
+        // replaced by a newer one for the same recipe. The next load then listed those
+        // public records as "orphaned" (2026-10-19: tracked 912 → 778, orphaned 15 → 148).
+        // Now: re-point a row to its recipe's newest record; drop it only when the listing
+        // was complete AND no record for its recipe exists.
+        let plan = TrackingCleanup.plan(
+            rows: allTracking.map { (recipeID: $0.recipeID, cloudRecordID: $0.cloudRecordID, isMine: $0.sharedByUserID == currentUserID) },
+            foundRecordIDs: foundCloudRecordIDs,
+            newestRecordIDByRecipeID: newestRecordIDByRecipeID.mapValues(\.id),
+            listingComplete: fetchFailures == 0 && decodeFailures == 0
+        )
+        for (index, recordID) in plan.repoint {
+            allTracking[index].cloudRecordID = recordID
+        }
+        for index in plan.drop {
+            AppLog.warning("📋 Dropping tracking record for '\(allTracking[index].recipeTitle)' - no public record for this recipe", category: .sharing)
+            orphanedTrackingRecords.append(allTracking[index])
+        }
+        if !plan.repoint.isEmpty {
+            AppLog.info("📋 Re-pointed \(plan.repoint.count) tracking records to their recipe's current public record", category: .sharing)
+        }
+        if fetchFailures + decodeFailures > 0 {
+            AppLog.warning("📋 Listing incomplete (\(fetchFailures) unread, \(decodeFailures) undecodable) — no tracking records dropped", category: .sharing)
         }
         
         // Clean up orphaned tracking records
-        if !orphanedTrackingRecords.isEmpty {
+        if !orphanedTrackingRecords.isEmpty || !plan.repoint.isEmpty {
             AppLog.info("📋 Cleaning up \(orphanedTrackingRecords.count) orphaned tracking records...", category: .sharing)
             for tracking in orphanedTrackingRecords {
                 modelContext.delete(tracking)
@@ -280,15 +312,16 @@ class CloudKitSharingService: ObservableObject {
         )
         
         if let existingRecord = existing.first {
-            // Reactivate existing record
+            // Reactivate existing record, pointing it at the record being re-tracked
             existingRecord.isActive = true
+            existingRecord.cloudRecordID = cloudRecordID
             AppLog.info("✅ Reactivated existing tracking record", category: .sharing)
         } else {
             // Create new tracking record
             let tracking = SharedRecipe(
                 recipeID: recipe.id,
                 cloudRecordID: cloudRecordID,
-                sharedByUserID: recipe.sharedByUserID ?? "no user id",
+                sharedByUserID: recipe.sharedByUserID ?? currentUserID ?? "no user id",
                 sharedByUserName: recipe.sharedByUserName,
                 sharedDate: Date(),
                 recipeTitle: recipe.title,
@@ -2828,6 +2861,7 @@ class CloudKitSharingService: ObservableObject {
         AppLog.info("📦 Fetching all '\(type)' records from CloudKit Public Database...", category: .sharing)
         
         var allRecords: [CKRecord] = []
+        lastFetchFailureCount = 0
         
         // Create the most basic query - no sort, no filters
         let predicate = NSPredicate(value: true)
@@ -2848,6 +2882,7 @@ class CloudKitSharingService: ObservableObject {
                 case .success(let record):
                     allRecords.append(record)
                 case .failure(let error):
+                    lastFetchFailureCount += 1
                     AppLog.error("❌ Error fetching record: \(error)", category: .sharing)
                 }
             }
@@ -2871,6 +2906,7 @@ class CloudKitSharingService: ObservableObject {
                     case .success(let record):
                         allRecords.append(record)
                     case .failure(let error):
+                        lastFetchFailureCount += 1
                         AppLog.error("❌ Error fetching record: \(error)", category: .sharing)
                     }
                 }
@@ -2881,6 +2917,7 @@ class CloudKitSharingService: ObservableObject {
                 // Safety: prevent infinite loops
                 if batchNumber > 100 {
                     AppLog.warning("📦 Reached maximum batch limit (100), stopping pagination", category: .sharing)
+                    lastFetchFailureCount += 1   // the listing is incomplete
                     break
                 }
             }

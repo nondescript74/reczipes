@@ -101,11 +101,23 @@ struct CloudKitRecipeManagerView: View {
                 }
                 .disabled(isLoading)
                 
-                if let data = managerData, data.orphanedCount > 0 {
+                if let data = managerData, !data.relinkableOrphans.isEmpty {
+                    Button {
+                        Task { await reLinkAll(data.relinkableOrphans) }
+                    } label: {
+                        Label("Re-link \(data.relinkableOrphans.count) to My Library", systemImage: "link")
+                    }
+                    .disabled(isLoading)
+                }
+                
+                // Only records whose recipe is neither on this device nor in any book.
+                // (It used to delete every untracked record — the website's copies of
+                // recipes still in the library and in books included.)
+                if let data = managerData, !data.bulkDeletableOrphans.isEmpty {
                     Button(role: .destructive) {
                         showingDeleteAllConfirmation = true
                     } label: {
-                        Label("Delete All Orphaned (\(data.orphanedCount))", systemImage: "trash")
+                        Label("Delete Orphans Not on This Device (\(data.bulkDeletableOrphans.count))", systemImage: "trash")
                     }
                     .disabled(isLoading)
                 }
@@ -153,7 +165,7 @@ struct CloudKitRecipeManagerView: View {
             }
         } message: {
             if let data = managerData {
-                Text("This will permanently delete \(data.orphanedCount) orphaned recipes from CloudKit. This cannot be undone.")
+                Text("This will permanently delete \(data.bulkDeletableOrphans.count) public records whose recipe is neither in this library nor in any book. They will leave the website. This cannot be undone.")
             }
         }
         .task {
@@ -205,6 +217,25 @@ struct CloudKitRecipeManagerView: View {
         }
     }
     
+    /// Restore tracking for every untracked record whose recipe is in this library or a book.
+    private func reLinkAll(_ statuses: [CloudKitRecipeStatus]) async {
+        isLoading = true
+        var failures = 0
+        for status in statuses {
+            do {
+                try sharingService.reTrackRecipe(recipe: status.recipe, cloudRecordID: status.cloudRecordID, modelContext: modelContext)
+            } catch {
+                failures += 1
+            }
+        }
+        try? modelContext.save()
+        if failures > 0 {
+            errorMessage = "Re-linked \(statuses.count - failures); \(failures) failed."
+        }
+        await loadRecipes()
+        isLoading = false
+    }
+    
     private func reTrackRecipe(_ status: CloudKitRecipeStatus) {
         Task {
             isLoading = true
@@ -232,7 +263,7 @@ struct CloudKitRecipeManagerView: View {
         isLoading = true
         
         do {
-            try await sharingService.deleteAllOrphanedRecipes(orphanedStatuses: data.orphanedRecipes)
+            try await sharingService.deleteAllOrphanedRecipes(orphanedStatuses: data.bulkDeletableOrphans)
             await loadRecipes()
         } catch {
             await MainActor.run {

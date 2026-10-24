@@ -148,6 +148,10 @@ struct CloudKitRecipeStatus: Identifiable {
     let cloudRecordID: String
     let sharedDate: Date
     let localTrackingRecord: SharedRecipe?
+    /// The recipe this record publishes is in this device's library.
+    var inLocalLibrary: Bool = false
+    /// The recipe is in one of the user's books.
+    var inBook: Bool = false
     
     var isTracked: Bool {
         localTrackingRecord != nil
@@ -166,7 +170,10 @@ struct CloudKitRecipeStatus: Identifiable {
     }
     
     var statusDescription: String {
-        isTracked ? "Tracked" : "Orphaned (not tracked locally)"
+        if isTracked { return "Tracked" }
+        if inBook { return "Not tracked — recipe is in a book (re-link, never delete)" }
+        if inLocalLibrary { return "Not tracked — recipe is in your library (re-link)" }
+        return "Orphaned (recipe not on this device)"
     }
 }
 
@@ -180,6 +187,16 @@ struct CloudKitRecipeManagerData {
     
     var orphanedRecipes: [CloudKitRecipeStatus] {
         recipes.filter { $0.isOrphaned }
+    }
+    
+    /// Untracked records whose recipe is here or in a book: re-link, never bulk-delete.
+    var relinkableOrphans: [CloudKitRecipeStatus] {
+        orphanedRecipes.filter { $0.inLocalLibrary || $0.inBook }
+    }
+    
+    /// The only records "Delete All Orphaned" may remove.
+    var bulkDeletableOrphans: [CloudKitRecipeStatus] {
+        orphanedRecipes.filter { TrackingCleanup.mayBulkDeleteOrphan(inLocalLibrary: $0.inLocalLibrary, inBook: $0.inBook) }
     }
     
     var trackedCount: Int {
