@@ -533,9 +533,18 @@ struct IngredientsEditorView: View {
                                 Text(sectionTitle(for: section, at: index))
                                     .font(.headline)
                                 
-                                Text("\(section.ingredients.count) ingredient\(section.ingredients.count == 1 ? "" : "s")")
+                                Text("\(section.ingredients.count) ingredient\(section.ingredients.count == 1 ? "" : "s") — click to edit")
                                     .font(.subheadline)
                                     .foregroundColor(.secondary)
+
+                                // Show the ingredients themselves, so a recipe with one
+                                // section no longer looks like an empty, single row.
+                                // Indexed, because two ingredients can read the same.
+                                ForEach(Array(Self.previewLines(for: section).enumerated()), id: \.offset) { _, line in
+                                    Text(line)
+                                        .font(.callout)
+                                        .lineLimit(1)
+                                }
                             }
                             .padding(.vertical, 4)
                         }
@@ -581,6 +590,18 @@ struct IngredientsEditorView: View {
         #endif
     }
     
+    /// Up to `limit` "quantity unit name" lines for a section, then "+N more".
+    static func previewLines(for section: EditableIngredientSection, limit: Int = 8) -> [String] {
+        let lines = section.ingredients.map { ingredient -> String in
+            let name = ingredient.name.isEmpty ? "New Ingredient" : ingredient.name
+            return "• " + [ingredient.quantity, ingredient.unit, name]
+                .filter { !$0.isEmpty }
+                .joined(separator: " ")
+        }
+        guard lines.count > limit else { return lines }
+        return Array(lines.prefix(limit)) + ["+\(lines.count - limit) more"]
+    }
+
     // Helper function to generate contextual section titles
     private func sectionTitle(for section: EditableIngredientSection, at index: Int) -> String {
         if !section.title.isEmpty {
