@@ -11,6 +11,7 @@ import Foundation
 @testable import Reczipes2
 
 @Suite("Tracking cleanup")
+@MainActor
 struct TrackingCleanupTests {
     private let r1 = UUID(), r2 = UUID(), r3 = UUID()
 
