@@ -8,6 +8,7 @@
 import SwiftUI
 import PhotosUI
 import SwiftData
+import UniformTypeIdentifiers
 
 struct RecipeExtractorView: View {
     @Environment(\.colorScheme) private var colorScheme
@@ -17,6 +18,8 @@ struct RecipeExtractorView: View {
     @State private var selectedLibraryItem: PhotosPickerItem?
     /// Several photos of ONE recipe that runs across pages, in the order picked.
     @State private var selectedPageItems: [PhotosPickerItem] = []
+    /// Same as Pages, but the page images come from Files (e.g. cleaned pipeline output).
+    @State private var showPageFileImporter = false
     @State private var showCamera = false
     @State private var showImageCrop = false
     @State private var imageToCrop: PlatformImage?
@@ -181,9 +184,9 @@ struct RecipeExtractorView: View {
                 if let recipe = viewModel.extractedRecipe {
                     let imageCount = downloadedWebImages.count + (viewModel.selectedImage != nil ? 1 : 0)
                     if imageCount > 0 {
-                        Text("\"\(String(describing: recipe.title))\" and \(imageCount) image\(imageCount == 1 ? "" : "s") have been added to your recipe collection.")
+                        Text("\"\(recipe.safeTitle)\" and \(imageCount) image\(imageCount == 1 ? "" : "s") have been added to your recipe collection.")
                     } else {
-                        Text("\"\(String(describing: recipe.title))\" has been added to your recipe collection.")
+                        Text("\"\(recipe.safeTitle)\" has been added to your recipe collection.")
                     }
                 }
             }
@@ -413,8 +416,36 @@ struct RecipeExtractorView: View {
                     }
                     .background(Color.blue.opacity(0.1))
                     .cornerRadius(12)
+
+                    // One recipe across several pages, the pages picked from Files.
+                    // Files gives no pick order, so pages run in file-name order
+                    // (name them …_p1, …_p2).
+                    Button {
+                        showPageFileImporter = true
+                    } label: {
+                        VStack(spacing: 4) {
+                            Image(systemName: "folder")
+                                .font(.system(size: 18))
+                            Text("Page Files")
+                                .font(.system(size: 11))
+                                .fontWeight(.medium)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(6)
+                        .background(Color.blue.opacity(0.1))
+                        .cornerRadius(12)
+                    }
+                    .buttonStyle(.plain)
+                    .help("One recipe across several pages, from files (in file-name order)")
+                    .fileImporter(isPresented: $showPageFileImporter,
+                                  allowedContentTypes: [.image],
+                                  allowsMultipleSelection: true) { result in
+                        guard case .success(let urls) = result, !urls.isEmpty else { return }
+                        extractionSource = .library
+                        Task { await extractPages(fromFiles: urls) }
+                    }
                 }
-                
+
                 // Row 2: Web URL (full width)
                 Button {
                     extractionSource = .url
@@ -1332,6 +1363,29 @@ struct RecipeExtractorView: View {
         }
     }
     
+    // MARK: - Pages from Files
+
+    /// Load up to 6 page images chosen in Files, in file-name order (natural sort,
+    /// so p2 comes before p10), and extract them as ONE recipe.
+    private func extractPages(fromFiles urls: [URL]) async {
+        let ordered = urls
+            .sorted { $0.lastPathComponent.localizedStandardCompare($1.lastPathComponent) == .orderedAscending }
+            .prefix(6)
+        var pages: [PlatformImage] = []
+        for url in ordered {
+            let scoped = url.startAccessingSecurityScopedResource()
+            defer { if scoped { url.stopAccessingSecurityScopedResource() } }
+            if let data = try? Data(contentsOf: url), let image = PlatformImage(data: data) {
+                pages.append(image)
+            } else {
+                AppLog.warning("Could not load page image: \(url.lastPathComponent)", category: .ui)
+            }
+        }
+        guard !pages.isEmpty else { return }
+        AppLog.info("\(pages.count) page files selected for one recipe: \(ordered.map(\.lastPathComponent))", category: .ui)
+        await viewModel.extractRecipe(fromPages: pages)
+    }
+
     // MARK: - Task Restoration
     
     private func checkForPendingExtraction() {
