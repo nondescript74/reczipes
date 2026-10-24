@@ -536,6 +536,37 @@ class RecipeExtractorViewModel: ObservableObject {
         }
     }
     
+    /// Extract ONE recipe that runs across several pages, in the order given.
+    /// Each page is reduced on its own (to the extraction size) and sent as its own
+    /// image, so a long recipe is not shrunk into one joined picture.
+    func extractRecipe(fromPages pages: [PlatformImage]) async {
+        guard let first = pages.first else { return }
+        guard pages.count > 1 else { return await extractRecipe(from: first) }
+        await MainActor.run {
+            isLoading = true
+            errorMessage = nil
+            extractedRecipe = nil
+            selectedImage = first
+            processedImage = nil
+        }
+        do {
+            let pageData = try pages.map { page -> Data in
+                guard let data = imagePreprocessor.reduceImageSize(page, maxSizeBytes: ImagePreprocessor.extractionMaxBytes, maxDimension: ImagePreprocessor.extractionMaxDimension) else {
+                    throw ClaudeAPIError.invalidResponse
+                }
+                return data
+            }
+            AppLog.info("Extracting one recipe from \(pageData.count) pages (\(pageData.map { $0.count / 1024 }) KB)", category: .extraction)
+            let recipe = try await apiClient.extractRecipe(fromPages: pageData, usePreprocessing: usePreprocessing)
+            await MainActor.run { self.extractedRecipe = recipe }
+        } catch let error as ClaudeAPIError {
+            await MainActor.run { self.errorMessage = error.errorDescription }
+        } catch {
+            await MainActor.run { self.errorMessage = "Unexpected error: \(error.localizedDescription)" }
+        }
+        await MainActor.run { isLoading = false }
+    }
+    
     /// Clear all current data
     func reset() {
         extractedRecipe = nil

@@ -457,6 +457,27 @@ class ClaudeAPIClient {
         // Convert to RecipeX outside of retry closure
         return recipeResponse.toRecipeX()
     }
+
+    /// Extract ONE recipe that runs across several page images, in order.
+    /// Each page is sent as its own image, so no page is shrunk to fit a joined
+    /// picture (a 3211 px join lost four quantities to the size cap, 2026-10-16).
+    func extractRecipe(fromPages pages: [Data], usePreprocessing: Bool = true) async throws -> RecipeX {
+        AppLog.info("RECIPE EXTRACTION START — \(pages.count) page(s)", category: .extraction)
+        let operationID = "claude-extract-pages-\(pages.map(\.count).reduce(0, +))-\(pages.count)"
+        let recipeResponse = try await retryManager.withRetry(
+            operationID: operationID,
+            configuration: .init(
+                maxAttempts: 3,
+                initialDelay: 2.0,
+                maxDelay: 20.0,
+                backoffMultiplier: 2.0,
+                useJitter: true
+            )
+        ) {
+            try await self.performImageExtraction(pages: pages, usePreprocessing: usePreprocessing)
+        }
+        return recipeResponse.toRecipeX()
+    }
 #endif
 
     // MARK: - App Clip extraction (returns AppClipExtractedRecipeData directly)
@@ -510,26 +531,32 @@ class ClaudeAPIClient {
     /// Perform the actual image extraction (wrapped by retry logic)
     /// Returns RecipeResponse (Sendable) instead of RecipeX (SwiftData model)
     private func performImageExtraction(imageData: Data, usePreprocessing: Bool) async throws -> RecipeResponse {
+        try await performImageExtraction(pages: [imageData], usePreprocessing: usePreprocessing)
+    }
+
+    /// One request; one image block per page, in order.
+    private func performImageExtraction(pages: [Data], usePreprocessing: Bool) async throws -> RecipeResponse {
+        guard !pages.isEmpty else { throw ClaudeAPIError.invalidResponse }
         
-        // Preprocess the image if requested
-        let finalImageData: Data
-        if usePreprocessing, let uiImage = PlatformImage(data: imageData) {
-            AppLog.debug("Converting to PlatformImage for preprocessing", category: .extraction)
-            if let processedData = imagePreprocessor.preprocessForOCR(uiImage) {
-                finalImageData = processedData
-                AppLog.info("Image preprocessed - new size: \(finalImageData.count) bytes", category: .extraction)
+        // Preprocess each page if requested
+        let base64Pages: [String] = pages.map { imageData in
+            let finalImageData: Data
+            if usePreprocessing, let uiImage = PlatformImage(data: imageData) {
+                AppLog.debug("Converting to PlatformImage for preprocessing", category: .extraction)
+                if let processedData = imagePreprocessor.preprocessForOCR(uiImage) {
+                    finalImageData = processedData
+                    AppLog.info("Image preprocessed - new size: \(finalImageData.count) bytes", category: .extraction)
+                } else {
+                    AppLog.warning("Preprocessing failed, using original", category: .extraction)
+                    finalImageData = imageData
+                }
             } else {
-                AppLog.warning("Preprocessing failed, using original", category: .extraction)
+                AppLog.debug("Using original image data without preprocessing", category: .extraction)
                 finalImageData = imageData
             }
-        } else {
-            AppLog.debug("Using original image data without preprocessing", category: .extraction)
-            finalImageData = imageData
+            return finalImageData.base64EncodedString()
         }
-        
-        AppLog.debug("Converting image to base64", category: .extraction)
-        let base64Image = finalImageData.base64EncodedString()
-        AppLog.debug("Base64 string length: \(base64Image.count) characters", category: .extraction)
+        AppLog.debug("Base64 page lengths: \(base64Pages.map(\.count))", category: .extraction)
         
         let systemPrompt = """
         You are an expert at extracting recipes from images of recipe cards, cookbooks, and handwritten notes. 
@@ -608,7 +635,29 @@ class ClaudeAPIClient {
         If step numbers aren't visible, leave "stepNumber" as null.
         Include metric conversions when they're present in the original.
         Extract ALL text including notes, variations, and tips.
-        """
+        """ + (pages.count > 1 ? """
+        
+        
+        The recipe continues across \(pages.count) images, given in page order (page 1 first). \
+        They are ONE recipe: combine them into a single JSON object. Do not repeat an ingredient or step \
+        that is cut across a page break; join it.
+        """ : "")
+        
+        var content: [[String: Any]] = []
+        for (index, base64Image) in base64Pages.enumerated() {
+            if base64Pages.count > 1 {
+                content.append(["type": "text", "text": "Page \(index + 1) of \(base64Pages.count):"])
+            }
+            content.append([
+                "type": "image",
+                "source": [
+                    "type": "base64",
+                    "media_type": "image/jpeg",
+                    "data": base64Image
+                ]
+            ])
+        }
+        content.append(["type": "text", "text": userPrompt])
         
         AppLog.info("Building API request", category: .extraction)
         AppLog.debug("Using model: \(recipeExtractionModel)", category: .extraction)
@@ -619,20 +668,7 @@ class ClaudeAPIClient {
             "messages": [
                 [
                     "role": "user",
-                    "content": [
-                        [
-                            "type": "image",
-                            "source": [
-                                "type": "base64",
-                                "media_type": "image/jpeg",
-                                "data": base64Image
-                            ]
-                        ],
-                        [
-                            "type": "text",
-                            "text": userPrompt
-                        ]
-                    ]
+                    "content": content
                 ]
             ]
         ]

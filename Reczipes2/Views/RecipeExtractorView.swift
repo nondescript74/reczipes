@@ -15,6 +15,8 @@ struct RecipeExtractorView: View {
     @State private var keepAwakeManager = KeepAwakeManager.shared
     @EnvironmentObject private var appState: AppStateManager
     @State private var selectedLibraryItem: PhotosPickerItem?
+    /// Several photos of ONE recipe that runs across pages, in the order picked.
+    @State private var selectedPageItems: [PhotosPickerItem] = []
     @State private var showCamera = false
     @State private var showImageCrop = false
     @State private var imageToCrop: PlatformImage?
@@ -274,6 +276,23 @@ struct RecipeExtractorView: View {
             .onChange(of: appState.pendingExtractURL) { _, _ in
                 consumePendingExtractURL()
             }
+            .onChange(of: selectedPageItems) { _, items in
+                guard !items.isEmpty else { return }
+                extractionSource = .library
+                Task {
+                    var pages: [PlatformImage] = []
+                    for item in items {
+                        if let data = try? await item.loadTransferable(type: Data.self),
+                           let image = PlatformImage(data: data) {
+                            pages.append(image)
+                        }
+                    }
+                    selectedPageItems = []
+                    guard !pages.isEmpty else { return }
+                    AppLog.info("\(pages.count) pages selected for one recipe", category: .ui)
+                    await viewModel.extractRecipe(fromPages: pages)
+                }
+            }
             .onChange(of: selectedLibraryItem) { _, newItem in
                 guard let item = newItem else { return }
                 extractionSource = .library
@@ -378,6 +397,22 @@ struct RecipeExtractorView: View {
                         RoundedRectangle(cornerRadius: 12)
                             .stroke(extractionSource == .library ? Color.blue : Color.clear, lineWidth: 2)
                     )
+                    
+                    // One recipe across several pages: pick the pages in order.
+                    PhotosPicker(selection: $selectedPageItems, maxSelectionCount: 6,
+                                 selectionBehavior: .ordered, matching: .images) {
+                        VStack(spacing: 4) {
+                            Image(systemName: "doc.on.doc")
+                                .font(.system(size: 18))
+                            Text("Pages")
+                                .font(.system(size: 11))
+                                .fontWeight(.medium)
+                        }
+                        .frame(maxWidth: .infinity)
+                        .padding(6)
+                    }
+                    .background(Color.blue.opacity(0.1))
+                    .cornerRadius(12)
                 }
                 
                 // Row 2: Web URL (full width)
