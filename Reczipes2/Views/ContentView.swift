@@ -69,9 +69,17 @@ struct ContentView: View {
     // Filtered recipes based on filter settings (now uses cached results)
     private var availableRecipes: [any RecipeDisplayProtocol] {
         let baseRecipes = filterMode != .none ? cachedFilteredRecipes : cachedAllRecipes
-        
+
+        // The cache can still hold a recipe deleted elsewhere (e.g. the Duplicate
+        // Detector) until it is rebuilt; reading any attribute of it is a SwiftData
+        // fatal error ("backing data was detached"), so drop it before drawing.
+        let live = baseRecipes.filter { recipe in
+            guard let recipeX = recipe as? RecipeX else { return true }
+            return recipeX.modelContext != nil && !recipeX.isDeleted
+        }
+
         // Apply content filter (mine/shared)
-        return applyContentFilter(to: baseRecipes)
+        return applyContentFilter(to: live)
     }
     
     /// Applies the content filter (mine/shared) to recipes
