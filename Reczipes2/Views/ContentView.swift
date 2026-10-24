@@ -1103,9 +1103,24 @@ struct ContentView: View {
             protectedDeleteMessage = bookGuard.refusalMessage(recipeTitle: recipe.safeTitle, recipeID: recipe.id)
             return
         }
+        // Take down the public (website/community) copy too, as the Duplicate
+        // Detector's removal does — otherwise it stays online with no recipe behind it.
+        let deletedTitle = recipe.safeTitle
+        if let deletedID = recipe.id,
+           let tracked = sharedRecipes.first(where: { $0.recipeID == deletedID && $0.isActive }),
+           let cloudRecordID = tracked.cloudRecordID {
+            Task {
+                do {
+                    try await CloudKitSharingService.shared.unshareRecipe(cloudRecordID: cloudRecordID, modelContext: modelContext)
+                    AppLog.info("Took down public copy of deleted recipe '\(deletedTitle)'", category: .sharing)
+                } catch {
+                    AppLog.warning("Could not take down public copy of deleted recipe '\(deletedTitle)': \(error)", category: .sharing)
+                }
+            }
+        }
         withAnimation {
             AppLog.info("Deleting recipe: \(recipe.safeTitle) (ID: \(recipe.safeID))", category: .recipe)
-            
+
             // Delete associated image file if it exists
             if let imageName = recipe.imageName {
                 let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
