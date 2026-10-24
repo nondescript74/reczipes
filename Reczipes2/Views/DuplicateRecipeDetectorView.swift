@@ -607,15 +607,6 @@ struct DuplicateRecipeDetectorView: View {
 
     private var sameIDExtraCount: Int { sameIDGroups.reduce(0) { $0 + $1.count - 1 } }
 
-    /// Same content as the user sees it (decoded, so encoding differences don't matter).
-    static func sameContent(_ a: RecipeX, _ b: RecipeX) -> Bool {
-        a.title == b.title && a.headerNotes == b.headerNotes && a.recipeYield == b.recipeYield
-            && a.reference == b.reference
-            && a.ingredientSections == b.ingredientSections
-            && a.instructionSections == b.instructionSections
-            && a.notes == b.notes
-    }
-
     @ViewBuilder
     private var sameIDSection: some View {
         let groups = sameIDGroups
@@ -647,15 +638,12 @@ struct DuplicateRecipeDetectorView: View {
         var removed = 0
         var differing = 0
         for group in sameIDGroups {
-            guard let keep = group.max(by: { DuplicateCluster.completenessScore($0) < DuplicateCluster.completenessScore($1) }) else { continue }
-            for other in group where other.persistentModelID != keep.persistentModelID {
-                if Self.sameContent(keep, other) {
-                    modelContext.delete(other)
-                    removed += 1
-                } else {
-                    differing += 1
-                }
+            let plan = SameIDCopies.plan(group)
+            for other in plan.remove {
+                modelContext.delete(other)
+                removed += 1
             }
+            differing += plan.differing.count
         }
         do {
             try modelContext.save()

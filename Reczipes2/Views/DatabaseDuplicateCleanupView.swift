@@ -18,6 +18,7 @@ struct DatabaseDuplicateCleanupView: View {
     @State private var isRemoving = false
     @State private var cleanupComplete = false
     @State private var removedCount = 0
+    @State private var keptDiffering = 0
     @State private var error: Error?
     @State private var showSuccessAlert = false
     
@@ -50,7 +51,8 @@ struct DatabaseDuplicateCleanupView: View {
                     dismiss()
                 }
             } message: {
-                Text("Successfully removed \(removedCount) duplicate recipes. Your database now has \(duplicateInfo?.uniqueRecipes ?? 0) unique recipes.")
+                Text("Removed \(removedCount) identical extra stored cop\(removedCount == 1 ? "y" : "ies")."
+                     + (keptDiffering > 0 ? " Kept \(keptDiffering) whose content differs — review them in the Duplicate Recipe Detector." : ""))
             }
             .task {
                 await scanForDuplicates()
@@ -107,7 +109,7 @@ struct DatabaseDuplicateCleanupView: View {
                 Divider()
                 
                 HStack {
-                    Text("Duplicates to Remove:")
+                    Text("Extra Stored Copies:")
                     Spacer()
                     Text("\(info.duplicateCount)")
                         .fontWeight(.bold)
@@ -156,7 +158,7 @@ struct DatabaseDuplicateCleanupView: View {
                 }
                 .disabled(isRemoving)
                 
-                Text("This will keep the newest version of each recipe and delete older duplicates")
+                Text("Only the same recipe stored more than once under one ID. Keeps the most complete copy and removes only identical extras; copies whose content differs are kept for you to review.")
                     .font(.caption)
                     .foregroundStyle(.secondary)
                     .multilineTextAlignment(.center)
@@ -285,7 +287,8 @@ struct DatabaseDuplicateCleanupView: View {
             // Group by ID to find duplicates
             var recipesByID: [UUID: [RecipeX]] = [:]
             for recipe in allRecipes {
-                recipesByID[recipe.id!, default: []].append(recipe)
+                guard let id = recipe.id else { continue }
+                recipesByID[id, default: []].append(recipe)
             }
             
             // Find which IDs have duplicates
@@ -320,20 +323,19 @@ struct DatabaseDuplicateCleanupView: View {
             var count = 0
             
             let bookGuard = BookMembershipGuard(context: modelContext)
-            // For each duplicate group, keep the newest and delete the rest
+            var differing = 0
+            // Same rule as the Duplicate Detector's "Remove Extra Stored Copies":
+            // keep the most complete row, remove only rows whose content is identical
+            // to it, and leave rows that differ for the user to review. (This used to
+            // keep a row picked by hash value — not the newest, as it claimed — and
+            // delete the others even when their content differed.)
             for (_, recipes) in info.duplicateGroups {
-                // Sort by persistence date (newest first)
-                let sorted = recipes.sorted { first, second in
-                    (first.persistentModelID.hashValue) > (second.persistentModelID.hashValue)
-                }
-                
-                // Delete all except the first (newest).
+                let plan = SameIDCopies.plan(recipes)
+                differing += plan.differing.count
                 // Book safety (BookMembershipGuard): every row in this group has the SAME
-                // recipe UUID, so one row always survives and any book that lists the id
-                // still resolves. canRemoveDuplicate allows exactly that and nothing more.
-                let keepRow = sorted.first
-                for recipe in sorted.dropFirst() {
-                    guard bookGuard.canRemoveDuplicate(recipe.id, keeping: keepRow?.id) else {
+                // recipe UUID, so the kept row still resolves for any book listing the id.
+                for recipe in plan.remove {
+                    guard bookGuard.canRemoveDuplicate(recipe.id, keeping: plan.keep?.id) else {
                         bookGuard.logSkip(recipeTitle: recipe.title ?? "", recipeID: recipe.id, operation: "Remove Duplicate Recipes (same ID)")
                         continue
                     }
@@ -341,6 +343,7 @@ struct DatabaseDuplicateCleanupView: View {
                     count += 1
                 }
             }
+            keptDiffering = differing
             
             // Save changes
             try modelContext.save()
