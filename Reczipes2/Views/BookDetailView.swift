@@ -23,6 +23,7 @@ struct BookDetailView: View {
     
     @State private var currentPage = 0
     @State private var showingBookEditor = false
+    @State private var showingRecipeManager = false
     @State private var showingExportOptions = false
     @State private var isExporting = false
     @State private var exportedFileURL: URL?
@@ -142,7 +143,14 @@ struct BookDetailView: View {
                         } label: {
                             Label("Edit Book", systemImage: "pencil")
                         }
-                        
+
+                        // Same manager as Edit Book → Manage Recipes, one click closer.
+                        Button {
+                            showingRecipeManager = true
+                        } label: {
+                            Label("Manage Recipes…", systemImage: "book.pages")
+                        }
+
                         if isPubliclyShared {
                             Button {
                                 Task { await updatePublicCopy() }
@@ -185,6 +193,9 @@ struct BookDetailView: View {
             }
             .sheet(isPresented: $showingBookEditor) {
                 BookEditorView(book: book)
+            }
+            .sheet(isPresented: $showingRecipeManager) {
+                BookRecipeManagerView(book: book)
             }
             .fileImporter(isPresented: $showingPackageImporter, allowedContentTypes: [.folder]) { result in
                 switch result {
