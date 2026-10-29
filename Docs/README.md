@@ -394,4 +394,4 @@ Visit [console.anthropic.com](https://console.anthropic.com) to:
 
 Start with the [Quick Start Guide](QUICK_START.md) →
 
-Built with ❤️ using Claude Sonnet 4
+Built with ❤️ using Claude Opus 5.5
