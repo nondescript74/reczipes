@@ -315,7 +315,10 @@ struct BookDetailView: View {
                     } else {
                         VStack(alignment: .leading, spacing: 2) {
                             Text(previewTitles[recipeID] ?? "Recipe")
-                            Text("Not downloaded yet")
+                            // After a finished full download, a missing recipe is
+                            // one the owner hasn't shared, not one still on its way.
+                            Text(LibrarySyncStatus.shared.hasCompleteCommunityDownload
+                                 ? "Not in the shared library" : "Not downloaded yet")
                                 .font(.caption)
                                 .foregroundStyle(.secondary)
                         }

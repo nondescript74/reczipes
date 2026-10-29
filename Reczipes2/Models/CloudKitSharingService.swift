@@ -2026,8 +2026,13 @@ class CloudKitSharingService: ObservableObject {
         AppLog.info("Starting background sync", category: .sharing)
         
         do {
-            // Sync community recipes (limit to recent 100 to keep it fast)
-            try await syncCommunityRecipesForViewing(modelContext: modelContext, limit: 100)
+            // Community recipes: a full download when the last finished one is
+            // over 30 minutes old. (This used to read the first 100 records and
+            // then delete every other cached recipe.)
+            let lastFull = LibrarySyncStatus.shared.lastCompleteCommunityDownload
+            if lastFull.map({ Date().timeIntervalSince($0) > 1800 }) ?? true {
+                try await syncCommunityRecipesForViewing(modelContext: modelContext, limit: Int.max)
+            }
 
             // Sync community books
             try await syncCommunityBooksToLocal(modelContext: modelContext)
@@ -2074,94 +2079,203 @@ class CloudKitSharingService: ObservableObject {
     
     // MARK: - Community Recipes Sync (Temporary Cache)
     
-    /// Sync community recipes for viewing (not permanent import)
-    /// Creates temporary cache for viewing, cooking, etc. with automatic cleanup
-    /// Uses pagination to fetch all available recipes efficiently
+    /// Sync community recipes for viewing (not permanent import).
+    ///
+    /// The full download (`limit == Int.max`) is the only run that may remove
+    /// anything, and only when it read every record: a cached recipe is dropped
+    /// only when the public library no longer has it. (A periodic run used to
+    /// read the first 100 records and delete every other cached recipe, so a
+    /// device that relies on shared books never finished downloading.)
+    ///
+    /// Recipe text is read first (light: no photos), saved page by page so a
+    /// stopped run keeps what it read; photos follow, only for recipes that are
+    /// new, re-shared, or still without one. Progress goes to LibrarySyncStatus.
     func syncCommunityRecipesForViewing(modelContext: ModelContext, limit: Int = Int.max, includeSelf: Bool = true) async throws {
+        if let running = communityRecipesSyncTask {
+            AppLog.info("📖 SYNC: Community recipes download already running — joining it", category: .sharing)
+            return try await running.value
+        }
+        let task = Task { @MainActor in
+            try await self.performCommunityRecipesSync(modelContext: modelContext, limit: limit, includeSelf: includeSelf)
+        }
+        communityRecipesSyncTask = task
+        defer { communityRecipesSyncTask = nil }
+        try await task.value
+    }
+
+    /// The community-recipe download in flight, if any. Launch hydration, the
+    /// Recipes screen, Sharing Settings, auto-sync and the banner's Retry join it
+    /// instead of starting a second run (two runs inserted the same recipe twice).
+    private var communityRecipesSyncTask: Task<Void, Error>?
+
+    private func performCommunityRecipesSync(modelContext: ModelContext, limit: Int, includeSelf: Bool) async throws {
+        let status = LibrarySyncStatus.shared
+        let isFull = limit == Int.max
+
+        // At launch this can run before the account check has finished.
+        if !isCloudKitAvailable { await checkCloudKitAvailability() }
         guard isCloudKitAvailable else {
+            if isFull { status.communityDownloadFailed("iCloud isn't available on this device right now.") }
             throw SharingError.cloudKitUnavailable()
         }
+        if isFull { status.communityDownloadStarted() }
 
-        let isFetchingAll = limit == Int.max
-        AppLog.info("📖 SYNC: Syncing community recipes for viewing\(isFetchingAll ? " (ALL recipes)" : " (limit: \(limit))")\(includeSelf ? " incl. self" : "")...", category: .sharing)
+        AppLog.info("📖 SYNC: Community recipes\(isFull ? " (full download)" : " (first \(limit))")\(includeSelf ? " incl. self" : "")...", category: .sharing)
 
-        // Fetch shared recipes from CloudKit with pagination
-        // The fetchSharedRecipes method automatically handles pagination in batches of 100.
-        // Communal library: includeSelf == true pulls the current user's own shared recipes too.
-        let cloudRecipes = try await fetchSharedRecipes(limit: limit, excludeCurrentUser: !includeSelf)
-        let recipesToCache = isFetchingAll ? cloudRecipes : Array(cloudRecipes.prefix(limit))
-        
-        AppLog.info("📖 SYNC: Found \(cloudRecipes.count) community recipes, caching \(recipesToCache.count)", category: .sharing)
-        
-        // Fetch existing cached recipes
+        // The cache, one row per recipe id. Extra rows for one id (two runs both
+        // inserted it, or another device on this Apple ID synced its own copy)
+        // are the same cache entry: keep the one with a photo, then the newer.
         let existingCached = try modelContext.fetch(FetchDescriptor<CachedSharedRecipe>())
         var existingByID = [UUID: CachedSharedRecipe]()
+        var removedCount = 0
         for cached in existingCached {
-            existingByID[cached.id] = cached
+            guard let kept = existingByID[cached.id] else {
+                existingByID[cached.id] = cached
+                continue
+            }
+            let preferNew: Bool
+            if (kept.imageData == nil) != (cached.imageData == nil) {
+                preferNew = cached.imageData != nil
+            } else {
+                preferNew = cached.sharedDate > kept.sharedDate
+            }
+            let drop = preferNew ? kept : cached
+            if preferNew { existingByID[cached.id] = cached }
+            modelContext.delete(drop)
+            removedCount += 1
         }
-        
-        // Track which recipes are still in CloudKit
-        var currentCloudRecipeIDs = Set<UUID>()
-        
+        if removedCount > 0 {
+            AppLog.info("📖   Dropped \(removedCount) extra cached row(s) for the same recipe id", category: .sharing)
+        }
+
+        let predicate: NSPredicate
+        if !includeSelf, let currentUserID {
+            predicate = NSPredicate(format: "sharedBy != %@", currentUserID)
+        } else {
+            predicate = NSPredicate(value: true)
+        }
+        let query = CKQuery(recordType: CloudKitRecordType.sharedRecipe, predicate: predicate)
+        let textKeys: [CKRecord.FieldKey] = ["recipeData", "sharedBy", "sharedByName", "sharedDate", "title"]
+
+        // Newest share per recipe id (the public database can hold several
+        // records for one recipe), and the record to take its photo from.
+        var newestSharedDate = [UUID: Date]()
+        var needPhoto = [UUID: CKRecord.ID]()
+        var recordsRead = 0
+        var unreadable = 0
         var addedCount = 0
         var updatedCount = 0
-        
-        // Process each CloudKit recipe
-        for cloudRecipe in recipesToCache {
-            currentCloudRecipeIDs.insert(cloudRecipe.id)
-            
-            if let existingCached = existingByID[cloudRecipe.id] {
-                // Update existing cache
-                existingCached.title = cloudRecipe.title
-                existingCached.headerNotes = cloudRecipe.headerNotes
-                existingCached.yield = cloudRecipe.yield
-                existingCached.ingredientSections = cloudRecipe.ingredientSections
-                existingCached.instructionSections = cloudRecipe.instructionSections
-                existingCached.notes = cloudRecipe.notes
-                existingCached.reference = cloudRecipe.reference
-                existingCached.imageName = cloudRecipe.imageName
-                existingCached.additionalImageNames = cloudRecipe.additionalImageNames
-                existingCached.sharedByUserName = cloudRecipe.sharedByUserName
-                existingCached.cachedDate = Date()
-                // Carry through the downloaded image asset so thumbnails appear
-                if let imageData = cloudRecipe.imageData {
-                    existingCached.imageData = imageData
+        var reachedEnd = false
+        var cursor: CKQueryOperation.Cursor?
+
+        do {
+            repeat {
+                let page: (matchResults: [(CKRecord.ID, Result<CKRecord, Error>)], queryCursor: CKQueryOperation.Cursor?)
+                if let cursor {
+                    page = try await publicDatabase.records(continuingMatchFrom: cursor, desiredKeys: textKeys, resultsLimit: 200)
+                } else {
+                    page = try await publicDatabase.records(matching: query, desiredKeys: textKeys, resultsLimit: 200)
                 }
-                updatedCount += 1
-                AppLog.info("📖   Updated cached recipe: '\(cloudRecipe.title)'\(cloudRecipe.imageData != nil ? " (with image)" : "")", category: .sharing)
-            } else {
-                // Create new cached recipe
-                let newCached = CachedSharedRecipe(from: cloudRecipe)
-                // Carry through the downloaded image asset so thumbnails appear
-                if let imageData = cloudRecipe.imageData {
-                    newCached.imageData = imageData
+
+                for (_, result) in page.matchResults {
+                    recordsRead += 1
+                    guard case .success(let record) = result,
+                          let json = (record["recipeData"] as? String)?.data(using: .utf8),
+                          let recipe = try? JSONDecoder().decode(CloudKitRecipe.self, from: json) else {
+                        unreadable += 1
+                        continue
+                    }
+                    if let seen = newestSharedDate[recipe.id], seen >= recipe.sharedDate { continue }
+                    newestSharedDate[recipe.id] = recipe.sharedDate
+
+                    if let row = existingByID[recipe.id] {
+                        let reshared = recipe.sharedDate > row.sharedDate
+                        row.title = recipe.title
+                        row.headerNotes = recipe.headerNotes
+                        row.yield = recipe.yield
+                        row.ingredientSections = recipe.ingredientSections
+                        row.instructionSections = recipe.instructionSections
+                        row.notes = recipe.notes
+                        row.reference = recipe.reference
+                        row.imageName = recipe.imageName
+                        row.additionalImageNames = recipe.additionalImageNames
+                        row.sharedByUserID = recipe.sharedByUserID ?? row.sharedByUserID
+                        row.sharedByUserName = recipe.sharedByUserName
+                        row.sharedDate = recipe.sharedDate
+                        row.cachedDate = Date()
+                        if reshared || row.imageData == nil { needPhoto[recipe.id] = record.recordID }
+                        updatedCount += 1
+                    } else {
+                        let row = CachedSharedRecipe(from: recipe)
+                        modelContext.insert(row)
+                        existingByID[recipe.id] = row
+                        needPhoto[recipe.id] = record.recordID
+                        addedCount += 1
+                    }
                 }
-                modelContext.insert(newCached)
-                addedCount += 1
-                AppLog.info("📖   Cached new recipe: '\(cloudRecipe.title)' by \(cloudRecipe.sharedByUserName ?? "Unknown")\(cloudRecipe.imageData != nil ? " (with image)" : "")", category: .sharing)
+
+                // Keep each page: a run stopped half way leaves what it read.
+                try modelContext.save()
+                cursor = page.queryCursor
+                if cursor == nil { reachedEnd = true }
+                if isFull { status.communityDownloadProgress(fetched: recordsRead) }
+            } while cursor != nil && newestSharedDate.count < limit
+        } catch {
+            try? modelContext.save()
+            if isFull {
+                status.communityDownloadFailed("Stopped after \(recordsRead.formatted()) shared recipes: \(error.localizedDescription)")
             }
+            AppLog.error("📖 SYNC: Community recipes stopped after \(recordsRead) records: \(error)", category: .sharing)
+            throw error
         }
-        
-        // Clean up cached recipes that are no longer available or old
-        var removedCount = 0
-        let thirtyDaysAgo = Calendar.current.date(byAdding: .day, value: -30, to: Date()) ?? Date()
-        
-        for cached in existingCached {
-            let shouldRemove = !currentCloudRecipeIDs.contains(cached.id) || cached.lastAccessedDate < thirtyDaysAgo
-            
-            if shouldRemove {
-                modelContext.delete(cached)
+
+        // Photos, a chunk at a time, only where needed. A failed chunk is
+        // retried by the next full download (the row still has no photo).
+        let photoWork = Array(needPhoto)
+        var photosDone = 0
+        var photoFailures = 0
+        let chunkSize = 40
+        for start in stride(from: 0, to: photoWork.count, by: chunkSize) {
+            let chunk = Array(photoWork[start..<min(start + chunkSize, photoWork.count)])
+            do {
+                let results = try await publicDatabase.records(for: chunk.map(\.value), desiredKeys: ["mainImage"])
+                for (recipeID, recordID) in chunk {
+                    guard case .success(let record)? = results[recordID],
+                          let asset = record["mainImage"] as? CKAsset,
+                          let url = asset.fileURL,
+                          let data = try? Data(contentsOf: url) else { continue }
+                    existingByID[recipeID]?.imageData = data
+                }
+                try modelContext.save()
+            } catch {
+                photoFailures += chunk.count
+                AppLog.warning("📖   Photo chunk failed (\(chunk.count)): \(error.localizedDescription)", category: .sharing)
+            }
+            photosDone += chunk.count
+            if isFull { status.communityPhotosProgress(done: photosDone, total: photoWork.count) }
+        }
+
+        // Remove only what the public library no longer has, and only after a
+        // full read with every record understood.
+        if isFull && reachedEnd && unreadable == 0 {
+            for (id, row) in existingByID where newestSharedDate[id] == nil {
+                modelContext.delete(row)
                 removedCount += 1
-                AppLog.info("📖   Removed cached recipe: '\(cached.title)'", category: .sharing)
+            }
+        } else if isFull {
+            AppLog.info("📖   Nothing removed: \(unreadable) unreadable record(s) or the read did not finish", category: .sharing)
+        }
+        try modelContext.save()
+
+        if isFull {
+            if reachedEnd {
+                status.communityDownloadFinished(totalRecords: recordsRead)
+            } else {
+                status.communityDownloadFailed("The download stopped before the end.")
             }
         }
-        
-        try modelContext.save()
-        
-        AppLog.info("✅ SYNC COMPLETE: Community recipes cached for viewing", category: .sharing)
-        AppLog.info("   - Added: \(addedCount) recipes", category: .sharing)
-        AppLog.info("   - Updated: \(updatedCount) recipes", category: .sharing)
-        AppLog.info("   - Removed: \(removedCount) recipes", category: .sharing)
+
+        AppLog.info("✅ SYNC COMPLETE: Community recipes — read \(recordsRead) records (\(newestSharedDate.count) recipes, \(unreadable) unreadable); added \(addedCount), updated \(updatedCount), removed \(removedCount); photos \(photoWork.count - photoFailures)/\(photoWork.count)", category: .sharing)
     }
     
     /// Update last accessed date for a cached recipe (prevents auto-cleanup)
@@ -2257,9 +2371,29 @@ class CloudKitSharingService: ObservableObject {
         let allCloudKitRecords = try await fetchAllCloudKitRecords(type: CloudKitRecordType.sharedRecipeBook)
         
         // Filter to exclude current user's books
-        let communityRecords = allCloudKitRecords.filter { record in
+        let othersRecords = allCloudKitRecords.filter { record in
             guard let sharedBy = record["sharedBy"] as? String else { return false }
             return sharedBy != currentUserID
+        }
+
+        // One record per book id: the newest share. The public database holds
+        // several records for one book (82 records for 28 books on 28 Oct), and
+        // processing each one rebuilt that book's previews once per record.
+        var newestByBookID = [UUID: (record: CKRecord, date: Date)]()
+        for record in othersRecords {
+            guard let bookData = record["bookData"] as? String,
+                  let jsonData = bookData.data(using: .utf8),
+                  let decoded = try? JSONDecoder().decode(CloudKitRecipeBook.self, from: jsonData) else {
+                AppLog.warning("📚 Skipping invalid book record: \(record.recordID.recordName)", category: .sharing)
+                continue
+            }
+            let date = (record["sharedDate"] as? Date) ?? decoded.sharedDate
+            if let seen = newestByBookID[decoded.id], seen.date >= date { continue }
+            newestByBookID[decoded.id] = (record, date)
+        }
+        let communityRecords = newestByBookID.values.map(\.record)
+        if communityRecords.count != othersRecords.count {
+            AppLog.info("📚 \(othersRecords.count) book records → \(communityRecords.count) books (newest record per book)", category: .sharing)
         }
         
         AppLog.info("📚 Found \(communityRecords.count) community book records in CloudKit", category: .sharing)
@@ -2284,10 +2418,20 @@ class CloudKitSharingService: ObservableObject {
         var existingRecipeBooksByID = [UUID: Book]()
         var existingPreviewsByBookID = [UUID: [CloudKitRecipePreview]]()
         
+        // One tracking row per book; extra rows for the same book (two runs, or
+        // another device on this Apple ID) are dropped.
+        var extraTrackingRows = 0
         for book in existingSharedBooks {
-            if let bookID = book.bookID {
+            guard let bookID = book.bookID else { continue }
+            if existingSharedBooksByID[bookID] != nil {
+                modelContext.delete(book)
+                extraTrackingRows += 1
+            } else {
                 existingSharedBooksByID[bookID] = book
             }
+        }
+        if extraTrackingRows > 0 {
+            AppLog.info("📚 Dropped \(extraTrackingRows) extra community-book tracking row(s)", category: .sharing)
         }
         
         for book in allRecipeBooks {
@@ -2526,7 +2670,7 @@ class CloudKitSharingService: ObservableObject {
         
         // Find and remove books that are no longer in CloudKit
         var removedCount = 0
-        for existingSharedBook in existingSharedBooks {
+        for existingSharedBook in Array(existingSharedBooksByID.values) {
             guard let bookID = existingSharedBook.bookID else { continue }
             
             // If this book is not in CloudKit anymore, mark it as inactive and delete the RecipeBook

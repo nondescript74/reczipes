@@ -590,44 +590,49 @@ struct MainTabView: View {
     @Environment(\.scenePhase) private var scenePhase
 
     var body: some View {
-        TabView(selection: $appState.currentTab) {
-            // Existing recipes tab
-            ContentView()
-                .tabItem {
-                    Label("Recipes", systemImage: "book.fill")
-                }
-                .tag(AppTab.recipes)
-            
-            // Recipe Books tab
-            RecipeBooksView()
-                .tabItem {
-                    Label("Books", systemImage: "books.vertical.fill")
-                }
-                .tag(AppTab.books)
-            // Meals tab — group recipes into a complete meal
-            MealsView()
-                .tabItem {
-                    Label("Meals", systemImage: "fork.knife.circle.fill")
-                }
-                .tag(AppTab.meals)
-            // NEW: Cooking Mode tab
-            CookingView()
-                .tabItem {
-                    Label("Cooking", systemImage: "flame.fill")
-                }
-                .tag(AppTab.cooking)
-            // Extraction tab - always visible
-            RecipeExtractorTabWrapper()
-                .tabItem {
-                    Label("Extract", systemImage: "camera.fill")
-                }
-                .tag(AppTab.extract)
-            // Settings tab
-            SettingsView()
-                .tabItem {
-                    Label("Settings", systemImage: "gear")
-                }
-                .tag(AppTab.settings)
+        VStack(spacing: 0) {
+            // Shown only while this device's library is still downloading / syncing,
+            // or when the last download didn't finish (with Retry).
+            LibrarySyncBanner()
+            TabView(selection: $appState.currentTab) {
+                // Existing recipes tab
+                ContentView()
+                    .tabItem {
+                        Label("Recipes", systemImage: "book.fill")
+                    }
+                    .tag(AppTab.recipes)
+                
+                // Recipe Books tab
+                RecipeBooksView()
+                    .tabItem {
+                        Label("Books", systemImage: "books.vertical.fill")
+                    }
+                    .tag(AppTab.books)
+                // Meals tab — group recipes into a complete meal
+                MealsView()
+                    .tabItem {
+                        Label("Meals", systemImage: "fork.knife.circle.fill")
+                    }
+                    .tag(AppTab.meals)
+                // NEW: Cooking Mode tab
+                CookingView()
+                    .tabItem {
+                        Label("Cooking", systemImage: "flame.fill")
+                    }
+                    .tag(AppTab.cooking)
+                // Extraction tab - always visible
+                RecipeExtractorTabWrapper()
+                    .tabItem {
+                        Label("Extract", systemImage: "camera.fill")
+                    }
+                    .tag(AppTab.extract)
+                // Settings tab
+                SettingsView()
+                    .tabItem {
+                        Label("Settings", systemImage: "gear")
+                    }
+                    .tag(AppTab.settings)
+            }
         }
         .toolbar {
             #if os(iOS)
