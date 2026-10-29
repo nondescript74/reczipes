@@ -243,11 +243,8 @@ struct SettingsView: View {
 #endif
     }
 
-    private var versionString: String {
-        let version = Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "Unknown"
-        let build = Bundle.main.infoDictionary?["CFBundleVersion"] as? String ?? "Unknown"
-        return "\(version) (\(build))"
-    }
+    /// Xcode Cloud builds show the App Store Connect build number; a local Xcode build says so (AppBuildInfo).
+    private var versionString: String { AppBuildInfo.statusLine }
 
     var body: some View {
         VStack(spacing: 0) {
@@ -401,7 +398,7 @@ struct SettingsView: View {
                 }
             }
 
-            Text("Version \(versionString)")
+            Text(versionString)
                 .font(.footnote)
                 .foregroundStyle(.secondary)
         }
