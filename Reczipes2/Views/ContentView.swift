@@ -109,8 +109,10 @@ struct ContentView: View {
         // Add owned recipes (RecipeX)
         allRecipes.append(contentsOf: savedRecipes as [any RecipeDisplayProtocol])
         
-        // Add cached shared recipes (CachedSharedRecipe)
-        allRecipes.append(contentsOf: cachedSharedRecipes as [any RecipeDisplayProtocol])
+        // Add cached shared recipes (CachedSharedRecipe), each recipe once:
+        // copies of one recipe shared under two ids show once (CommunityCopies,
+        // the same rule as the web version). Display only — nothing is deleted.
+        allRecipes.append(contentsOf: CommunityCopies.collapse(cachedSharedRecipes) as [any RecipeDisplayProtocol])
         
         AppLog.debug("Total available recipes count: \(allRecipes.count)", category: .recipe)
         
