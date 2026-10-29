@@ -40,12 +40,22 @@ struct CloudKitRecipe: Codable, Identifiable {
     /// Raw image data downloaded from CloudKit. Not Codable — set after decode.
     var imageData: Data? = nil
 
+    // Deleted by its owner (Δ-163). The public record is kept, marked, never removed:
+    // devices that already have the recipe keep it with a "User Deleted" badge, new
+    // devices skip it. Inside the JSON, so no CloudKit schema change; older builds ignore it.
+    var deletedByOwner: Bool? = nil
+    var deletedDate: Date? = nil
+    /// Set when the recipe was removed as an exact copy of another (duplicate merge):
+    /// receivers drop their copy quietly when this one is still published.
+    var replacedByID: UUID? = nil
+
     /// Keys to encode/decode — excludes imageData so it doesn't break the JSON round-trip.
     enum CodingKeys: String, CodingKey {
         case id, title, headerNotes, yield
         case ingredientSections, instructionSections
         case notes, reference, imageName, additionalImageNames
         case sharedByUserID, sharedByUserName, sharedDate
+        case deletedByOwner, deletedDate, replacedByID
         // imageData intentionally omitted
     }
 }
@@ -72,6 +82,10 @@ struct CloudKitRecipeBook: Codable, Identifiable {
     var tableOfContents: [BookSection]? = nil
     /// Glossary (entry images stripped)
     var glossary: [BookGlossaryEntry]? = nil
+
+    /// Deleted by its owner (Δ-163): kept public and marked, never removed.
+    var deletedByOwner: Bool? = nil
+    var deletedDate: Date? = nil
 }
 
 // MARK: - Sharing Result
@@ -253,6 +267,10 @@ struct CloudKitMeal: Codable, Identifiable {
     let sharedByUserID: String?
     let sharedByUserName: String?
     let sharedDate: Date
+
+    /// Deleted by its owner (Δ-163): kept public and marked, never removed.
+    var deletedByOwner: Bool? = nil
+    var deletedDate: Date? = nil
 }
 
 /// Status of a meal in CloudKit

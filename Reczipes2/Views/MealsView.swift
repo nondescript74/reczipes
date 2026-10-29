@@ -14,6 +14,10 @@ struct MealsView: View {
     @Environment(\.modelContext) private var modelContext
     @Query(sort: \Meal.dateModified, order: .reverse) private var meals: [Meal]
     @Query private var recipes: [RecipeX]
+    /// Δ-163: other people's meals (shared with everyone, always)
+    @Query(sort: \CachedSharedMeal.name) private var cachedMeals: [CachedSharedMeal]
+    @ObservedObject private var ownerDeleted = OwnerDeletedStore.shared
+    @State private var selectedCommunityMeal: CachedSharedMeal?
 
     @State private var showingEditor = false
     @State private var editingMeal: Meal?
@@ -28,10 +32,21 @@ struct MealsView: View {
         }
     }
 
+    /// Others' meals; this person's own published meals are already listed above.
+    private var communityMeals: [CachedSharedMeal] {
+        let me = CloudKitSharingService.shared.currentUserID
+        return cachedMeals.filter { cached in
+            cached.sharedByUserID != me &&
+            (searchText.isEmpty ||
+             cached.name.localizedCaseInsensitiveContains(searchText) ||
+             (cached.mealDescription ?? "").localizedCaseInsensitiveContains(searchText))
+        }
+    }
+
     var body: some View {
         NavigationStack {
             Group {
-                if filteredMeals.isEmpty {
+                if filteredMeals.isEmpty && communityMeals.isEmpty {
                     emptyState
                 } else {
                     mealList
@@ -54,6 +69,9 @@ struct MealsView: View {
             }
             .sheet(item: $selectedMeal) { meal in
                 MealDetailView(meal: meal)
+            }
+            .sheet(item: $selectedCommunityMeal) { meal in
+                CommunityMealDetailView(meal: meal)
             }
             .onAppear {
                 MealPresets.seedIfNeeded(in: modelContext)
@@ -92,6 +110,7 @@ struct MealsView: View {
 
     private var mealList: some View {
         List {
+          Section {
             ForEach(filteredMeals) { meal in
                 Button {
                     selectedMeal = meal
@@ -114,11 +133,46 @@ struct MealsView: View {
                     .tint(.blue)
                 }
             }
+          } header: {
+              if !communityMeals.isEmpty { Text("My Meals") }
+          }
+            if !communityMeals.isEmpty {
+                Section("Shared by others") {
+                    ForEach(communityMeals) { cached in
+                        let deleted = ownerDeleted.isDeleted(.meal, cached.id)
+                        Button {
+                            selectedCommunityMeal = cached
+                        } label: {
+                            CommunityMealRow(meal: cached, isOwnerDeleted: deleted)
+                        }
+                        .buttonStyle(.plain)
+                        .swipeActions(edge: .trailing) {
+                            if deleted {
+                                // Leaves only by this person's choice
+                                Button(role: .destructive) {
+                                    removeDeletedCommunityMeal(cached)
+                                } label: {
+                                    Label("Remove", systemImage: "trash")
+                                }
+                            }
+                        }
+                    }
+                }
+            }
         }
         .platformInsetGroupedListStyle()
     }
 
+    private func removeDeletedCommunityMeal(_ cached: CachedSharedMeal) {
+        let id = cached.id
+        modelContext.delete(cached)
+        try? modelContext.save()
+        ownerDeleted.clear(.meal, id)
+    }
+
     private func delete(_ meal: Meal) {
+        // Δ-163: the public copy is marked deleted (never removed)
+        CloudKitSharingService.shared.ownerDeleted(.meal, id: meal.id, modelContext: modelContext)
         withAnimation {
             modelContext.delete(meal)
             try? modelContext.save()

@@ -294,10 +294,21 @@ struct RecipeBooksView: View {
                             
                             Divider()
                             
-                            Button(role: .destructive) {
-                                deleteBook(book)
-                            } label: {
-                                Label("Delete", systemImage: "trash")
+                            // Δ-163: someone else's book is always shared with everyone and
+                            // would come back on the next sync; it can be removed from this
+                            // device only once its owner deleted it.
+                            let owned = Book.isOwnedByCurrentUser(ownerUserID: book.ownerUserID,
+                                                                  currentUserID: CloudKitSharingService.shared.currentUserID)
+                            if owned || OwnerDeletedStore.shared.isDeleted(.book, book.id) {
+                                Button(role: .destructive) {
+                                    deleteBook(book)
+                                } label: {
+                                    if owned {
+                                        Label("Delete", systemImage: "trash")
+                                    } else {
+                                        Label("Remove from This Device", systemImage: "trash")
+                                    }
+                                }
                             }
                         }
                 }
@@ -314,6 +325,16 @@ struct RecipeBooksView: View {
             // the recipes stay in the library; only the book record goes away.
             let memberCount = book.recipeIDs?.count ?? 0
             AppLog.info("Deleting book '\(book.name ?? "Untitled")' — its \(memberCount) recipe(s) stay in the library", category: .recipe)
+
+            // Δ-163: the owner's delete marks the public copy deleted (never removed).
+            // Removing someone else's book only takes it off this device.
+            let sharing = CloudKitSharingService.shared
+            if Book.isOwnedByCurrentUser(ownerUserID: book.ownerUserID, currentUserID: sharing.currentUserID),
+               book.isImported != true {
+                sharing.ownerDeleted(.book, id: book.id, modelContext: modelContext)
+            } else if let id = book.id {
+                OwnerDeletedStore.shared.clear(.book, id)
+            }
             
             // Delete the book itself and its picture records (cover image is stored as Data, not file)
             BookPictureStore.deleteBook(book, in: modelContext)
@@ -374,6 +395,8 @@ struct BookCardView: View {
     private let cachedBookColor: String?
     private let cachedOwnerDisplayName: String?
     private let cachedOwnerUserID: String?
+    /// Δ-163: community books their owner deleted show a badge
+    @ObservedObject private var ownerDeleted = OwnerDeletedStore.shared
     
     init(book: Book, savedRecipes: [RecipeX], showSharedInfo: Bool) {
         self.book = book
@@ -441,6 +464,10 @@ struct BookCardView: View {
                 // Recipe count badge
                 VStack {
                     HStack {
+                        if ownerDeleted.isDeleted(.book, bookID) {
+                            UserDeletedBadge()
+                                .padding(8)
+                        }
                         Spacer()
                         Text("\(cachedRecipeCount)")
                             .font(.caption)

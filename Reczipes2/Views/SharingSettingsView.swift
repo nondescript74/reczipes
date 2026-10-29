@@ -67,27 +67,14 @@ struct SharingSettingsView: View {
     
     var body: some View {
         ZStack {
+            // Δ-163 (operator ruling 2026-10-29): everything is shared with everyone,
+            // always. No toggles, no share / unshare, no manager or repair tools —
+            // a read-only status, plus the name shown on what this person shares.
             List {
-                // Info banner explaining iCloud sync vs public sharing
-                infoSection
-                
-                // CloudKit Status
+                alwaysSharedInfoSection
                 cloudKitStatusSection
-                
-                // Auto-Sync Settings
-                autoSyncSection
-                
-                // Sharing Preferences
-                sharingPreferencesSection
-                
-                // My Shared Content
-                mySharedContentSection
-                
-                // Quick Actions
-                quickActionsSection
-                
-                // CloudKit Management (advanced)
-                cloudKitManagementSection
+                nameSection
+                libraryStatusSection
             }
             .disabled(isSharing) // Disable all interactions during operations
             
@@ -117,7 +104,7 @@ struct SharingSettingsView: View {
                 .shadow(radius: 20)
             }
         }
-        .navigationTitle("Public Sharing")
+        .navigationTitle("Sharing")
         .platformNavigationBarTitleDisplayMode(.inline)
         .onAppear {
             // Initialize CloudKitSharingService with current preferences
@@ -216,6 +203,94 @@ struct SharingSettingsView: View {
     
     // MARK: - Sections
     
+    // MARK: - Δ-163 read-only sharing status
+
+    @Query private var cachedCommunityRecipes: [CachedSharedRecipe]
+    @Query private var cachedCommunityMeals: [CachedSharedMeal]
+    @ObservedObject private var ownerDeleted = OwnerDeletedStore.shared
+    @ObservedObject private var syncStatus = LibrarySyncStatus.shared
+
+    private var alwaysSharedInfoSection: some View {
+        Section {
+            VStack(alignment: .leading, spacing: 10) {
+                Label("Everything is shared with everyone", systemImage: "person.3.fill")
+                    .font(.headline)
+                Text("Every recipe, book and meal in Reczipes is shared with everyone who uses the app, automatically — new ones, and edits too. There is nothing to turn on or off.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                Text("If someone deletes something they shared, it stays on the devices that already have it, marked **User Deleted**. You can remove it from your device yourself.")
+                    .font(.subheadline)
+                    .foregroundStyle(.secondary)
+                Text("Shared content is licensed under **Creative Commons BY 4.0** (attribution required).")
+                    .font(.caption)
+                    .foregroundStyle(.secondary)
+            }
+            .padding(.vertical, 6)
+        }
+    }
+
+    private var nameSection: some View {
+        Section {
+            Toggle("Show My Name", isOn: Binding(
+                get: { preferences.allowOthersToSeeMyName },
+                set: { newValue in
+                    preferences.allowOthersToSeeMyName = newValue
+                    preferences.dateModified = Date()
+                    try? modelContext.save()
+                    sharingService.updateUserDisplayName(from: preferences)
+                }
+            ))
+            if preferences.allowOthersToSeeMyName {
+                TextField("Display Name", text: Binding(
+                    get: { preferences.displayName ?? "" },
+                    set: { newValue in
+                        preferences.displayName = newValue.isEmpty ? nil : newValue
+                        preferences.dateModified = Date()
+                        try? modelContext.save()
+                        sharingService.updateUserDisplayName(from: preferences)
+                    }
+                ))
+                .textContentType(.name)
+                .autocorrectionDisabled()
+            }
+        } header: {
+            Text("Your Name on What You Share")
+        }
+    }
+
+    private var libraryStatusSection: some View {
+        let me = sharingService.currentUserID
+        let othersRecipes = cachedCommunityRecipes.filter { $0.sharedByUserID != me }.count
+        let othersBooks = allBooks.filter { !Book.isOwnedByCurrentUser(ownerUserID: $0.ownerUserID, currentUserID: me) }.count
+        let othersMeals = cachedCommunityMeals.filter { $0.sharedByUserID != me }.count
+        let myBooks = allBooks.count - othersBooks
+        let deleted = PublicItemKind.allCases.map { ownerDeleted.count($0) }.reduce(0, +)
+        return Section {
+            LabeledContent("Your recipes", value: recipeXEntities.count.formatted())
+            LabeledContent("Your books", value: myBooks.formatted())
+            LabeledContent("Your meals", value: allMeals.filter { $0.isPreset != true }.count.formatted())
+            LabeledContent("Recipes from others", value: othersRecipes.formatted())
+            LabeledContent("Books from others", value: othersBooks.formatted())
+            LabeledContent("Meals from others", value: othersMeals.formatted())
+            if deleted > 0 {
+                LabeledContent("Deleted by their owners (kept here)", value: deleted.formatted())
+            }
+            if !ownerDeleted.pending.isEmpty {
+                LabeledContent("Your deletions still to reach everyone", value: ownerDeleted.pending.count.formatted())
+            }
+            if syncStatus.publishTotal > 0 {
+                LabeledContent("Sharing now", value: "\(syncStatus.publishDone) of \(syncStatus.publishTotal)")
+            }
+            if let last = sharingService.lastPublishPass {
+                LabeledContent("Last checked", value: last.formatted(date: .abbreviated, time: .shortened))
+            }
+        } header: {
+            Text("Library")
+        } footer: {
+            Text("Checked automatically every few minutes while the app is open.")
+        }
+    }
+
     private var infoSection: some View {
         Section {
             VStack(alignment: .leading, spacing: 12) {
@@ -272,7 +347,7 @@ struct SharingSettingsView: View {
                     .foregroundStyle(sharingService.isCloudKitAvailable ? .green : .red)
                 
                 VStack(alignment: .leading) {
-                    Text(sharingService.isCloudKitAvailable ? "Ready to Share Publicly" : "Not Available")
+                    Text(sharingService.isCloudKitAvailable ? "Connected to the shared library" : "Not Available")
                         .font(.headline)
                     
                     if let userName = sharingService.currentUserName {
@@ -280,16 +355,16 @@ struct SharingSettingsView: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     } else if !sharingService.isCloudKitAvailable {
-                        Text("Sign in to iCloud to enable public sharing")
+                        Text("Sign in to iCloud to share and receive the library")
                             .font(.caption)
                             .foregroundStyle(.secondary)
                     }
                 }
             }
         } header: {
-            Text("Public Sharing Status")
+            Text("Status")
         } footer: {
-            Text("Public sharing requires iCloud. Your private sync works regardless of these settings.")
+            Text("Sharing needs iCloud. Your own library syncs across your devices either way.")
         }
     }
     

@@ -126,18 +126,8 @@ struct RecipeBatchAdminDeleteView: View {
 
     private func forceDelete(_ recipes: [RecipeX], typed: String) async {
         let count = recipes.count
-        // Take down public CloudKit copies first (best effort)
-        let tracked = (try? modelContext.fetch(FetchDescriptor<SharedRecipe>())) ?? []
-        for recipe in recipes {
-            guard let rid = recipe.id,
-                  let share = tracked.first(where: { $0.recipeID == rid && $0.isActive }),
-                  let cloudRecordID = share.cloudRecordID else { continue }
-            do {
-                try await CloudKitSharingService.shared.unshareRecipe(cloudRecordID: cloudRecordID, modelContext: modelContext)
-            } catch {
-                AppLog.warning("Batch delete: could not take down public copy of '\(recipe.title ?? "")': \(error)", category: .sharing)
-            }
-        }
+        // Δ-163: public copies are marked deleted (never removed), after the delete succeeds.
+        let deletedIDs = recipes.compactMap(\.id)
         do {
             let ids = Set(recipes.compactMap(\.id))
             let assignments = (try? modelContext.fetch(FetchDescriptor<RecipeImageAssignment>())) ?? []
@@ -146,6 +136,9 @@ struct RecipeBatchAdminDeleteView: View {
             }
             let removedFrom = try BookMembershipGuard.forceDeleteBatch(recipes, typedConfirmation: typed, in: modelContext)
             try modelContext.save()
+            for id in deletedIDs {
+                CloudKitSharingService.shared.ownerDeleted(.recipe, id: id, modelContext: modelContext)
+            }
             excluded.removeAll()
             resultMessage = removedFrom.isEmpty
                 ? "Deleted \(count) recipes."

@@ -64,6 +64,10 @@ class CloudKitSharingService: ObservableObject {
     
     // Keep a weak reference to model context for auto-sync
     private weak var currentModelContext: ModelContext?
+
+    /// Δ-163 publish pass (LibraryPublisher.swift): the pass in flight, and when the last one ended.
+    var publishTask: Task<Void, Never>?
+    @Published var lastPublishPass: Date?
     
     // Track last sync attempt to prevent too-frequent syncs
     private var lastSyncAttempt: Date?
@@ -75,8 +79,9 @@ class CloudKitSharingService: ObservableObject {
         self.publicDatabase = container.publicCloudDatabase
         self.privateDatabase = container.privateCloudDatabase
         
-        // Load auto-sync preferences from UserDefaults
-        self.autoSyncEnabled = UserDefaults.standard.bool(forKey: "cloudKitAutoSyncEnabled")
+        // Δ-163: everything is shared with everyone, always, so the library sync
+        // is always on (it used to be an opt-in toggle, off by default).
+        self.autoSyncEnabled = true
         self.syncInterval = UserDefaults.standard.double(forKey: "cloudKitSyncInterval")
         
         // Default to 5 minutes if not set or too low
@@ -502,7 +507,8 @@ class CloudKitSharingService: ObservableObject {
     /// Shares a recipe publicly. With `refreshExisting: true`, an already-shared recipe's
     /// public record is overwritten in place with the recipe's current content (same record
     /// id, nothing deleted), e.g. after the recipe was edited. Mirrors `shareRecipeBook`.
-    func shareRecipe(_ recipe: RecipeX, modelContext: ModelContext, refreshExisting: Bool = false) async throws -> String {
+    func shareRecipe(_ recipe: RecipeX, modelContext: ModelContext, refreshExisting: Bool = false,
+                     knownRecordName: String? = nil, scanForDuplicates: Bool = true) async throws -> String {
         guard isCloudKitAvailable else {
             throw SharingError.cloudKitUnavailable()
         }
@@ -543,12 +549,24 @@ class CloudKitSharingService: ObservableObject {
             }
         }
         
-        // Check for duplicates in CloudKit by recipe ID (safety check)
-        let query = CKQuery(
-            recordType: CloudKitRecordType.sharedRecipe,
-            predicate: NSPredicate(format: "sharedBy == %@", userID)
-        )
-        let existingRecords = try await publicDatabase.records(matching: query, desiredKeys: ["recipeData"], resultsLimit: 400)
+        // The publish pass knows the public record already (read from the public
+        // database): refresh that one in place, even with no local tracking row.
+        if existingRecordToUpdate == nil, let knownRecordName {
+            existingRecordToUpdate = try? await publicDatabase.record(for: CKRecord.ID(recordName: knownRecordName))
+        }
+
+        // Check for duplicates in CloudKit by recipe ID (safety check). Skipped by
+        // the publish pass, which has just read every one of this user's records.
+        let existingRecords: (matchResults: [(CKRecord.ID, Result<CKRecord, Error>)], queryCursor: CKQueryOperation.Cursor?)
+        if scanForDuplicates {
+            let query = CKQuery(
+                recordType: CloudKitRecordType.sharedRecipe,
+                predicate: NSPredicate(format: "sharedBy == %@", userID)
+            )
+            existingRecords = try await publicDatabase.records(matching: query, desiredKeys: ["recipeData"], resultsLimit: 400)
+        } else {
+            existingRecords = ([], nil)
+        }
         
         // Delete any existing records for this recipe ID
         for (_, result) in existingRecords.matchResults {
@@ -664,7 +682,8 @@ class CloudKitSharingService: ObservableObject {
     /// Shares a book publicly. With `refreshExisting: true`, an already-shared book's
     /// public record is overwritten in place with the book's current recipes (same record
     /// id, nothing deleted), e.g. after recipes were added to the book.
-    func shareRecipeBook(_ book: Book, modelContext: ModelContext, refreshExisting: Bool = false) async throws -> String {
+    func shareRecipeBook(_ book: Book, modelContext: ModelContext, refreshExisting: Bool = false,
+                         knownRecordName: String? = nil) async throws -> String {
         guard isCloudKitAvailable else {
             throw SharingError.cloudKitUnavailable()
         }
@@ -710,6 +729,11 @@ class CloudKitSharingService: ObservableObject {
             }
         }
         
+        // The publish pass knows the public record already: refresh it in place.
+        if existingRecordToUpdate == nil, let knownRecordName {
+            existingRecordToUpdate = try? await publicDatabase.record(for: CKRecord.ID(recordName: knownRecordName))
+        }
+
         AppLog.info("📚 Sharing recipe book '\(String(describing: book.name))' with \(book.recipeIDs?.count ?? 0) recipes...", category: .sharing)
         
         // Fetch recipe previews for all recipes in the book
@@ -1223,7 +1247,11 @@ class CloudKitSharingService: ObservableObject {
     
     // MARK: - Share Meal
 
-    func shareMeal(_ meal: Meal, modelContext: ModelContext) async throws -> String {
+    /// With `refreshExisting`, an already-public meal's record is overwritten in
+    /// place with its current content (Δ-163 publish pass); `knownRecordName` is
+    /// that record when the pass read it from the public database.
+    func shareMeal(_ meal: Meal, modelContext: ModelContext, refreshExisting: Bool = false,
+                   knownRecordName: String? = nil) async throws -> String {
         guard isCloudKitAvailable else { throw SharingError.cloudKitUnavailable() }
         guard let userID = currentUserID else { throw SharingError.notAuthenticated }
         guard let mealID = meal.id else { throw SharingError.invalidData }
@@ -1233,17 +1261,27 @@ class CloudKitSharingService: ObservableObject {
         let existingDescriptor = FetchDescriptor<SharedMeal>(
             predicate: #Predicate<SharedMeal> { $0.mealID == mealIDToFind && $0.isActive == true }
         )
+        var existingRecord: CKRecord?
+        var existingTracking: SharedMeal?
         if let existing = try? modelContext.fetch(existingDescriptor).first,
            let cloudRecordID = existing.cloudRecordID {
             do {
                 let recordID = CKRecord.ID(recordName: cloudRecordID)
-                _ = try await publicDatabase.record(for: recordID)
-                AppLog.info("Meal '\(meal.displayName)' already shared", category: .sharing)
-                return cloudRecordID
+                let fetched = try await publicDatabase.record(for: recordID)
+                if refreshExisting {
+                    existingRecord = fetched
+                    existingTracking = existing
+                } else {
+                    AppLog.info("Meal '\(meal.displayName)' already shared", category: .sharing)
+                    return cloudRecordID
+                }
             } catch {
                 modelContext.delete(existing)
                 try? modelContext.save()
             }
+        }
+        if existingRecord == nil, let knownRecordName {
+            existingRecord = try? await publicDatabase.record(for: CKRecord.ID(recordName: knownRecordName))
         }
 
         let cloudMeal = CloudKitMeal(
@@ -1257,7 +1295,7 @@ class CloudKitSharingService: ObservableObject {
             sharedDate: Date()
         )
 
-        let record = CKRecord(recordType: CloudKitRecordType.sharedMeal)
+        let record = existingRecord ?? CKRecord(recordType: CloudKitRecordType.sharedMeal)
         let jsonData = try JSONEncoder().encode(cloudMeal)
         record["mealData"] = String(data: jsonData, encoding: .utf8)
         record["name"] = meal.displayName as CKRecordValue
@@ -1266,6 +1304,14 @@ class CloudKitSharingService: ObservableObject {
         record["sharedDate"] = Date() as CKRecordValue
 
         let savedRecord = try await publicDatabase.save(record)
+
+        if let existingTracking {
+            existingTracking.mealName = meal.displayName
+            existingTracking.courseCount = meal.courseCount
+            try modelContext.save()
+            AppLog.info("Refreshed public copy of meal: \(meal.displayName)", category: .sharing)
+            return savedRecord.recordID.recordName
+        }
 
         let sharedMeal = SharedMeal(
             mealID: mealID,
@@ -1347,12 +1393,35 @@ class CloudKitSharingService: ObservableObject {
 
         AppLog.info("🍽️ SYNC: Syncing community meals for viewing...", category: .sharing)
 
-        let cloudMeals = try await fetchSharedMeals(limit: limit, excludeCurrentUser: !includeSelf)
-        let mealsToCache = limit == Int.max ? cloudMeals : Array(cloudMeals.prefix(limit))
+        // Δ-163: every meal is read (no limit), nothing is removed. A meal its owner
+        // deleted stays on devices that have it, with the "User Deleted" badge.
+        let allCloudMeals = try await fetchSharedMeals(limit: Int.max, excludeCurrentUser: !includeSelf)
+        let fetchComplete = true // fetchSharedMeals throws rather than returning a partial list
 
         let existingCached = try modelContext.fetch(FetchDescriptor<CachedSharedMeal>())
         var existingByID = [UUID: CachedSharedMeal]()
-        for cached in existingCached { existingByID[cached.id] = cached }
+        for cached in existingCached {
+            if existingByID[cached.id] != nil {
+                modelContext.delete(cached) // an extra row for the same meal
+            } else {
+                existingByID[cached.id] = cached
+            }
+        }
+
+        // Newest live record per meal, and the deleted marks.
+        var newestLive = [UUID: CloudKitMeal]()
+        var marks = [UUID: PublicTombstones.Mark]()
+        for cloudMeal in allCloudMeals {
+            if cloudMeal.deletedByOwner == true {
+                PublicTombstones.merge(.init(deletedDate: cloudMeal.deletedDate ?? cloudMeal.sharedDate),
+                                       into: &marks, id: cloudMeal.id)
+            } else if (newestLive[cloudMeal.id]?.sharedDate ?? .distantPast) < cloudMeal.sharedDate {
+                newestLive[cloudMeal.id] = cloudMeal
+            }
+        }
+        let deletedIDs = PublicTombstones.deletedIDs(newestLive: newestLive.mapValues(\.sharedDate), marks: marks)
+        let mealsToCache = newestLive.values.filter { deletedIDs[$0.id] == nil }
+        let store = OwnerDeletedStore.shared
 
         var currentCloudMealIDs = Set<UUID>()
         var addedCount = 0
@@ -1360,6 +1429,7 @@ class CloudKitSharingService: ObservableObject {
 
         for cloudMeal in mealsToCache {
             currentCloudMealIDs.insert(cloudMeal.id)
+            store.clear(.meal, cloudMeal.id) // published (again)
             if let existing = existingByID[cloudMeal.id] {
                 existing.name = cloudMeal.name
                 existing.mealDescription = cloudMeal.mealDescription
@@ -1375,17 +1445,29 @@ class CloudKitSharingService: ObservableObject {
             }
         }
 
+        // Deleted by the owner, or gone from the public library (an older build's
+        // unshare): kept here with the badge; never removed automatically.
+        var badgedCount = 0
         var removedCount = 0
-        let thirtyDaysAgo = Calendar.current.date(byAdding: .day, value: -30, to: Date()) ?? Date()
-        for cached in existingCached {
-            if !currentCloudMealIDs.contains(cached.id) || cached.lastAccessedDate < thirtyDaysAgo {
+        for (id, cached) in existingByID where !currentCloudMealIDs.contains(id) {
+            let mark = deletedIDs[id]
+            guard mark != nil || fetchComplete else { continue }
+            switch PublicTombstones.receiverAction(hadCopyBefore: true,
+                                                   isOwnersDevice: cached.sharedByUserID == currentUserID,
+                                                   replacementStillPublished: false) {
+            case .dropCopy:
                 modelContext.delete(cached)
                 removedCount += 1
+            case .keepWithBadge:
+                if !store.isDeleted(.meal, id) { badgedCount += 1 }
+                store.markDeleted(.meal, id, on: mark?.deletedDate ?? Date())
+            case .skip:
+                break
             }
         }
 
         try modelContext.save()
-        AppLog.info("✅ SYNC: Meals — added \(addedCount), updated \(updatedCount), removed \(removedCount)", category: .sharing)
+        AppLog.info("✅ SYNC: Meals — added \(addedCount), updated \(updatedCount), newly marked User Deleted \(badgedCount), own copies dropped \(removedCount)", category: .sharing)
     }
 
     // MARK: - Image Handling
@@ -2037,8 +2119,11 @@ class CloudKitSharingService: ObservableObject {
             // Sync community books
             try await syncCommunityBooksToLocal(modelContext: modelContext)
 
-            // Sync community meals
-            try await syncCommunityMealsForViewing(modelContext: modelContext, limit: 100)
+            // Sync community meals (all of them)
+            try await syncCommunityMealsForViewing(modelContext: modelContext)
+
+            // Δ-163: publish everything in this library that isn't public yet
+            await publishEverything(modelContext: modelContext)
             
             lastSyncDate = Date()
             let duration = Date().timeIntervalSince(startTime)
@@ -2161,6 +2246,10 @@ class CloudKitSharingService: ObservableObject {
         // records for one recipe), and the record to take its photo from.
         var newestSharedDate = [UUID: Date]()
         var needPhoto = [UUID: CKRecord.ID]()
+        // Δ-163: owner-deleted marks, and the rows this run added (a device that
+        // never had a deleted recipe must not get it now).
+        var deletedMarks = [UUID: PublicTombstones.Mark]()
+        var insertedThisRun = Set<UUID>()
         var recordsRead = 0
         var unreadable = 0
         var addedCount = 0
@@ -2183,6 +2272,12 @@ class CloudKitSharingService: ObservableObject {
                           let json = (record["recipeData"] as? String)?.data(using: .utf8),
                           let recipe = try? JSONDecoder().decode(CloudKitRecipe.self, from: json) else {
                         unreadable += 1
+                        continue
+                    }
+                    if recipe.deletedByOwner == true {
+                        PublicTombstones.merge(.init(deletedDate: recipe.deletedDate ?? recipe.sharedDate,
+                                                     replacedByID: recipe.replacedByID),
+                                               into: &deletedMarks, id: recipe.id)
                         continue
                     }
                     if let seen = newestSharedDate[recipe.id], seen >= recipe.sharedDate { continue }
@@ -2209,6 +2304,7 @@ class CloudKitSharingService: ObservableObject {
                         let row = CachedSharedRecipe(from: recipe)
                         modelContext.insert(row)
                         existingByID[recipe.id] = row
+                        insertedThisRun.insert(recipe.id)
                         needPhoto[recipe.id] = record.recordID
                         addedCount += 1
                     }
@@ -2228,6 +2324,41 @@ class CloudKitSharingService: ObservableObject {
             AppLog.error("📖 SYNC: Community recipes stopped after \(recordsRead) records: \(error)", category: .sharing)
             throw error
         }
+
+        // Δ-163: recipes their owner deleted. Devices that had them keep them with
+        // the "User Deleted" badge; a device that never had one doesn't get it; the
+        // owner's own devices drop their community copy; a copy merged into another
+        // recipe that is still published goes quietly.
+        let store = OwnerDeletedStore.shared
+        // Only from a read that reached the end: a later live record (published
+        // again) may sit on a page not read yet.
+        let deletedIDs = reachedEnd
+            ? PublicTombstones.deletedIDs(newestLive: newestSharedDate, marks: deletedMarks) : [:]
+        var badgedCount = 0
+        for (id, mark) in deletedIDs {
+            needPhoto[id] = nil
+            guard let row = existingByID[id] else { continue }
+            let action = PublicTombstones.receiverAction(
+                hadCopyBefore: !insertedThisRun.contains(id),
+                isOwnersDevice: !row.sharedByUserID.isEmpty && row.sharedByUserID == currentUserID,
+                replacementStillPublished: mark.replacedByID.map { rep in
+                    newestSharedDate[rep] != nil && deletedIDs[rep] == nil
+                } ?? false)
+            switch action {
+            case .skip, .dropCopy:
+                modelContext.delete(row)
+                existingByID[id] = nil
+                removedCount += 1
+            case .keepWithBadge:
+                if !store.isDeleted(.recipe, id) { badgedCount += 1 }
+                store.markDeleted(.recipe, id, on: mark.deletedDate)
+            }
+        }
+        // Published (again): no badge.
+        if reachedEnd {
+            for id in newestSharedDate.keys where deletedIDs[id] == nil { store.clear(.recipe, id) }
+        }
+        try modelContext.save()
 
         // Photos, a chunk at a time, only where needed. A failed chunk is
         // retried by the next full download (the row still has no photo).
@@ -2255,15 +2386,22 @@ class CloudKitSharingService: ObservableObject {
             if isFull { status.communityPhotosProgress(done: photosDone, total: photoWork.count) }
         }
 
-        // Remove only what the public library no longer has, and only after a
-        // full read with every record understood.
+        // Gone from the public library without a mark (an older build's unshare or
+        // delete): treated as deleted by its owner — kept here with the badge, never
+        // removed. Only after a full read with every record understood. The owner's
+        // own devices drop their community copy.
         if isFull && reachedEnd && unreadable == 0 {
-            for (id, row) in existingByID where newestSharedDate[id] == nil {
-                modelContext.delete(row)
-                removedCount += 1
+            for (id, row) in existingByID where newestSharedDate[id] == nil && deletedIDs[id] == nil {
+                if !row.sharedByUserID.isEmpty && row.sharedByUserID == currentUserID {
+                    modelContext.delete(row)
+                    removedCount += 1
+                } else {
+                    if !store.isDeleted(.recipe, id) { badgedCount += 1 }
+                    store.markDeleted(.recipe, id, on: Date())
+                }
             }
         } else if isFull {
-            AppLog.info("📖   Nothing removed: \(unreadable) unreadable record(s) or the read did not finish", category: .sharing)
+            AppLog.info("📖   Nothing marked: \(unreadable) unreadable record(s) or the read did not finish", category: .sharing)
         }
         try modelContext.save()
 
@@ -2275,7 +2413,7 @@ class CloudKitSharingService: ObservableObject {
             }
         }
 
-        AppLog.info("✅ SYNC COMPLETE: Community recipes — read \(recordsRead) records (\(newestSharedDate.count) recipes, \(unreadable) unreadable); added \(addedCount), updated \(updatedCount), removed \(removedCount); photos \(photoWork.count - photoFailures)/\(photoWork.count)", category: .sharing)
+        AppLog.info("✅ SYNC COMPLETE: Community recipes — read \(recordsRead) records (\(newestSharedDate.count) recipes, \(unreadable) unreadable); added \(addedCount), updated \(updatedCount), newly marked User Deleted \(badgedCount), extra/own/merged copies dropped \(removedCount); photos \(photoWork.count - photoFailures)/\(photoWork.count)", category: .sharing)
     }
     
     /// Update last accessed date for a cached recipe (prevents auto-cleanup)
@@ -2380,6 +2518,9 @@ class CloudKitSharingService: ObservableObject {
         // several records for one book (82 records for 28 books on 28 Oct), and
         // processing each one rebuilt that book's previews once per record.
         var newestByBookID = [UUID: (record: CKRecord, date: Date)]()
+        // Δ-163: books their owner deleted (kept public, marked).
+        var deletedMarks = [UUID: PublicTombstones.Mark]()
+        let readWasComplete = lastFetchFailureCount == 0
         for record in othersRecords {
             guard let bookData = record["bookData"] as? String,
                   let jsonData = bookData.data(using: .utf8),
@@ -2388,10 +2529,16 @@ class CloudKitSharingService: ObservableObject {
                 continue
             }
             let date = (record["sharedDate"] as? Date) ?? decoded.sharedDate
+            if decoded.deletedByOwner == true {
+                PublicTombstones.merge(.init(deletedDate: decoded.deletedDate ?? date), into: &deletedMarks, id: decoded.id)
+                continue
+            }
             if let seen = newestByBookID[decoded.id], seen.date >= date { continue }
             newestByBookID[decoded.id] = (record, date)
         }
-        let communityRecords = newestByBookID.values.map(\.record)
+        let deletedBookIDs = PublicTombstones.deletedIDs(newestLive: newestByBookID.mapValues(\.date), marks: deletedMarks)
+        let communityRecords = newestByBookID.filter { deletedBookIDs[$0.key] == nil }.values.map(\.record)
+        let store = OwnerDeletedStore.shared
         if communityRecords.count != othersRecords.count {
             AppLog.info("📚 \(othersRecords.count) book records → \(communityRecords.count) books (newest record per book)", category: .sharing)
         }
@@ -2468,6 +2615,7 @@ class CloudKitSharingService: ObservableObject {
             }
             
             cloudKitBookIDs.insert(cloudBook.id)
+            store.clear(.book, cloudBook.id) // published (again): no badge
             let cloudRecordID = record.recordID.recordName
             
             AppLog.info("📚 Processing book: '\(cloudBook.name)' (\(cloudBook.recipeIDs.count) recipes)", category: .sharing)
@@ -2668,65 +2816,32 @@ class CloudKitSharingService: ObservableObject {
             }
         }
         
-        // Find and remove books that are no longer in CloudKit
-        var removedCount = 0
-        for existingSharedBook in Array(existingSharedBooksByID.values) {
-            guard let bookID = existingSharedBook.bookID else { continue }
-            
-            // If this book is not in CloudKit anymore, mark it as inactive and delete the RecipeBook
-            if !cloudKitBookIDs.contains(bookID) {
-                // Only remove books shared by others, not the current user's own shared books
-                if existingSharedBook.sharedByUserID != currentUserID {
-                    AppLog.info("📚   Removing book (no longer shared): '\(existingSharedBook.bookName)'", category: .sharing)
-                    
-                    // Step 1: Delete associated recipe previews
-                    if let previews = existingPreviewsByBookID[bookID] {
-                        AppLog.info("📚     Deleting \(previews.count) recipe previews", category: .sharing)
-                        for preview in previews {
-                            modelContext.delete(preview)
-                        }
-                    }
-                    
-                    // Step 2: Delete the RecipeBook entity and its cover image
-                    if let recipeBook = existingRecipeBooksByID[bookID] {
-                        // Try to delete cover image file if it exists
-                        if let coverImageName = recipeBook.coverImageName {
-                            let documentsPath = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
-                            let fileURL = documentsPath.appendingPathComponent(coverImageName)
-                            do {
-                                try FileManager.default.removeItem(at: fileURL)
-                                AppLog.info("📚     Deleted cover image: \(coverImageName)", category: .sharing)
-                            } catch {
-                                // File might not exist, which is fine
-                                AppLog.debug("📚     Cover image file not found (already deleted): \(error)", category: .sharing)
-                            }
-                        }
-                        
-                        // Note: We intentionally DO NOT delete the Recipe entities themselves
-                        // because they might be used in other books or standalone.
-                        // Only delete the book container.
-                        AppLog.info("📚     Deleting RecipeBook entity and its pictures", category: .sharing)
-                        BookPictureStore.deleteBook(recipeBook, in: modelContext)
-                        // Delete every other copy with this ID too, or they linger as ghosts
-                        for extra in allRecipeBooks where extra.id == bookID && extra !== recipeBook {
-                            modelContext.delete(extra)
-                        }
-                    } else {
-                        // RecipeBook might have already been deleted, but tracking remains
-                        AppLog.warning("📚     RecipeBook entity not found (might have been already deleted)", category: .sharing)
-                    }
-                    
-                    // Step 3: Delete the tracking entry completely (not just marking inactive)
-                    // This ensures the book disappears from ALL tabs, including "All"
-                    AppLog.info("📚     Deleting SharedRecipeBook tracking entry", category: .sharing)
-                    modelContext.delete(existingSharedBook)
-                    
-                    removedCount += 1
-                    AppLog.info("📚   ✅ Removed book '\(existingSharedBook.bookName)' and cleaned up associated data", category: .sharing)
-                }
-            }
+        // Δ-163: nothing is removed. A community book its owner deleted — or one
+        // gone from the public library (an older build's unshare), judged only
+        // from a complete read — stays on this device with the "User Deleted"
+        // badge, with its previews, until this person removes it. A device that
+        // never had it doesn't get it (deleted books are not created above).
+        var badgedCount = 0
+        var candidateIDs = Set(existingSharedBooksByID.compactMap { id, tracking in
+            tracking.sharedByUserID != currentUserID ? id : nil
+        })
+        for book in allRecipeBooks {
+            guard let bookID = book.id,
+                  !Book.isOwnedByCurrentUser(ownerUserID: book.ownerUserID, currentUserID: currentUserID) else { continue }
+            candidateIDs.insert(bookID)
         }
-        
+        for bookID in candidateIDs where !cloudKitBookIDs.contains(bookID) {
+            let mark = deletedBookIDs[bookID]
+            guard mark != nil || readWasComplete else { continue }
+            guard existingRecipeBooksByID[bookID] != nil else { continue }
+            if !store.isDeleted(.book, bookID) {
+                badgedCount += 1
+                AppLog.info("📚   Book deleted by its owner, kept here: '\(existingRecipeBooksByID[bookID]?.name ?? "?")'", category: .sharing)
+            }
+            store.markDeleted(.book, bookID, on: mark?.deletedDate ?? Date())
+        }
+        let removedCount = 0
+
         // Save changes with error handling
         do {
             try modelContext.save()
@@ -2741,7 +2856,7 @@ class CloudKitSharingService: ObservableObject {
         
         AppLog.info("   - Added: \(addedCount) books", category: .sharing)
         AppLog.info("   - Updated: \(updatedCount) books", category: .sharing)
-        AppLog.info("   - Removed: \(removedCount) books", category: .sharing)
+        AppLog.info("   - Removed: \(removedCount) books (never, Δ-163); newly marked User Deleted: \(badgedCount)", category: .sharing)
         AppLog.info("   - Recipe previews created: \(previewsCreated)", category: .sharing)
         AppLog.info("   - Thumbnails decoded: \(thumbnailsDownloaded)", category: .sharing)
     }

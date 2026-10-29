@@ -366,9 +366,15 @@ struct RecipeEditorView: View {
         let descriptor = FetchDescriptor<SharedRecipe>(
             predicate: #Predicate<SharedRecipe> { $0.recipeID == recipeID && $0.isActive == true }
         )
-        guard let tracked = try? modelContext.fetch(descriptor), !tracked.isEmpty else { return }
         let recipe = self.recipe
         let modelContext = self.modelContext
+        guard let tracked = try? modelContext.fetch(descriptor), !tracked.isEmpty else {
+            // Δ-163: not public yet — everything is shared, so publish it now.
+            Task { @MainActor in
+                await CloudKitSharingService.shared.publishEverything(modelContext: modelContext, force: true)
+            }
+            return
+        }
         Task { @MainActor in
             do {
                 _ = try await CloudKitSharingService.shared.shareRecipe(recipe, modelContext: modelContext, refreshExisting: true)

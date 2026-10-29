@@ -1076,18 +1076,12 @@ struct DuplicateRecipeDetectorView: View {
 
         Self.repointBooks(from: dupID, to: keepID, in: allBooks)
 
-        if let tracked = sharedRecipes.first(where: { $0.recipeID == dupID && $0.isActive }),
-           let cloudRecordID = tracked.cloudRecordID {
-            do {
-                try await CloudKitSharingService.shared.unshareRecipe(cloudRecordID: cloudRecordID, modelContext: modelContext)
-            } catch {
-                AppLog.warning("Could not take down public copy of duplicate '\(duplicate.title ?? "")': \(error)", category: .sharing)
-            }
-        }
-
         modelContext.delete(duplicate)
         do {
             try modelContext.save()
+            // Δ-163: the copy's public record is marked merged into the kept recipe
+            // (never removed); devices that have the copy drop it quietly.
+            CloudKitSharingService.shared.ownerDeleted(.recipe, id: dupID, replacedBy: keepID, modelContext: modelContext)
             AppLog.info("Merged duplicate '\(duplicate.title ?? "")' (\(dupID)) into \(keepID)", category: .recipe)
             return true
         } catch {

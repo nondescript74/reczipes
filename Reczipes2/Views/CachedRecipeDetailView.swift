@@ -15,6 +15,7 @@ struct CachedRecipeDetailView: View {
     let cachedRecipe: CachedSharedRecipe
     
     @State private var showingImportConfirmation = false
+    @ObservedObject private var ownerDeleted = OwnerDeletedStore.shared
     
     var body: some View {
         ScrollView {
@@ -55,6 +56,10 @@ struct CachedRecipeDetailView: View {
                         }
                     }
                     
+                    if ownerDeleted.isDeleted(.recipe, cachedRecipe.id) {
+                        UserDeletedNote(kind: "recipe")
+                    }
+
                     if let headerNotes = cachedRecipe.headerNotes {
                         Text(headerNotes)
                             .font(.subheadline)

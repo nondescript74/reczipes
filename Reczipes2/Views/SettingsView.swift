@@ -99,7 +99,7 @@ private enum SettingsCategory: String, CaseIterable, Identifiable {
             return [
                 SettingsSummaryGroup(title: nil, items: [
                     "Browse Community Recipes", "Browse Community Books",
-                    "Public Sharing Settings", "Fix Sharing Issues"
+                    "Sharing"
                 ])
             ]
         case .dietary:
@@ -196,8 +196,7 @@ private struct SettingsSearchEntry: Identifiable {
         // Community
         dest("Browse Community Recipes", "tray.full.fill", .community, .communityRecipes, ["shared", "public", "recipes"]),
         dest("Browse Community Books", "books.vertical.circle.fill", .community, .communityBooks, ["shared", "public", "books"]),
-        dest("Public Sharing Settings", "person.3.fill", .community, .sharingSettings, ["share", "public"]),
-        dest("Fix Sharing Issues", "wrench.and.screwdriver.fill", .community, .fixSharingIssues, ["share", "repair", "cleanup"]),
+        dest("Sharing", "person.3.fill", .community, .sharingSettings, ["share", "public", "deleted"]),
         // Dietary
         dest("FODMAP Settings", "leaf.circle", .dietary, .fodmapSettings, ["diet", "ibs", "fodmap"]),
         dest("Diabetic-Friendly Analysis", "heart.text.square", .dietary, .diabeticSettings, ["diabetes", "glycemic", "carbs", "sugar"]),
@@ -728,10 +727,9 @@ private struct SettingsCategorySheet: View {
         Section {
             navRow("Browse Community Recipes", icon: "tray.full.fill", destination: .communityRecipes)
             navRow("Browse Community Books", icon: "books.vertical.circle.fill", destination: .communityBooks)
-            navRow("Public Sharing Settings", icon: "person.3.fill", destination: .sharingSettings)
-            navRow("Fix Sharing Issues", icon: "wrench.and.screwdriver.fill", starColor: Color.appWarning, destination: .fixSharingIssues)
+            navRow("Sharing", icon: "person.3.fill", destination: .sharingSettings)
         } footer: {
-            Text("Your recipes and books are automatically synced to iCloud across your devices. Use Public Sharing to share content with the wider community.")
+            Text("Every recipe, book and meal is shared with everyone who uses Reczipes, automatically.")
                 .font(.caption)
         }
     }

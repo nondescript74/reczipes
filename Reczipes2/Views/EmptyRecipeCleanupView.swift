@@ -36,7 +36,7 @@ struct EmptyRecipeCleanupView: View {
     private var operationList: some View {
         VStack(alignment: .leading, spacing: 4) {
             Text("• Skip recipes that are in a book (remove them from the book first)")
-            Text("• Unshare recipes from CloudKit")
+            Text("• Mark their public copies deleted")
             Text("• Delete from local storage and iCloud")
         }
         .font(.caption)
@@ -250,19 +250,10 @@ struct EmptyRecipeCleanupView: View {
             
             do {
                 
-                // Step 2: Unshare from CloudKit if shared
-                if let cloudRecordID = recipe.cloudRecordID {
-                    do {
-                        try await CloudKitSharingService.shared.unshareRecipe(
-                            cloudRecordID: cloudRecordID,
-                            modelContext: modelContext
-                        )
-                        unsharedCount += 1
-                        AppLog.info("☁️ Unshared recipe from CloudKit", category: .storage)
-                    } catch {
-                        AppLog.error("Failed to unshare recipe \(currentRecipeName): \(error)", category: .storage)
-                        // Continue with deletion even if unsharing fails
-                    }
+                // Step 2 (Δ-163): mark the public copy deleted (never removed)
+                if recipe.id != nil {
+                    CloudKitSharingService.shared.ownerDeleted(.recipe, id: recipe.id, modelContext: modelContext)
+                    unsharedCount += 1
                 }
                 
                 // Step 3: Delete from local storage
@@ -294,7 +285,7 @@ struct EmptyRecipeCleanupView: View {
             resultsMessage += "📚 Kept \(protectedCount) recipe\(protectedCount == 1 ? "" : "s") that \(protectedCount == 1 ? "is" : "are") in a book. Remove from the book first to delete.\n"
         }
         if unsharedCount > 0 {
-            resultsMessage += "☁️ Unshared \(unsharedCount) recipe\(unsharedCount == 1 ? "" : "s") from CloudKit.\n"
+            resultsMessage += "☁️ Marked \(unsharedCount) public cop\(unsharedCount == 1 ? "y" : "ies") deleted (kept for others, with a User Deleted badge).\n"
         }
         if failedCount > 0 {
             resultsMessage += "\n⚠️ \(failedCount) recipe\(failedCount == 1 ? "" : "s") could not be deleted."

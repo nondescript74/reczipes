@@ -325,8 +325,13 @@ struct BookDetailView: View {
                     }
                 }
             } footer: {
-                if let owner = book.ownerDisplayName {
-                    Text("Shared by \(owner)")
+                VStack(alignment: .leading, spacing: 6) {
+                    if OwnerDeletedStore.shared.isDeleted(.book, book.id) {
+                        UserDeletedNote(kind: "book")
+                    }
+                    if let owner = book.ownerDisplayName {
+                        Text("Shared by \(owner)")
+                    }
                 }
             }
         }

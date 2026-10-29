@@ -38,6 +38,21 @@ final class LibrarySyncStatus: ObservableObject {
     @Published private(set) var privateImportActive = false
     /// The last private-library import error, cleared by the next good import.
     @Published private(set) var privateImportError: String?
+    /// Δ-163 publish pass: items published so far / to publish (0 = not running).
+    @Published private(set) var publishDone = 0
+    @Published private(set) var publishTotal = 0
+    /// Small passes (an edit or two) run quietly.
+    private var publishShown: Bool { publishTotal > 3 }
+
+    func publishProgress(done: Int, total: Int) {
+        publishDone = done
+        publishTotal = total
+    }
+
+    func publishFinished() {
+        publishDone = 0
+        publishTotal = 0
+    }
 
     private static let lastCompleteKey = "LibrarySync.lastCompleteCommunityDownload"
     private static let lastTotalKey = "LibrarySync.lastCommunityRecordTotal"
@@ -172,6 +187,9 @@ final class LibrarySyncStatus: ObservableObject {
         case .notStarted, .complete:
             break
         }
+        if publishShown {
+            return "Sharing your library with everyone… \(publishDone.formatted()) of \(publishTotal.formatted())"
+        }
         if privateImportActive { return "Syncing your library with iCloud…" }
         if let privateImportError { return "iCloud sync problem: \(privateImportError)" }
         return nil
@@ -179,6 +197,9 @@ final class LibrarySyncStatus: ObservableObject {
 
     /// 0...1 when a fraction is known, else nil (indeterminate spinner).
     var progressFraction: Double? {
+        if publishShown, bannerText?.hasPrefix("Sharing your library") == true {
+            return Double(publishDone) / Double(publishTotal)
+        }
         guard bannerText != nil, !hasCompleteCommunityDownload else { return nil }
         switch communityPhase {
         case .downloading(let fetched, let expected):
@@ -194,8 +215,8 @@ final class LibrarySyncStatus: ObservableObject {
     var isWorking: Bool {
         let quiet = UserDefaults.standard.double(forKey: Self.lastCompleteKey) > 0
         switch communityPhase {
-        case .downloading, .downloadingPhotos: return !quiet || privateImportActive
-        default: return privateImportActive
+        case .downloading, .downloadingPhotos: return !quiet || privateImportActive || publishShown
+        default: return privateImportActive || publishShown
         }
     }
 

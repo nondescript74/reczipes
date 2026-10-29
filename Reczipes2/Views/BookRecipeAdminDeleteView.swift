@@ -87,17 +87,6 @@ struct BookRecipeAdminDeleteView: View {
         let title = recipe.title ?? "Untitled"
         let rid = recipe.id
 
-        // Take down the public CloudKit copy first (best effort)
-        if let rid,
-           let tracked = try? modelContext.fetch(FetchDescriptor<SharedRecipe>()).first(where: { $0.recipeID == rid && $0.isActive }),
-           let cloudRecordID = tracked.cloudRecordID {
-            do {
-                try await CloudKitSharingService.shared.unshareRecipe(cloudRecordID: cloudRecordID, modelContext: modelContext)
-            } catch {
-                AppLog.warning("Admin delete: could not take down public copy of '\(title)': \(error)", category: .sharing)
-            }
-        }
-
         do {
             if let rid {
                 let assignments = (try? modelContext.fetch(FetchDescriptor<RecipeImageAssignment>())) ?? []
@@ -107,6 +96,8 @@ struct BookRecipeAdminDeleteView: View {
             }
             let removedFrom = try BookMembershipGuard.forceDeleteBookMember(recipe, typedConfirmation: typed, in: modelContext)
             try modelContext.save()
+            // Δ-163: the public copy is marked deleted (never removed)
+            CloudKitSharingService.shared.ownerDeleted(.recipe, id: rid, modelContext: modelContext)
             pendingRecipe = nil
             resultMessage = "Deleted '\(title)'. It was removed from \(BookMembershipGuard.listPhrase(removedFrom))."
         } catch {

@@ -202,6 +202,7 @@ struct RecipeExtractorView: View {
                     if let recipe = viewModel.extractedRecipe,
                        !BookMembershipGuard(context: modelContext).isProtected(recipe.id) {
                         // A just-saved recipe is normally in no book; if it already is, keep it.
+                        CloudKitSharingService.shared.ownerDeleted(.recipe, id: recipe.id, modelContext: modelContext)
                         modelContext.delete(recipe)
                         try? modelContext.save()
                         AppLog.info("Undid duplicate recipe save: \(recipe.safeTitle)", category: .storage)

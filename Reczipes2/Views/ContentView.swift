@@ -41,6 +41,8 @@ struct ContentView: View {
     // Remembered across tab switches / view rebuilds (was @State, reset to Mine)
     @AppStorage("recipesContentFilter") private var contentFilter: ContentFilterMode = .mine
     @Query private var sharedRecipes: [SharedRecipe]
+    /// Δ-163: community items their owner deleted (kept here with a badge)
+    @ObservedObject private var ownerDeleted = OwnerDeletedStore.shared
     
     // Auto-sync tracking for shared recipes
     @State private var lastCommunitySync: Date?
@@ -428,6 +430,8 @@ struct ContentView: View {
                 AppLog.info("🗑️ Auto-removing duplicate: '\(dupe.safeTitle)' (ID: \(String(describing: dupe.id)))", category: .cloudKit)
                 if let dupID = dupe.id, let keepID = keep.id {
                     DuplicateRecipeDetectorView.repointBooks(from: dupID, to: keepID, in: books)
+                    // Exact copy: its public record is marked as merged into the kept one.
+                    CloudKitSharingService.shared.ownerDeleted(.recipe, id: dupID, replacedBy: keepID, modelContext: modelContext)
                 }
                 modelContext.delete(dupe)
                 deletedCount += 1
@@ -684,6 +688,14 @@ struct ContentView: View {
                                 } label: {
                                     Label("Delete", systemImage: "trash")
                                 }
+                            } else if let cached = recipe as? CachedSharedRecipe,
+                                      ownerDeleted.isDeleted(.recipe, cached.id) {
+                                // Δ-163: a recipe its owner deleted leaves only by this person's choice
+                                Button(role: .destructive) {
+                                    removeDeletedCommunityRecipe(cached)
+                                } label: {
+                                    Label("Remove", systemImage: "trash")
+                                }
                             }
                         }
                         .contextMenu {
@@ -845,6 +857,10 @@ struct ContentView: View {
                     Text(recipe.displayTitle)
                         .font(.headline)
                         .foregroundStyle(.primary)
+
+                    if let cached = recipe as? CachedSharedRecipe, ownerDeleted.isDeleted(.recipe, cached.id) {
+                        UserDeletedBadge()
+                    }
 
                     // Red "Fix" badge for recipes with missing data
                     if let recipeX = recipe as? RecipeX, recipeX.needsRepair {
@@ -1011,14 +1027,7 @@ struct ContentView: View {
         
         Divider()
         
-        Button {
-            Task {
-                await shareRecipe(recipe)
-            }
-        } label: {
-            Label("Share with Community", systemImage: "square.and.arrow.up")
-        }
-        
+        // Δ-163: every recipe is shared with everyone automatically — no Share item.
         Button(role: .destructive) {
             deleteRecipe(recipe)
         } label: {
@@ -1046,6 +1055,29 @@ struct ContentView: View {
                 Label("View Original", systemImage: "safari")
             }
         }
+
+        if let cached = recipe as? CachedSharedRecipe, ownerDeleted.isDeleted(.recipe, cached.id) {
+            Divider()
+            Button(role: .destructive) {
+                removeDeletedCommunityRecipe(cached)
+            } label: {
+                Label("Remove from This Device", systemImage: "trash")
+            }
+        }
+    }
+
+    /// Δ-163: removes a community recipe its owner deleted, from this person's
+    /// devices only (their choice). Nothing public changes.
+    private func removeDeletedCommunityRecipe(_ cached: CachedSharedRecipe) {
+        let id = cached.id
+        if selectedRecipeID == cached.displayID {
+            selectedRecipe = nil
+            selectedRecipeID = nil
+        }
+        modelContext.delete(cached)
+        try? modelContext.save()
+        ownerDeleted.clear(.recipe, id)
+        AppLog.info("Removed owner-deleted community recipe \(id) from this device", category: .sharing)
     }
     
     /// Import a cached shared recipe into permanent collection
@@ -1105,21 +1137,9 @@ struct ContentView: View {
             protectedDeleteMessage = bookGuard.refusalMessage(recipeTitle: recipe.safeTitle, recipeID: recipe.id)
             return
         }
-        // Take down the public (website/community) copy too, as the Duplicate
-        // Detector's removal does — otherwise it stays online with no recipe behind it.
-        let deletedTitle = recipe.safeTitle
-        if let deletedID = recipe.id,
-           let tracked = sharedRecipes.first(where: { $0.recipeID == deletedID && $0.isActive }),
-           let cloudRecordID = tracked.cloudRecordID {
-            Task {
-                do {
-                    try await CloudKitSharingService.shared.unshareRecipe(cloudRecordID: cloudRecordID, modelContext: modelContext)
-                    AppLog.info("Took down public copy of deleted recipe '\(deletedTitle)'", category: .sharing)
-                } catch {
-                    AppLog.warning("Could not take down public copy of deleted recipe '\(deletedTitle)': \(error)", category: .sharing)
-                }
-            }
-        }
+        // Δ-163: the public copy is marked deleted, not removed — everyone who has
+        // it keeps it with the "User Deleted" badge.
+        CloudKitSharingService.shared.ownerDeleted(.recipe, id: recipe.id, modelContext: modelContext)
         withAnimation {
             AppLog.info("Deleting recipe: \(recipe.safeTitle) (ID: \(recipe.safeID))", category: .recipe)
 
