@@ -224,3 +224,38 @@ test('SharedBookPicture records attach to their book, covers first, overriding i
   );
   assert.ok(out.images.every((i) => i.url && !('bookRecordName' in i)));
 });
+
+test('owner-deleted recipes and books are hidden; published again shows; nothing else changes', async () => {
+  // Swift reference-date seconds: 100 = 2001-01-01T00:01:40Z; CloudKit sharedDate in ms since 1970.
+  const ref = (s) => (s + 978307200) * 1000;
+  const rec = (recordName, id, title, sharedS, extra = {}) => ({
+    recordName, fields: {
+      recipeData: { value: JSON.stringify({ id, title, ingredientSections: [{ ingredients: [{ name: title }] }], instructionSections: [], notes: [], ...extra }) },
+      sharedDate: { value: ref(sharedS) },
+    },
+  });
+  const book = (recordName, id, name, sharedS, extra = {}) => ({
+    recordName, fields: {
+      bookData: { value: JSON.stringify({ id, name, recipeIDs: [], sharedByUserID: 'u', sharedDate: sharedS, ...extra }) },
+      sharedDate: { value: ref(sharedS) },
+    },
+  });
+  const cloudkit = {
+    async queryAll(t) {
+      if (t === 'SharedRecipe') return [
+        rec('r1', 'GONE', 'Deleted Dal', 10, { deletedByOwner: true, deletedDate: 20 }),
+        rec('r2', 'BACK', 'Restored Roti', 10, { deletedByOwner: true, deletedDate: 20 }),
+        rec('r3', 'BACK', 'Restored Roti', 30), // published again after the delete
+        rec('r4', 'LIVE', 'Plain Rice', 5),
+      ];
+      if (t === 'SharedRecipeBook') return [book('b1', 'BOOKGONE', 'Old Book', 10, { deletedByOwner: true, deletedDate: 20 }), book('b2', 'BOOK', 'Kept Book', 10)];
+      return [];
+    },
+  };
+  const store = createStore({ cloudkit, fixturesPath });
+  const titles = (await store.listRecipes()).map((r) => r.title).sort();
+  assert.deepEqual(titles, ['Plain Rice', 'Restored Roti']);
+  assert.equal(await store.getRecipe('GONE'), null);
+  assert.deepEqual((await store.listBooks()).map((b) => b.name), ['Kept Book']);
+  assert.deepEqual((await store.status()).ownerDeleted, { recipes: 1, books: 1 });
+});

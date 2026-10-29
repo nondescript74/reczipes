@@ -7,7 +7,7 @@
 // it never quietly substitutes sample data for real data (MTA M-19).
 
 import { readFile } from 'node:fs/promises';
-import { decodeSharedRecipe, decodeSharedBook, decodeSharedBookPicture, attachBookPictures, newestPerId, collapseCopies, summarize } from './decode.js';
+import { decodeSharedRecipe, decodeSharedBook, decodeSharedBookPicture, attachBookPictures, newestPerId, collapseCopies, summarize, dropOwnerDeleted } from './decode.js';
 
 export function createStore({ cloudkit, fixturesPath, ttlMs = 5 * 60 * 1000, now = () => Date.now() }) {
   const source = cloudkit ? 'cloudkit' : 'fixtures';
@@ -38,12 +38,14 @@ export function createStore({ cloudkit, fixturesPath, ttlMs = 5 * 60 * 1000, now
   }
 
   function build({ recipeRecords, bookRecords, pictureRecords = [] }) {
-    const uniqueById = newestPerId(recipeRecords.map(decodeSharedRecipe).filter(Boolean));
+    const liveRecipes = dropOwnerDeleted(recipeRecords.map(decodeSharedRecipe).filter(Boolean));
+    const liveBooks = dropOwnerDeleted(bookRecords.map(decodeSharedBook).filter(Boolean));
+    const uniqueById = newestPerId(liveRecipes.live);
     const { kept, alias } = collapseCopies(uniqueById);
     const recipes = kept.sort((a, b) => a.title.localeCompare(b.title, undefined, { sensitivity: 'base' }));
     const pictures = pictureRecords.map(decodeSharedBookPicture).filter(Boolean);
     const books = attachBookPictures(
-      newestPerId(bookRecords.map(decodeSharedBook).filter(Boolean)),
+      newestPerId(liveBooks.live),
       pictures,
     ).sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
     const byId = new Map(recipes.map((r) => [r.id.toUpperCase(), r]));
@@ -55,6 +57,7 @@ export function createStore({ cloudkit, fixturesPath, ttlMs = 5 * 60 * 1000, now
       byId,
       skipped: { recipes: recipeRecords.length - recipes.length, books: bookRecords.length - books.length },
       collapsedCopies: alias.size,
+      ownerDeleted: { recipes: liveRecipes.deletedCount, books: liveBooks.deletedCount },
       rawCounts: { recipes: recipeRecords.length, books: bookRecords.length, pictures: pictureRecords.length },
       loadedAt: new Date(now()).toISOString(),
       loadedAtMs: now(),
@@ -122,6 +125,7 @@ export function createStore({ cloudkit, fixturesPath, ttlMs = 5 * 60 * 1000, now
         counts: state ? { recipes: state.recipes.length, books: state.books.length } : null,
         rawCounts: state?.rawCounts ?? null,
         collapsedCopies: state?.collapsedCopies ?? 0,
+        ownerDeleted: state?.ownerDeleted ?? { recipes: 0, books: 0 },
         lastError,
       };
     },

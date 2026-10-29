@@ -119,7 +119,33 @@ export function decodeSharedRecipe(record) {
     sharedByName: str(fieldValue(record, 'sharedByName')) ?? str(data.sharedByUserName),
     sharedDate,
     imageURL: assetURL(record, 'mainImage'),
+    ...ownerDeletedFields(data),
   };
+}
+
+// Δ-163: nothing public is ever removed; an owner's delete marks the record
+// (deletedByOwner / deletedDate inside the JSON). The app keeps such items only on
+// devices that already had them; the web holds no copies, so it hides them.
+function ownerDeletedFields(data) {
+  return data.deletedByOwner === true
+    ? { deletedByOwner: true, deletedDate: swiftDateToISO(data.deletedDate) }
+    : {};
+}
+
+// Drops items their owner deleted. An id is deleted when it has a deleted mark and
+// no live record shared after that mark (a later live record = published again).
+export function dropOwnerDeleted(items) {
+  const marks = new Map();
+  for (const it of items) {
+    if (!it.deletedByOwner) continue;
+    const d = it.deletedDate ?? it.sharedDate ?? '';
+    if (!marks.has(it.id) || d > marks.get(it.id)) marks.set(it.id, d);
+  }
+  const live = items.filter(
+    (it) => !it.deletedByOwner && !(marks.has(it.id) && (it.sharedDate ?? '') <= marks.get(it.id)),
+  );
+  const liveIds = new Set(live.map((it) => it.id));
+  return { live, deletedCount: [...marks.keys()].filter((id) => !liveIds.has(id)).length };
 }
 
 export function decodeSharedBook(record) {
@@ -146,6 +172,7 @@ export function decodeSharedBook(record) {
       typeof sharedDateField === 'number' ? new Date(sharedDateField).toISOString() : swiftDateToISO(data.sharedDate),
     coverURL: assetURL(record, 'coverImage'),
     ...decodeBookContent(record, data),
+    ...ownerDeletedFields(data),
   };
 }
 
