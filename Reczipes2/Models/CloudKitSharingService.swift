@@ -2107,6 +2107,10 @@ class CloudKitSharingService: ObservableObject {
         let startTime = Date()
         AppLog.info("Starting background sync", category: .sharing)
         
+        // Each download step stands alone: one failing (a network blip, a bad
+        // record) must not stop the others, and above all must not stop this
+        // library's own publish pass, which used to be skipped on any error.
+        var failedSteps: [String] = []
         do {
             // Community recipes: a full download when the last finished one is
             // over 30 minutes old. (This used to read the first 100 records and
@@ -2115,21 +2119,32 @@ class CloudKitSharingService: ObservableObject {
             if lastFull.map({ Date().timeIntervalSince($0) > 1800 }) ?? true {
                 try await syncCommunityRecipesForViewing(modelContext: modelContext, limit: Int.max)
             }
-
-            // Sync community books
-            try await syncCommunityBooksToLocal(modelContext: modelContext)
-
-            // Sync community meals (all of them)
-            try await syncCommunityMealsForViewing(modelContext: modelContext)
-
-            // Δ-163: publish everything in this library that isn't public yet
-            await publishEverything(modelContext: modelContext)
-            
-            lastSyncDate = Date()
-            let duration = Date().timeIntervalSince(startTime)
-            AppLog.info("Auto-sync completed in \(String(format: "%.1f", duration))s", category: .sharing)
         } catch {
-            AppLog.error("Auto-sync failed: \(error.localizedDescription)", category: .sharing)
+            failedSteps.append("recipes")
+            AppLog.error("Auto-sync: community recipes failed: \(error.localizedDescription)", category: .sharing)
+        }
+        do {
+            try await syncCommunityBooksToLocal(modelContext: modelContext)
+        } catch {
+            failedSteps.append("books")
+            AppLog.error("Auto-sync: community books failed: \(error.localizedDescription)", category: .sharing)
+        }
+        do {
+            try await syncCommunityMealsForViewing(modelContext: modelContext)
+        } catch {
+            failedSteps.append("meals")
+            AppLog.error("Auto-sync: community meals failed: \(error.localizedDescription)", category: .sharing)
+        }
+
+        // Δ-163: publish everything in this library that isn't public yet
+        await publishEverything(modelContext: modelContext)
+
+        lastSyncDate = Date()
+        let duration = Date().timeIntervalSince(startTime)
+        if failedSteps.isEmpty {
+            AppLog.info("Auto-sync completed in \(String(format: "%.1f", duration))s", category: .sharing)
+        } else {
+            AppLog.warning("Auto-sync finished in \(String(format: "%.1f", duration))s; failed: \(failedSteps.joined(separator: ", "))", category: .sharing)
         }
     }
     
@@ -2508,10 +2523,34 @@ class CloudKitSharingService: ObservableObject {
         AppLog.info("📚 Step 1: Fetching CloudKit records with assets...", category: .sharing)
         let allCloudKitRecords = try await fetchAllCloudKitRecords(type: CloudKitRecordType.sharedRecipeBook)
         
+        // Without this account's ID every record looks like someone else's, and
+        // the loop below would take over this person's own books. Wait for it.
+        guard let me = currentUserID, !me.isEmpty else {
+            AppLog.warning("📚 Community books sync skipped: current user ID not known yet", category: .sharing)
+            return
+        }
+        // Any book this account has published is this person's own, even when an
+        // older record of it carries another sharedBy. It is never a community
+        // copy: claiming it here re-owned the local book, which hid it from the
+        // publish pass and froze its public copy (2026-11-05).
+        var ownBookIDs = Set<UUID>()
+        for record in allCloudKitRecords where (record["sharedBy"] as? String) == me {
+            if let bookData = record["bookData"] as? String,
+               let jsonData = bookData.data(using: .utf8),
+               let decoded = try? JSONDecoder().decode(CloudKitRecipeBook.self, from: jsonData) {
+                ownBookIDs.insert(decoded.id)
+            }
+        }
         // Filter to exclude current user's books
         let othersRecords = allCloudKitRecords.filter { record in
-            guard let sharedBy = record["sharedBy"] as? String else { return false }
-            return sharedBy != currentUserID
+            guard let sharedBy = record["sharedBy"] as? String, sharedBy != me else { return false }
+            guard let bookData = record["bookData"] as? String,
+                  let jsonData = bookData.data(using: .utf8),
+                  let decoded = try? JSONDecoder().decode(CloudKitRecipeBook.self, from: jsonData) else { return true }
+            return !ownBookIDs.contains(decoded.id)
+        }
+        if !ownBookIDs.isEmpty {
+            AppLog.info("📚 \(ownBookIDs.count) of this account's own books left out of the community sync", category: .sharing)
         }
 
         // One record per book id: the newest share. The public database holds
@@ -2830,6 +2869,9 @@ class CloudKitSharingService: ObservableObject {
                   !Book.isOwnedByCurrentUser(ownerUserID: book.ownerUserID, currentUserID: currentUserID) else { continue }
             candidateIDs.insert(bookID)
         }
+        // This account's own books are left out of the read above on purpose;
+        // their absence from it means nothing.
+        candidateIDs.subtract(ownBookIDs)
         for bookID in candidateIDs where !cloudKitBookIDs.contains(bookID) {
             let mark = deletedBookIDs[bookID]
             guard mark != nil || readWasComplete else { continue }

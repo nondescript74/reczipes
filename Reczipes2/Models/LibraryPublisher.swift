@@ -262,6 +262,61 @@ extension CloudKitSharingService {
         try? modelContext.save()
     }
 
+    // MARK: - Own-book repair
+
+    /// A book with a live public record under this account is this person's own.
+    /// An older community sync could re-own such a book to another ID and track it
+    /// as someone else's; the publish pass then skipped it and its public copy
+    /// froze (Doulat Premji, 2026-11-05). Put the owner and the tracking row back,
+    /// as the recipe section already does for missing tracking rows. Never deletes.
+    @discardableResult
+    private func repairOwnBooks(index: OwnPublicIndex, deleted: [UUID: PublicTombstones.Mark], modelContext: ModelContext) -> Set<UUID> {
+        guard let me = currentUserID, !me.isEmpty else { return [] }
+        var repaired = Set<UUID>()
+        let tracking = (try? modelContext.fetch(FetchDescriptor<SharedRecipeBook>())) ?? []
+        var trackingByBook = [UUID: [SharedRecipeBook]]()
+        for row in tracking { if let id = row.bookID { trackingByBook[id, default: []].append(row) } }
+        var reowned = 0, retracked = 0, restored = 0
+        for book in (try? modelContext.fetch(FetchDescriptor<Book>())) ?? [] {
+            guard let id = book.id, deleted[id] == nil, let live = index.live[id] else { continue }
+            if let owner = book.ownerUserID, owner != me {
+                AppLog.info("📤 Book '\(book.name ?? "?")' was owned by \(owner); it is published by this account, so it is mine again", category: .sharing)
+                book.ownerUserID = me
+                book.ownerDisplayName = currentUserName
+                reowned += 1
+                repaired.insert(id)
+            }
+            let rows = trackingByBook[id] ?? []
+            for row in rows where row.sharedByUserID != me {
+                row.sharedByUserID = me
+                row.sharedByUserName = currentUserName
+                row.cloudRecordID = live.recordName
+                row.isActive = true
+                retracked += 1
+                repaired.insert(id)
+            }
+            if !rows.contains(where: { $0.isActive }) {
+                if let row = rows.first {
+                    row.isActive = true
+                    row.cloudRecordID = live.recordName
+                } else {
+                    modelContext.insert(SharedRecipeBook(bookID: id, cloudRecordID: live.recordName,
+                                                         sharedByUserID: me, sharedByUserName: currentUserName,
+                                                         sharedDate: live.sharedDate, bookName: book.name ?? "",
+                                                         bookDescription: book.bookDescription,
+                                                         coverImageName: book.coverImageName))
+                }
+                restored += 1
+                repaired.insert(id)
+            }
+        }
+        if reowned + retracked + restored > 0 {
+            try? modelContext.save()
+            AppLog.info("📤 Own books repaired: \(reowned) re-owned, \(retracked) tracking rows re-attributed, \(restored) tracking rows restored", category: .sharing)
+        }
+        return repaired
+    }
+
     // MARK: - Publish pass
 
     /// Publishes everything in this person's library that the public database
@@ -324,17 +379,28 @@ extension CloudKitSharingService {
         // Books (this person's own only, never a community copy)
         if let index = await readOwnPublicIndex(.book) {
             let deleted = index.deleted
+            let repaired = repairOwnBooks(index: index, deleted: deleted, modelContext: modelContext)
             let othersBookIDs = Set(((try? modelContext.fetch(FetchDescriptor<SharedRecipeBook>())) ?? [])
                 .filter { $0.sharedByUserID != nil && $0.sharedByUserID != currentUserID }.compactMap(\.bookID))
+            var skipped = (notOwned: 0, imported: 0, othersTracking: 0, incomplete: 0)
             for book in (try? modelContext.fetch(FetchDescriptor<Book>())) ?? [] {
-                guard let id = book.id, book.name != nil, book.recipeIDs != nil,
-                      Book.isOwnedByCurrentUser(ownerUserID: book.ownerUserID, currentUserID: currentUserID),
-                      book.isImported != true, !othersBookIDs.contains(id),
-                      !OwnerDeletedStore.shared.isPendingTombstone(.book, id) else { continue }
+                guard let id = book.id, book.name != nil, book.recipeIDs != nil else { skipped.incomplete += 1; continue }
+                guard Book.isOwnedByCurrentUser(ownerUserID: book.ownerUserID, currentUserID: currentUserID) else {
+                    skipped.notOwned += 1
+                    AppLog.debug("📤 Book '\(book.name ?? "?")' skipped: owner \(book.ownerUserID ?? "nil") ≠ me \(currentUserID ?? "nil")", category: .sharing)
+                    continue
+                }
+                guard book.isImported != true else { skipped.imported += 1; continue }
+                guard !othersBookIDs.contains(id) else { skipped.othersTracking += 1; continue }
+                guard !OwnerDeletedStore.shared.isPendingTombstone(.book, id) else { continue }
                 // Picture changes go through setImages → markModified, so dateModified covers them.
                 let modified = book.dateModified ?? book.dateCreated ?? .distantPast
                 let live = deleted[id] == nil ? index.live[id] : nil
-                switch PublicTombstones.publishAction(localModified: modified, live: live, deletedDate: deleted[id]?.deletedDate) {
+                // A repaired book's public copy froze while it was mis-owned, whatever
+                // its edit date says: refresh it once.
+                var action = PublicTombstones.publishAction(localModified: modified, live: live, deletedDate: deleted[id]?.deletedDate)
+                if case .none = action, repaired.contains(id), let live { action = .refresh(recordName: live.recordName) }
+                switch action {
                 case .none: break
                 case .publishNew:
                     work.append((book.name ?? "Book", { [weak self] in
@@ -348,6 +414,7 @@ extension CloudKitSharingService {
                     }))
                 }
             }
+            AppLog.info("📤 Books: \(index.live.count) public under this account; skipped \(skipped.notOwned) not owned, \(skipped.othersTracking) tracked as someone else's, \(skipped.imported) imported, \(skipped.incomplete) incomplete", category: .sharing)
         }
 
         // Meals
