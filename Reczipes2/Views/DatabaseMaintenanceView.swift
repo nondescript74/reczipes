@@ -21,6 +21,13 @@ struct DatabaseMaintenanceView: View {
     @State private var isCleaningUp = false
     @State private var showingFullCleanupAlert = false
     @State private var cleanupResult: CleanupResult?
+    // Old public book copies (2026-11-05)
+    @State private var retirable: [CloudKitSharingService.RetirableBook]?
+    @State private var retireSelection = Set<UUID>()
+    @State private var isFindingRetirable = false
+    @State private var isRetiring = false
+    @State private var showingRetireAlert = false
+    @State private var retireMessage: String?
     
     var body: some View {
         List {
@@ -129,6 +136,71 @@ struct DatabaseMaintenanceView: View {
                 }
             }
             
+            // Old public book copies
+            Section {
+                Button {
+                    Task { await findRetirable() }
+                } label: {
+                    HStack {
+                        Label("Find Old Public Book Copies", systemImage: "books.vertical")
+                        if isFindingRetirable { Spacer(); ProgressView().controlSize(.small) }
+                    }
+                }
+                .disabled(isFindingRetirable || isRetiring)
+
+                if let retirable {
+                    if retirable.isEmpty {
+                        Text("No old copies: every public book of yours is a book in this library.")
+                            .foregroundStyle(.secondary)
+                    } else {
+                        ForEach(retirable) { item in
+                            Toggle(isOn: Binding(
+                                get: { retireSelection.contains(item.id) },
+                                set: { on in
+                                    if on { retireSelection.insert(item.id) } else { retireSelection.remove(item.id) }
+                                }
+                            )) {
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(item.name)
+                                    Text("Old copy: \(item.recipeCount) recipes, shared \(item.sharedDate.formatted(date: .abbreviated, time: .omitted))")
+                                        .font(.caption)
+                                        .foregroundStyle(.secondary)
+                                    if let count = item.replacementRecipeCount {
+                                        Text(item.recipeCount > 0
+                                             ? "All \(item.recipeCount) are in current book \u{201C}\(item.replacementName ?? "")\u{201D} (\(count) recipes)"
+                                             : "Empty; current book \u{201C}\(item.replacementName ?? "")\u{201D} has \(count) recipes")
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                    } else {
+                                        Text("No single current book holds all its recipes")
+                                            .font(.caption)
+                                            .foregroundStyle(Color.appWarning)
+                                    }
+                                }
+                            }
+                        }
+
+                        Button(role: .destructive) {
+                            showingRetireAlert = true
+                        } label: {
+                            HStack {
+                                Label("Retire \(retireSelection.count) Old Copies", systemImage: "archivebox")
+                                if isRetiring { Spacer(); ProgressView().controlSize(.small) }
+                            }
+                        }
+                        .disabled(retireSelection.isEmpty || isRetiring)
+                    }
+                }
+            } header: {
+                Text("Old Public Book Copies")
+            } footer: {
+                if let retireMessage {
+                    Text(retireMessage)
+                } else {
+                    Text("Public copies of books that are no longer in your library (left by a merge). They never update, so the website shows them stale beside the current book. Retiring marks them deleted by you: nothing is removed, and people who already have them keep them, marked User Deleted.")
+                }
+            }
+
             // CloudKit Sync Status
             Section {
                 HStack {
@@ -175,6 +247,14 @@ struct DatabaseMaintenanceView: View {
         } message: {
             Text("This will delete all duplicate recipes and orphaned assignments. This action cannot be undone. Are you sure?")
         }
+        .alert("Retire Old Copies", isPresented: $showingRetireAlert) {
+            Button("Retire \(retireSelection.count)", role: .destructive) {
+                Task { await retireSelected() }
+            }
+            Button("Cancel", role: .cancel) { }
+        } message: {
+            Text("The \(retireSelection.count) selected old public copies will be marked deleted by you and leave the website. Your current books are not touched.")
+        }
         .onAppear {
             duplicateMonitor.configure(with: modelContext)
             generateReport()
@@ -182,6 +262,36 @@ struct DatabaseMaintenanceView: View {
     }
     
     // MARK: - Actions
+
+    private func findRetirable() async {
+        isFindingRetirable = true
+        defer { isFindingRetirable = false }
+        retireMessage = nil
+        guard let found = await CloudKitSharingService.shared.findRetirableBooks(modelContext: modelContext) else {
+            retirable = nil
+            retireMessage = "Couldn't read your public books completely. Nothing was changed; try again."
+            return
+        }
+        retirable = found
+        // Preselect only old copies that have exactly one current book of the same name.
+        retireSelection = Set(found.filter { $0.replacementID != nil }.map(\.id))
+    }
+
+    private func retireSelected() async {
+        guard let retirable else { return }
+        isRetiring = true
+        defer { isRetiring = false }
+        let chosen = retirable.filter { retireSelection.contains($0.id) }
+        let done = await CloudKitSharingService.shared.retireBooks(chosen, modelContext: modelContext)
+        retireMessage = done == chosen.count
+            ? "Retired \(done) old copies. The website drops them on its next refresh (within about 5 minutes)."
+            : "Retired \(done) of \(chosen.count); the rest stay queued and are retried on the next sync."
+        await findRetirable()
+        if done == chosen.count {
+            retireMessage = "Retired \(done) old copies. The website drops them on its next refresh (within about 5 minutes)."
+        }
+    }
+
     
     private func generateReport() {
         isGeneratingReport = true

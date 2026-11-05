@@ -21,7 +21,7 @@ struct LoggingSettingsView: View {
         Form {
             // Level + presets
             Section {
-                Picker("Logging Level", selection: $settings.loggingLevel) {
+                Picker("Level", selection: $settings.loggingLevel) {
                     ForEach(LoggingSettings.LoggingLevel.allCases) { level in
                         Text(level.rawValue).tag(level)
                     }
@@ -40,7 +40,10 @@ struct LoggingSettingsView: View {
             } header: {
                 Label("Logging Level", systemImage: "speedometer")
             } footer: {
-                Text(settings.loggingLevel.description + " Balanced logs errors only; use Info or Full to see sharing and sync progress.")
+                VStack(alignment: .leading, spacing: 2) {
+                    Text(settings.loggingLevel.description)
+                    Text("Balanced logs errors only; use Info or Full to see sharing and sync progress.")
+                }
             }
 
             // Categories — all visible at once

@@ -262,6 +262,83 @@ extension CloudKitSharingService {
         try? modelContext.save()
     }
 
+    // MARK: - Old public book copies
+
+    /// A public book under this account whose book is no longer in this library:
+    /// a merge (or an older build) kept the book under another ID. Nothing can ever
+    /// refresh it, so the web shows it, stale, beside the current copy (2026-11-05:
+    /// 28 old copies dated 2026-10-28). Retiring = the normal owner-delete mark.
+    struct RetirableBook: Identifiable {
+        let id: UUID                 // the old book ID
+        let name: String
+        let recipeCount: Int
+        let sharedDate: Date
+        let replacementID: UUID?     // the current book that holds every recipe of the old copy
+        let replacementName: String?
+        let replacementRecipeCount: Int?
+    }
+
+    /// Lists old copies for the owner to review. Returns nil when the public
+    /// database could not be read completely, and nothing while this library has
+    /// no books of its own yet (a library still loading must never make every
+    /// book look gone). Read-only.
+    func findRetirableBooks(modelContext: ModelContext) async -> [RetirableBook]? {
+        guard let index = await readOwnPublicIndex(.book) else { return nil }
+        let deleted = index.deleted
+        let me = currentUserID
+        let books = ((try? modelContext.fetch(FetchDescriptor<Book>())) ?? [])
+            .filter { Book.isOwnedByCurrentUser(ownerUserID: $0.ownerUserID, currentUserID: me) && $0.isImported != true }
+        guard !books.isEmpty else { return [] }
+        let localIDs = Set(((try? modelContext.fetch(FetchDescriptor<Book>())) ?? []).compactMap(\.id))
+        let key: (String?) -> String = { ($0 ?? "").trimmingCharacters(in: .whitespacesAndNewlines).lowercased() }
+
+        // Current books with a live public copy: the candidates an old copy can be "replaced by".
+        let current = books.filter { b in
+            guard let id = b.id else { return false }
+            return deleted[id] == nil && index.live[id] != nil
+        }
+
+        var result: [RetirableBook] = []
+        for (id, live) in index.live where deleted[id] == nil && !localIDs.contains(id) {
+            guard let record = index.liveRecords[id]?.first(where: { $0.recordID.recordName == live.recordName }),
+                  let text = record[Self.dataKey(for: .book)] as? String,
+                  let data = text.data(using: .utf8),
+                  let decoded = try? JSONDecoder().decode(CloudKitRecipeBook.self, from: data) else { continue }
+            // Decided by content, not by title: the replacement is a current book that
+            // already holds every recipe of the old copy (same name preferred). An empty
+            // old copy has no content to compare, so it gets a replacement only when
+            // exactly one current book has its name.
+            let oldIDs = Set(decoded.recipeIDs)
+            var match: Book?
+            if !oldIDs.isEmpty {
+                let holders = current.filter { oldIDs.isSubset(of: Set($0.recipeIDs ?? [])) }
+                let sameName = holders.filter { key($0.name) == key(decoded.name) }
+                match = sameName.count == 1 ? sameName[0] : (holders.count == 1 ? holders[0] : nil)
+            } else {
+                let sameName = current.filter { key($0.name) == key(decoded.name) }
+                match = sameName.count == 1 ? sameName[0] : nil
+            }
+            result.append(RetirableBook(id: id, name: decoded.name, recipeCount: decoded.recipeIDs.count,
+                                        sharedDate: live.sharedDate, replacementID: match?.id,
+                                        replacementName: match?.name,
+                                        replacementRecipeCount: match?.recipeIDs?.count))
+        }
+        return result.sorted { ($0.name.localizedLowercase, $0.sharedDate) < ($1.name.localizedLowercase, $1.sharedDate) }
+    }
+
+    /// Marks the chosen old copies deleted by their owner (replaced by the current
+    /// book where there is one). The records stay in the public database; the web
+    /// and other devices stop showing them as live. Only what the owner ticked.
+    func retireBooks(_ items: [RetirableBook], modelContext: ModelContext) async -> Int {
+        for item in items {
+            OwnerDeletedStore.shared.enqueueTombstone(.book, item.id, replacedByID: item.replacementID)
+            AppLog.info("📤 Retiring old public copy of '\(item.name)' (\(item.id)) → \(item.replacementID?.uuidString ?? "no replacement")", category: .sharing)
+        }
+        await flushPendingTombstones(modelContext: modelContext)
+        let stillPending = Set(OwnerDeletedStore.shared.pending.filter { $0.kind == .book }.map(\.id))
+        return items.filter { !stillPending.contains($0.id) }.count
+    }
+
     // MARK: - Own-book repair
 
     /// A book with a live public record under this account is this person's own.
