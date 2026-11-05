@@ -12,42 +12,72 @@ struct LoggingSettingsView: View {
     @State private var showResetAlert = false
     @State private var showLogViewer = false
     
+    // Compact layout (2026-11-05): level, presets and every category fit on one
+    // screen — categories are a grid of check chips (description on hover / long
+    // press) instead of one tall row each. File and reset tools sit below.
+    private let categoryColumns = [GridItem(.adaptive(minimum: 170), spacing: 8, alignment: .leading)]
+
     var body: some View {
         Form {
-            // Overview Section
-            Section {
-                VStack(alignment: .leading, spacing: 8) {
-                    Text("Performance Impact")
-                        .font(.headline)
-                    
-                    PerformanceIndicator(level: settings.loggingLevel)
-                    
-                    Text("Logging can impact app performance, especially during recipe extraction and image processing. Lower logging levels improve speed.")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
-                }
-                .padding(.vertical, 4)
-            } header: {
-                Label("Logging Performance", systemImage: "speedometer")
-            }
-            
-            // Main Logging Level
+            // Level + presets
             Section {
                 Picker("Logging Level", selection: $settings.loggingLevel) {
                     ForEach(LoggingSettings.LoggingLevel.allCases) { level in
-                        VStack(alignment: .leading) {
-                            Text(level.rawValue)
-                            Text(level.description)
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                        }
-                        .tag(level)
+                        Text(level.rawValue).tag(level)
                     }
                 }
-                .platformNavigationLinkPickerStyle()
-                
+
+                HStack(spacing: 8) {
+                    presetButton("Off", systemImage: "bolt.fill",
+                                 isCurrent: settings.loggingLevel == .off) { settings.disableAllLogging() }
+                    presetButton("Balanced", systemImage: "scale.3d",
+                                 isCurrent: settings.loggingLevel == .errors && settings.enabledCategories.count == 3) { settings.resetToDefaults() }
+                    presetButton("Full", systemImage: "ladybug.fill",
+                                 isCurrent: settings.loggingLevel == .debug) { settings.enableFullLogging() }
+                }
+
+                PerformanceIndicator(level: settings.loggingLevel)
+            } header: {
+                Label("Logging Level", systemImage: "speedometer")
+            } footer: {
+                Text(settings.loggingLevel.description + " Balanced logs errors only; use Info or Full to see sharing and sync progress.")
+            }
+
+            // Categories — all visible at once
+            if settings.loggingLevel != .off {
+                Section {
+                    LazyVGrid(columns: categoryColumns, alignment: .leading, spacing: 6) {
+                        ForEach(LoggingSettings.LoggingCategory.allCases) { category in
+                            CategoryChip(
+                                category: category,
+                                isEnabled: settings.enabledCategories.contains(category),
+                                onToggle: { enabled in
+                                    if enabled {
+                                        settings.enabledCategories.insert(category)
+                                    } else {
+                                        settings.enabledCategories.remove(category)
+                                    }
+                                }
+                            )
+                        }
+                    }
+                    .padding(.vertical, 4)
+                } header: {
+                    HStack {
+                        Text("Logging Categories (\(settings.enabledCategories.count) of \(LoggingSettings.LoggingCategory.allCases.count))")
+                        Spacer()
+                        Button("All") { settings.enabledCategories = Set(LoggingSettings.LoggingCategory.allCases) }
+                            .buttonStyle(.borderless)
+                        Button("None") { settings.enabledCategories = [] }
+                            .buttonStyle(.borderless)
+                    }
+                }
+            }
+
+            // Log file + reset
+            Section {
                 Toggle("Save Logs to File", isOn: $settings.enableFileLogging)
-                
+
                 if settings.enableFileLogging {
                     Button {
                         showLogViewer = true
@@ -60,106 +90,27 @@ struct LoggingSettingsView: View {
                                 .foregroundStyle(.secondary)
                         }
                     }
-                }
-            } header: {
-                Text("General Settings")
-            } footer: {
-                Text("Choose what gets logged. 'Off' provides best performance, 'All' helps with troubleshooting.")
-            }
-            
-            // Quick Presets
-            Section {
-                Button {
-                    withAnimation {
-                        settings.disableAllLogging()
-                    }
-                } label: {
-                    Label("Disable All Logging", systemImage: "bolt.fill")
-                        .foregroundStyle(settings.loggingLevel == .off ? .green : .primary)
-                }
-                
-                Button {
-                    withAnimation {
-                        settings.resetToDefaults()
-                    }
-                } label: {
-                    Label("Balanced (Recommended)", systemImage: "scale.3d")
-                        .foregroundStyle(
-                            settings.loggingLevel == .errors && 
-                            settings.enabledCategories.count == 3 ? .green : .primary
-                        )
-                }
-                
-                Button {
-                    withAnimation {
-                        settings.enableFullLogging()
-                    }
-                } label: {
-                    Label("Enable Full Logging", systemImage: "ladybug.fill")
-                        .foregroundStyle(settings.loggingLevel == .debug ? .orange : .primary)
-                }
-            } header: {
-                Text("Quick Presets")
-            } footer: {
-                Text("Quick presets for common scenarios. Use 'Full Logging' when reporting bugs.")
-            }
-            
-            // Category-Specific Controls
-            if settings.loggingLevel != .off {
-                Section {
-                    ForEach(LoggingSettings.LoggingCategory.allCases) { category in
-                        CategoryToggleRow(
-                            category: category,
-                            isEnabled: settings.enabledCategories.contains(category),
-                            onToggle: { enabled in
-                                if enabled {
-                                    settings.enabledCategories.insert(category)
-                                } else {
-                                    settings.enabledCategories.remove(category)
-                                }
-                            }
-                        )
-                    }
-                } header: {
-                    Text("Logging Categories")
-                } footer: {
-                    Text("Enable specific categories to focus on particular areas. More categories = more logging.")
-                }
-            }
-            
-            // Log Management
-            Section {
-                if settings.enableFileLogging {
-                    HStack {
-                        Label("Log File Size", systemImage: "doc.text")
-                        Spacer()
-                        Text(DiagnosticLogger.shared.getFormattedLogFileSize())
-                            .foregroundStyle(.secondary)
-                    }
-                    
+
                     Button(role: .destructive) {
                         DiagnosticLogger.shared.clearLog()
                     } label: {
                         Label("Clear Log File", systemImage: "trash")
                     }
                 }
-                
+
                 if let logURL = DiagnosticLogger.shared.getLogFileURL() {
                     ShareLink(item: logURL) {
                         Label("Share Log File", systemImage: "square.and.arrow.up")
                     }
                 }
-            } header: {
-                Text("Log File Management")
-            }
-            
-            // Reset Section
-            Section {
+
                 Button(role: .destructive) {
                     showResetAlert = true
                 } label: {
                     Label("Reset to Defaults", systemImage: "arrow.counterclockwise")
                 }
+            } header: {
+                Text("Log File")
             }
         }
         .navigationTitle("Logging Settings")
@@ -247,6 +198,52 @@ struct PerformanceIndicator: View {
         case .info: return 3
         case .debug: return 5
         }
+    }
+}
+
+extension LoggingSettingsView {
+    fileprivate func presetButton(_ title: String, systemImage: String, isCurrent: Bool,
+                                  action: @escaping () -> Void) -> some View {
+        Button {
+            withAnimation { action() }
+        } label: {
+            Label(title, systemImage: systemImage)
+                .frame(maxWidth: .infinity)
+        }
+        .buttonStyle(.bordered)
+        .tint(isCurrent ? .accentColor : .secondary)
+    }
+}
+
+/// One category as a compact check chip; the description shows on hover (macOS)
+/// or as the accessibility hint.
+struct CategoryChip: View {
+    let category: LoggingSettings.LoggingCategory
+    let isEnabled: Bool
+    let onToggle: (Bool) -> Void
+
+    var body: some View {
+        Button {
+            onToggle(!isEnabled)
+        } label: {
+            HStack(spacing: 6) {
+                Image(systemName: isEnabled ? "checkmark.square.fill" : "square")
+                    .foregroundStyle(isEnabled ? Color.accentColor : .secondary)
+                Image(systemName: category.systemImage)
+                    .foregroundStyle(isEnabled ? .blue : .secondary)
+                    .frame(width: 18)
+                Text(category.rawValue)
+                    .font(.callout)
+                    .lineLimit(1)
+                    .minimumScaleFactor(0.8)
+                Spacer(minLength: 0)
+            }
+            .contentShape(Rectangle())
+        }
+        .buttonStyle(.plain)
+        .help(category.description)
+        .accessibilityAddTraits(isEnabled ? .isSelected : [])
+        .accessibilityHint(category.description)
     }
 }
 
