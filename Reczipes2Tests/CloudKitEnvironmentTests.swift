@@ -13,6 +13,7 @@ import Foundation
 @testable import Reczipes2
 
 @Suite("CloudKit environment")
+@MainActor
 struct CloudKitEnvironmentTests {
 
     @Test("App is built for CloudKit Production")

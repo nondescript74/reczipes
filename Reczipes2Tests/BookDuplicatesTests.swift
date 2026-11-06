@@ -10,6 +10,7 @@ import Foundation
 @testable import Reczipes2
 
 @Suite("Duplicate books")
+@MainActor
 struct BookDuplicatesTests {
     private func id(_ n: Int) -> UUID { UUID(uuidString: String(format: "00000000-0000-0000-0000-%012d", n))! }
     private func book(_ n: Int, _ name: String, _ recipes: [Int], days: Double = 0, content: Bool = false) -> BookCopy {
