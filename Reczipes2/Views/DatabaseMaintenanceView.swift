@@ -28,6 +28,10 @@ struct DatabaseMaintenanceView: View {
     @State private var isRetiring = false
     @State private var showingRetireAlert = false
     @State private var retireMessage: String?
+    @State private var bookGroups: [BookDuplicateGroup]?
+    @State private var keepChoice: [String: UUID] = [:]
+    @State private var groupToMerge: BookDuplicateGroup?
+    @State private var bookMergeMessage: String?
     
     var body: some View {
         List {
@@ -136,6 +140,54 @@ struct DatabaseMaintenanceView: View {
                 }
             }
             
+            // Duplicate books (same name)
+            Section {
+                Button {
+                    findDuplicateBooks()
+                } label: {
+                    Label("Find Duplicate Books", systemImage: "rectangle.stack")
+                }
+
+                if let bookGroups {
+                    if bookGroups.isEmpty {
+                        Text("No two of your books share a name.")
+                            .foregroundStyle(.secondary)
+                    }
+                    ForEach(bookGroups) { group in
+                        let all = [group.keep] + group.extras
+                        let keepID = keepChoice[group.key] ?? group.keep.id
+                        let keptRecipes = Set(all.first { $0.id == keepID }?.recipeIDs ?? [])
+                        VStack(alignment: .leading, spacing: 6) {
+                            Text("\(group.keep.name) — \(all.count) copies")
+                                .font(.headline)
+                            Picker("Keep", selection: Binding(
+                                get: { keepChoice[group.key] ?? group.keep.id },
+                                set: { keepChoice[group.key] = $0 }
+                            )) {
+                                ForEach(all) { copy in
+                                    Text("\(copy.recipeIDs.count) recipes\(copy.dateCreated.map { ", made \($0.formatted(date: .abbreviated, time: .omitted))" } ?? "")")
+                                        .tag(copy.id)
+                                }
+                            }
+                            ForEach(all.filter { $0.id != keepID }) { copy in
+                                let added = Set(copy.recipeIDs).subtracting(keptRecipes).count
+                                Text(added == 0
+                                     ? "• Copy with \(copy.recipeIDs.count) recipes: adds nothing"
+                                     : "• Copy with \(copy.recipeIDs.count) recipes: adds \(added) recipes")
+                                    .font(.caption)
+                                    .foregroundStyle(added == 0 ? Color.secondary : Color.appWarning)
+                            }
+                            Button("Merge Into Kept Book") { groupToMerge = group }
+                        }
+                        .padding(.vertical, 4)
+                    }
+                }
+            } header: {
+                Text("Duplicate Books")
+            } footer: {
+                Text(bookMergeMessage ?? "Your books that share a name. Merging moves every recipe and picture into the book you keep, then removes the other copies from your library and marks their public copies replaced, so every device and the website show one book. No recipe is deleted.")
+            }
+
             // Old public book copies
             Section {
                 Button {
@@ -247,6 +299,18 @@ struct DatabaseMaintenanceView: View {
         } message: {
             Text("This will delete all duplicate recipes and orphaned assignments. This action cannot be undone. Are you sure?")
         }
+        .alert("Merge Books", isPresented: Binding(
+            get: { groupToMerge != nil },
+            set: { if !$0 { groupToMerge = nil } }
+        )) {
+            Button("Merge", role: .destructive) {
+                if let group = groupToMerge { mergeGroup(group) }
+                groupToMerge = nil
+            }
+            Button("Cancel", role: .cancel) { groupToMerge = nil }
+        } message: {
+            Text("All copies of \u{201C}\(groupToMerge?.keep.name ?? "")\u{201D} become one book. No recipe is deleted.")
+        }
         .alert("Retire Old Copies", isPresented: $showingRetireAlert) {
             Button("Retire \(retireSelection.count)", role: .destructive) {
                 Task { await retireSelected() }
@@ -262,6 +326,21 @@ struct DatabaseMaintenanceView: View {
     }
     
     // MARK: - Actions
+
+    private func findDuplicateBooks() {
+        bookMergeMessage = nil
+        let groups = BookMerger.duplicateGroups(in: modelContext)
+        bookGroups = groups
+        keepChoice = Dictionary(uniqueKeysWithValues: groups.map { ($0.key, $0.keep.id) })
+    }
+
+    private func mergeGroup(_ group: BookDuplicateGroup) {
+        let all = [group.keep] + group.extras
+        let keepID = keepChoice[group.key] ?? group.keep.id
+        let merged = BookMerger.merge(keepID: keepID, extraIDs: all.map(\.id).filter { $0 != keepID }, in: modelContext)
+        findDuplicateBooks()
+        bookMergeMessage = "Merged \(merged) copies of \u{201C}\(group.keep.name)\u{201D}. The website drops the old copies on its next refresh (about 5 minutes)."
+    }
 
     private func findRetirable() async {
         isFindingRetirable = true

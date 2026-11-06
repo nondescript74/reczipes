@@ -282,6 +282,11 @@ class CloudKitDuplicateMonitor: ObservableObject {
         // Books are few, so this scan is cheap — run it on every check,
         // outside the recipe-count throttle below.
         mergeDuplicateBooks(in: context)
+        // Same-name books that add nothing (same recipes or none, no pictures /
+        // glossary / contents of their own). Anything else waits for the owner in
+        // Database Maintenance → Duplicate Books. The kept copy is chosen by fixed
+        // rules (most recipes, oldest, id), so every device picks the same one.
+        BookMerger.mergeExactCopies(in: context)
 
         do {
             // Quick count check to see if a scan is even needed
