@@ -259,3 +259,26 @@ test('owner-deleted recipes and books are hidden; published again shows; nothing
   assert.deepEqual((await store.listBooks()).map((b) => b.name), ['Kept Book']);
   assert.deepEqual((await store.status()).ownerDeleted, { recipes: 1, books: 1 });
 });
+
+import { collapseBookCopies } from '../lib/decode.js';
+
+test('identical same-name books show once; different recipes stay apart', () => {
+  const bk = (id, name, recipeIDs, extra = {}) => ({ id, name, recipeIDs, coverURL: null, sharedDate: '2026-11-05T17:24:00.000Z', ...extra });
+  const books = [
+    bk('S1', 'Salt Fat Acid Heat', ['r1']),
+    bk('S2', 'Salt Fat Acid Heat', ['R1'], { sharedDate: '2026-11-05T17:41:00.000Z' }),
+    bk('E1', 'Serious Eats Recipes', []),
+    bk('E2', 'serious eats recipes', []),
+    bk('P1', 'Soups', ['a', 'b']),
+    bk('P2', 'Soups', ['c']),
+    bk('F1', 'The Food Lab', ['x']),
+    bk('F2', 'The Food Lab', ['y']),
+  ];
+  // y is a folded copy of x, so the two Food Lab books list the same recipe
+  const { kept, alias } = collapseBookCopies(books, new Map([['Y', 'x']]));
+  assert.equal(kept.length, 5);
+  assert.equal(alias.get('S1'), 'S2', 'keeps the newest');
+  assert.ok(alias.has('E1') || alias.has('E2'));
+  assert.ok(kept.some((b) => b.id === 'P1') && kept.some((b) => b.id === 'P2'));
+  assert.ok(alias.has('F1') || alias.has('F2'), 'folded recipe copies count as the same recipe');
+});

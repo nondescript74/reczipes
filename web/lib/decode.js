@@ -344,3 +344,35 @@ export function collapseCopies(recipes) {
   }
   return { kept, alias };
 }
+
+// Two public books with the same name and exactly the same recipes are one book shown
+// twice (left by a restore or a second device, Lane 37 2026-11-06). Show it once: keep
+// the newest copy, preferring one with a cover. Same-name books with different recipes
+// stay apart (a name is not identity). Recipe ids are compared after collapseCopies, so
+// a book listing a folded copy matches one listing the kept recipe. Read-side only.
+export function bookCopySignature(book, recipeAlias = new Map()) {
+  const ids = [...new Set(book.recipeIDs.map((id) => (recipeAlias.get(id.toUpperCase()) ?? id).toUpperCase()))].sort();
+  return normText(book.name) + '|' + ids.join(',');
+}
+
+export function collapseBookCopies(books, recipeAlias = new Map()) {
+  const groups = new Map();
+  for (const b of books) {
+    const k = bookCopySignature(b, recipeAlias);
+    if (!groups.has(k)) groups.set(k, []);
+    groups.get(k).push(b);
+  }
+  const kept = [];
+  const alias = new Map(); // dropped book id (upper-case) -> kept book id
+  for (const group of groups.values()) {
+    group.sort(
+      (a, b) =>
+        Number(Boolean(b.coverURL)) - Number(Boolean(a.coverURL)) ||
+        (b.sharedDate ?? '').localeCompare(a.sharedDate ?? ''),
+    );
+    const [keep, ...rest] = group;
+    kept.push(keep);
+    for (const d of rest) alias.set(d.id.toUpperCase(), keep.id);
+  }
+  return { kept, alias };
+}

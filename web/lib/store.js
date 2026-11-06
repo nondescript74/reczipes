@@ -7,7 +7,7 @@
 // it never quietly substitutes sample data for real data (MTA M-19).
 
 import { readFile } from 'node:fs/promises';
-import { decodeSharedRecipe, decodeSharedBook, decodeSharedBookPicture, attachBookPictures, newestPerId, collapseCopies, summarize, dropOwnerDeleted } from './decode.js';
+import { decodeSharedRecipe, decodeSharedBook, decodeSharedBookPicture, attachBookPictures, newestPerId, collapseCopies, collapseBookCopies, summarize, dropOwnerDeleted } from './decode.js';
 
 export function createStore({ cloudkit, fixturesPath, ttlMs = 5 * 60 * 1000, now = () => Date.now() }) {
   const source = cloudkit ? 'cloudkit' : 'fixtures';
@@ -44,8 +44,9 @@ export function createStore({ cloudkit, fixturesPath, ttlMs = 5 * 60 * 1000, now
     const { kept, alias } = collapseCopies(uniqueById);
     const recipes = kept.sort((a, b) => a.title.localeCompare(b.title, undefined, { sensitivity: 'base' }));
     const pictures = pictureRecords.map(decodeSharedBookPicture).filter(Boolean);
+    const bookCopies = collapseBookCopies(newestPerId(liveBooks.live), alias);
     const books = attachBookPictures(
-      newestPerId(liveBooks.live),
+      bookCopies.kept,
       pictures,
     ).sort((a, b) => a.name.localeCompare(b.name, undefined, { sensitivity: 'base' }));
     const byId = new Map(recipes.map((r) => [r.id.toUpperCase(), r]));
@@ -57,6 +58,8 @@ export function createStore({ cloudkit, fixturesPath, ttlMs = 5 * 60 * 1000, now
       byId,
       skipped: { recipes: recipeRecords.length - recipes.length, books: bookRecords.length - books.length },
       collapsedCopies: alias.size,
+      collapsedBookCopies: bookCopies.alias.size,
+      bookAlias: bookCopies.alias,
       ownerDeleted: { recipes: liveRecipes.deletedCount, books: liveBooks.deletedCount },
       rawCounts: { recipes: recipeRecords.length, books: bookRecords.length, pictures: pictureRecords.length },
       loadedAt: new Date(now()).toISOString(),
@@ -125,6 +128,7 @@ export function createStore({ cloudkit, fixturesPath, ttlMs = 5 * 60 * 1000, now
         counts: state ? { recipes: state.recipes.length, books: state.books.length } : null,
         rawCounts: state?.rawCounts ?? null,
         collapsedCopies: state?.collapsedCopies ?? 0,
+        collapsedBookCopies: state?.collapsedBookCopies ?? 0,
         ownerDeleted: state?.ownerDeleted ?? { recipes: 0, books: 0 },
         lastError,
       };
@@ -151,7 +155,9 @@ export function createStore({ cloudkit, fixturesPath, ttlMs = 5 * 60 * 1000, now
     },
     async getBook(id) {
       await ensure();
-      const b = state.books.find((x) => x.id.toUpperCase() === String(id).toUpperCase());
+      const wanted = String(id).toUpperCase();
+      const target = (state.bookAlias?.get(wanted) ?? wanted).toUpperCase();
+      const b = state.books.find((x) => x.id.toUpperCase() === target);
       if (!b) return null;
       const full = bookWithEntries(b);
       // Contents rows that name a recipe resolve like entries do (folded copies -> kept recipe).
