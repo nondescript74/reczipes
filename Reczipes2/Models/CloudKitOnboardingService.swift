@@ -497,11 +497,8 @@ class CloudKitOnboardingService: ObservableObject {
         errors: [String]
     ) {
         // Detect environment
-        #if DEBUG
-        let isProduction = false
-        #else
-        let isProduction = true
-        #endif
+        // Read from the signed build (not Debug/Release, which says nothing about it)
+        let isProduction = !AppBuildInfo.isCloudKitDevelopment
         
         diagnostics = CloudKitDiagnostics(
             timestamp: Date(),

@@ -401,6 +401,10 @@ struct SettingsView: View {
             Text(versionString)
                 .font(.footnote)
                 .foregroundStyle(.secondary)
+            Text(AppBuildInfo.cloudKitLine)
+                .font(.footnote)
+                .foregroundStyle(AppBuildInfo.isCloudKitDevelopment ? Color.orange : Color.secondary)
+                .multilineTextAlignment(.center)
         }
         .padding(.vertical, 20)
         .padding(.horizontal, 28)

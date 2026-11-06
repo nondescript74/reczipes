@@ -18,7 +18,7 @@ class DatabaseRecoveryService {
         let appSupport = URL.applicationSupportDirectory
         
         // Current database file
-        let currentDB = appSupport.appendingPathComponent("CloudKitModel.sqlite")
+        let currentDB = appSupport.appendingPathComponent(AppBuildInfo.localStoreFileName)
         
         // Possible old database locations
         let oldDatabases = [

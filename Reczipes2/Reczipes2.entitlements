@@ -7,7 +7,7 @@
 	<key>com.apple.developer.aps-environment</key>
 	<string>development</string>
 	<key>com.apple.developer.icloud-container-environment</key>
-	<string>Production</string>
+	<string>$(RECZIPES_CLOUDKIT_ENVIRONMENT)</string>
 	<key>com.apple.developer.icloud-container-identifiers</key>
 	<array>
 		<string>iCloud.com.headydiscy.reczipes</string>

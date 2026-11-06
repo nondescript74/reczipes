@@ -171,7 +171,7 @@ class ModelContainerManager: ObservableObject {
     }
     
     private static func tryCreateCloudKitContainer() -> ModelContainer? {
-        let cloudKitURL = URL.applicationSupportDirectory.appending(path: "CloudKitModel.sqlite")
+        let cloudKitURL = URL.applicationSupportDirectory.appending(path: AppBuildInfo.localStoreFileName)
         
         // NOTE: We removed the pre-check that was deleting the database on every launch.
         // Database compatibility issues will be handled in the catch block below
@@ -433,7 +433,7 @@ class ModelContainerManager: ObservableObject {
 
     private static func createLocalContainer() -> ModelContainer {
         // CRITICAL: Use the same database file as CloudKit config to preserve data!
-        let cloudKitURL = URL.applicationSupportDirectory.appending(path: "CloudKitModel.sqlite")
+        let cloudKitURL = URL.applicationSupportDirectory.appending(path: AppBuildInfo.localStoreFileName)
         let localConfiguration = ModelConfiguration(
             url: cloudKitURL  // Use same database file, CloudKit disabled by not specifying cloudKitDatabase
         )
