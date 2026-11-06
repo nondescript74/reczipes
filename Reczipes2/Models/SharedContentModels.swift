@@ -19,6 +19,25 @@ enum CloudKitRecordType {
     static let sharedMeal = "SharedMeal"
 }
 
+/// Public record names derived from the item's own id, so publishing is an upsert:
+/// two devices, a lost tracking row or a restore all write the same record instead of
+/// adding a second public copy. Records published before this rule keep their random
+/// names; readers keep the newest record per item id, so both kinds coexist.
+enum PublicRecordName {
+    static func recipe(_ id: UUID) -> String { "recipe-\(id.uuidString)" }
+    static func book(_ id: UUID) -> String { "book-\(id.uuidString)" }
+    static func meal(_ id: UUID) -> String { "meal-\(id.uuidString)" }
+
+    static func forType(_ recordType: String, id: UUID) -> String? {
+        switch recordType {
+        case CloudKitRecordType.sharedRecipe: return recipe(id)
+        case CloudKitRecordType.sharedRecipeBook: return book(id)
+        case CloudKitRecordType.sharedMeal: return meal(id)
+        default: return nil
+        }
+    }
+}
+
 // MARK: - Codable Representations for CloudKit
 
 struct CloudKitRecipe: Codable, Identifiable {

@@ -502,6 +502,21 @@ class CloudKitSharingService: ObservableObject {
         AppLog.info("✅ Deleted \(successCount) orphaned recipe books, \(failCount) failures", category: .sharing)
     }
     
+    // MARK: - Public record upsert
+
+    /// The public record an item publishes to: its id-derived record if one exists
+    /// (published by this or another device), else a new record with that name.
+    /// Any error other than "not found" is thrown, so a network failure never
+    /// creates a record that would collide with an existing one.
+    func publicRecordForUpsert(type: String, name: String) async throws -> CKRecord {
+        let recordID = CKRecord.ID(recordName: name)
+        do {
+            return try await publicDatabase.record(for: recordID)
+        } catch let error as CKError where error.code == .unknownItem {
+            return CKRecord(recordType: type, recordID: recordID)
+        }
+    }
+
     // MARK: - Share Recipe
     
     /// Shares a recipe publicly. With `refreshExisting: true`, an already-shared recipe's
@@ -583,7 +598,9 @@ class CloudKitSharingService: ObservableObject {
         }
         
         // Create CloudKit record, or reuse the existing one when refreshing in place
-        let record = existingRecordToUpdate ?? CKRecord(recordType: CloudKitRecordType.sharedRecipe)
+        let record: CKRecord
+        if let existingRecordToUpdate { record = existingRecordToUpdate }
+        else { record = try await publicRecordForUpsert(type: CloudKitRecordType.sharedRecipe, name: PublicRecordName.recipe(recipe.safeID)) }
         
         let cloudRecipe = CloudKitRecipe(
             id: recipe.safeID,
@@ -812,7 +829,10 @@ class CloudKitSharingService: ObservableObject {
         recipePreviews = Self.fitPreviewsToRecordBudget(recipePreviews)
         
         // Create CloudKit record, or reuse the existing one when refreshing in place
-        let record = existingRecordToUpdate ?? CKRecord(recordType: CloudKitRecordType.sharedRecipeBook)
+        let record: CKRecord
+        if let existingRecordToUpdate { record = existingRecordToUpdate }
+        else if let bookID = book.id { record = try await publicRecordForUpsert(type: CloudKitRecordType.sharedRecipeBook, name: PublicRecordName.book(bookID)) }
+        else { throw SharingError.invalidData }
         
         // Pictures: one public SharedBookPicture record each (image as CKAsset).
         // bookData lists their METADATA only, so the book record stays small.
@@ -1295,7 +1315,9 @@ class CloudKitSharingService: ObservableObject {
             sharedDate: Date()
         )
 
-        let record = existingRecord ?? CKRecord(recordType: CloudKitRecordType.sharedMeal)
+        let record: CKRecord
+        if let existingRecord { record = existingRecord }
+        else { record = try await publicRecordForUpsert(type: CloudKitRecordType.sharedMeal, name: PublicRecordName.meal(mealID)) }
         let jsonData = try JSONEncoder().encode(cloudMeal)
         record["mealData"] = String(data: jsonData, encoding: .utf8)
         record["name"] = meal.displayName as CKRecordValue

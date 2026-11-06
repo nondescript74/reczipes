@@ -202,7 +202,8 @@ extension CloudKitSharingService {
     private func saveDeletedStub(_ kind: PublicItemKind, id: UUID, replacedBy: UUID?) async throws {
         guard let userID = currentUserID else { throw SharingError.notAuthenticated }
         let now = Date()
-        let record = CKRecord(recordType: Self.recordType(for: kind))
+        let type = Self.recordType(for: kind)
+        let record = try await publicRecordForUpsert(type: type, name: PublicRecordName.forType(type, id: id) ?? UUID().uuidString)
         let encoder = JSONEncoder()
         let payload: Data
         let label: String
