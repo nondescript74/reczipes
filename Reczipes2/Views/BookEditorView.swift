@@ -14,6 +14,7 @@ struct BookEditorView: View {
     @Environment(\.dismiss) private var dismiss
     @Environment(\.modelContext) private var modelContext
     @Query private var savedRecipes: [RecipeX]
+    @Query private var allBooks: [Book]
     
     let book: Book?
     
@@ -73,7 +74,20 @@ struct BookEditorView: View {
     }
     
     private var isValid: Bool {
-        !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
+        !name.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty && !nameTaken
+    }
+
+    /// A new book may not take the name of one of your books: two books with one
+    /// name split their recipes and publish twice (the "Soups" ×3 of 2026-11-05).
+    private var nameTaken: Bool {
+        guard book == nil else { return false }
+        let trimmed = name.trimmingCharacters(in: .whitespacesAndNewlines)
+        guard !trimmed.isEmpty else { return false }
+        return allBooks.contains {
+            ($0.ownerUserID == nil || $0.ownerUserID == CloudKitSharingService.shared.currentUserID)
+                && ($0.name ?? "").trimmingCharacters(in: .whitespacesAndNewlines)
+                .caseInsensitiveCompare(trimmed) == .orderedSame
+        }
     }
     
     var body: some View {
@@ -81,6 +95,11 @@ struct BookEditorView: View {
             Form {
                 Section("Book Details") {
                     TextField("Book Name", text: $name)
+                    if nameTaken {
+                        Text("You already have a book with this name. Add the recipes to it instead.")
+                            .font(.caption)
+                            .foregroundStyle(.orange)
+                    }
                     
                     TextField("Description (Optional)", text: $bookDescription, axis: .vertical)
                         .lineLimit(3...6)

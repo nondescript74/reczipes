@@ -855,9 +855,27 @@ class BookBackupManager {
                 switch overwriteMode {
                     
                 case .overwrite:
-                    AppLog.info("Overwriting existing Book '\(bookBackup.name)'", category: .backup)
-                    BookPictureStore.deleteBook(existing, in: modelContext)
+                    // Update the existing book IN PLACE: same id, same public record.
+                    // (Deleting it and inserting a copy gave every restored book a new
+                    // id, so the publish pass shared each one again as a new book and
+                    // left the old public copy behind — the duplicate books of 2026-11-05.)
+                    AppLog.info("Restoring Book '\(bookBackup.name)' in place (id kept)", category: .backup)
+                    existing.name = bookBackup.name
+                    existing.bookDescription = bookBackup.bookDescription
+                    existing.recipeIDs = bookBackup.recipeIDs
+                    existing.color = bookBackup.color
+                    if let coverImageData = bookBackup.coverImageData {
+                        existing.coverImageData = coverImageData
+                        existing.coverImageName = bookBackup.coverImageFileName
+                    }
+                    if bookBackup.imagesData != nil { existing.imagesData = bookBackup.imagesData }
+                    if bookBackup.glossaryData != nil { existing.glossaryData = bookBackup.glossaryData }
+                    if bookBackup.tableOfContentsData != nil { existing.tableOfContentsData = bookBackup.tableOfContentsData }
+                    if existing.cloudRecordID == nil { existing.cloudRecordID = bookBackup.cloudRecordID }
+                    existing.markModified()
+                    BookPictureMigration.migrate(book: existing, in: modelContext)
                     updatedCount += 1
+                    continue
                 }
 
             } else {
@@ -865,27 +883,7 @@ class BookBackupManager {
             }
             
             // Create Book instance
-            var bookToImport = bookBackup
-            
-            // Handle keep both mode - create new ID
-            if existingBook != nil {
-                bookToImport = BookBackup(
-                    id: UUID(), // New ID
-                    name: bookBackup.name,
-                    bookDescription: bookBackup.bookDescription,
-                    coverImageFileName: bookBackup.coverImageFileName,
-                    coverImageData: bookBackup.coverImageData,
-                    dateCreated: Date(), // New creation date
-                    dateModified: Date(),
-                    recipeIDs: bookBackup.recipeIDs,
-                    color: bookBackup.color,
-                    isShared: bookBackup.isShared,
-                    cloudRecordID: nil, // Clear CloudKit record for new copy
-                    imagesData: bookBackup.imagesData,
-                    glossaryData: bookBackup.glossaryData,
-                    tableOfContentsData: bookBackup.tableOfContentsData
-                )
-            }
+            let bookToImport = bookBackup
             
             // Create new Book from backup
             let newBook = Book(
