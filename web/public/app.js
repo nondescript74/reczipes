@@ -221,6 +221,8 @@ async function showRecipe(id) {
     if (e.currentTarget.classList.contains('done')) doneIng.add(k); else doneIng.delete(k);
   };
   const ingPanel = h('section', { class: 'panel ingredients-panel', 'aria-labelledby': 'ing-h' });
+  const health = r.health ?? null;
+  const fodmapKeys = new Set((health?.fodmap?.substitutions ?? []).map((g) => g.key));
 
   const drawIngredients = () => {
     ingPanel.replaceChildren(...[
@@ -231,7 +233,8 @@ async function showRecipe(id) {
           h('li', { class: doneIng.has(`${si}.${ii}`) ? 'done' : null, 'data-key': `${si}.${ii}`, role: 'checkbox', 'aria-checked': String(doneIng.has(`${si}.${ii}`)), tabindex: '0', onclick: toggleIng, onkeydown: (e) => { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); toggleIng(e); } } },
             qtyText(i, metric) ? h('span', { class: 'qty' }, qtyText(i, metric) + ' ') : null,
             i.name,
-            i.preparation ? h('span', { class: 'prep' }, `, ${i.preparation}`) : null))),
+            i.preparation ? h('span', { class: 'prep' }, `, ${i.preparation}`) : null,
+            fodmapKeys.has(`${si}.${ii}`) ? fodmapFlag(`${si}.${ii}`) : null))),
         s.transitionNote ? h('p', { class: 'transition' }, s.transitionNote) : null,
       ]),
     ].flat(Infinity).filter(Boolean));
@@ -264,6 +267,7 @@ async function showRecipe(id) {
       h('div', { class: 'toolbar' },
         metricBtn, wakeBtn,
         h('button', { class: 'btn', type: 'button', onclick: () => window.print() }, 'Print')),
+      health ? h('div', { class: 'health-area' }, fodmapPanel(health.fodmap), diabetesPanel(health)) : null,
       h('div', { class: 'recipe-body' },
         ingPanel,
         h('section', { class: 'panel', 'aria-labelledby': 'steps-h' },
@@ -283,6 +287,125 @@ async function showRecipe(id) {
   );
   main.focus({ preventScroll: true });
   window.scrollTo(0, 0);
+}
+
+// ---------- FODMAP and diabetes (same content as the app's recipe page) ----------
+// Panels open/closed state is remembered per viewer, like the app's Show/Hide.
+function rememberedDetails(key, cls, defaultOpen, summary, ...body) {
+  const saved = store(key);
+  const d = h('details', { class: cls, open: saved == null ? defaultOpen : saved === '1' }, h('summary', {}, summary), ...body);
+  d.addEventListener('toggle', () => store(key, d.open ? '1' : '0'));
+  return d;
+}
+
+const chip = (text, tone) => h('span', { class: `chip chip--${tone}` }, text);
+const LEVEL_TONE = { Low: 'ok', Moderate: 'warn', High: 'bad' };
+const CONFIDENCE_TONE = { Recommended: 'ok', 'Good Alternative': 'warn', 'Limited Option': 'caution' };
+const FODMAP_ICON = { Oligosaccharides: '🧅', Disaccharides: '🥛', Monosaccharides: '🍯', Polyols: '🍎' };
+
+function fodmapFlag(key) {
+  return h('button', {
+    type: 'button', class: 'fodmap-flag', title: 'FODMAP substitute available',
+    onclick: (e) => {
+      e.stopPropagation();
+      const card = document.getElementById(`fodmap-${key}`);
+      if (!card) return;
+      card.closest('details.health')?.setAttribute('open', '');
+      card.open = true;
+      card.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    },
+    onkeydown: (e) => e.stopPropagation(),
+  }, '⇄ FODMAP substitute');
+}
+
+function fodmapPanel(f) {
+  if (!f?.hasSubstitutions) return null; // the app shows this section only when there is something to swap
+  const n = f.substitutions.length;
+  return rememberedDetails('reczipes.panel.fodmap', 'health health--fodmap', true,
+    [h('span', { class: 'health__title' }, 'FODMAP Friendly Options'), chip(f.overallLevel, LEVEL_TONE[f.overallLevel])],
+    f.isSafeWithoutSubstitutions
+      ? h('p', { class: 'callout callout--ok' }, '✓ This recipe is already low FODMAP!')
+      : h('p', { class: 'callout callout--warn' }, `${n} ingredient${n === 1 ? '' : 's'} can be substituted`),
+    f.substitutions.map((g) => h('details', { class: 'sub-card', id: `fodmap-${g.key}` },
+      h('summary', {},
+        h('span', { class: 'sub-card__warn', 'aria-hidden': 'true' }, '⚠'),
+        h('span', { class: 'sub-card__ing' },
+          h('b', {}, [g.ingredient.quantity, g.ingredient.unit, g.ingredient.name].filter(Boolean).join(' ')),
+          g.sectionTitle ? h('span', { class: 'muted' }, ` · ${g.sectionTitle}`) : null,
+          h('span', { class: 'sub-card__cats' }, g.substitution.fodmapCategories.map((c) => `${FODMAP_ICON[c] ?? ''} ${c}`).join('   ')))),
+      h('div', { class: 'sub-card__body' },
+        h('p', { class: 'muted' }, g.substitution.explanation),
+        g.substitution.portionNote ? h('p', { class: 'portion' }, '📏 ', g.substitution.portionNote) : null,
+        h('p', { class: 'sub-card__with' }, 'Substitute with:'),
+        h('ul', { class: 'sub-options' }, g.substitution.substitutes.map((o) => h('li', {},
+          h('span', { class: 'sub-options__name' }, o.name, ' ', chip(o.confidence, CONFIDENCE_TONE[o.confidence] ?? 'warn')),
+          o.quantity ? h('span', { class: 'sub-options__qty' }, o.quantity) : null,
+          o.notes ? h('span', { class: 'sub-options__notes' }, o.notes) : null)))))));
+}
+
+const SUIT_TONE = { Excellent: 'ok', Good: 'ok', Moderate: 'warn', Caution: 'caution', Avoid: 'bad' };
+const CONSENSUS = {
+  strongConsensus: ['Verified', 'ok'], moderateConsensus: ['Moderate', 'info'],
+  limitedEvidence: ['Limited', 'warn'], needsReview: ['Review', 'bad'],
+};
+const glTone = (v) => (v <= 10 ? 'ok' : v <= 20 ? 'warn' : 'bad');
+const glWord = (v) => (v <= 10 ? 'Low' : v <= 20 ? 'Medium' : 'High');
+const grams = (v) => `${Math.trunc(v)}g`;
+
+function diabetesPanel(health) {
+  const score = health.diabetes;
+  const info = health.diabeticInfo;
+  const consensus = info ? CONSENSUS[info.consensusLevel] ?? CONSENSUS.needsReview : null;
+  const concerns = [...score.highSugarIngredients, ...score.refinedCarbIngredients.filter((x) => !score.highSugarIngredients.includes(x))];
+
+  const check = h('div', { class: 'dcheck' },
+    h('div', { class: 'dcheck__head' }, h('b', {}, 'Ingredient check'), chip(score.suitability, SUIT_TONE[score.suitability])),
+    concerns.length ? h('p', {}, h('span', { class: 'muted' }, 'Higher sugar or refined carbs: '), concerns.join(', ')) : null,
+    score.beneficialIngredients.length ? h('p', {}, h('span', { class: 'muted' }, 'Helpful: '), score.beneficialIngredients.join(', ')) : null);
+
+  let analysis;
+  if (info) {
+    const bar = h('div', { class: `glbar__fill glbar--${info.glycemicLoad ? glTone(info.glycemicLoad.value) : 'ok'}` });
+    if (info.glycemicLoad) bar.style.width = `${Math.min(100, (info.glycemicLoad.value / 30) * 100)}%`;
+    analysis = [
+      info.glycemicLoad ? h('div', { class: `dcard dcard--${glTone(info.glycemicLoad.value)}` },
+        h('div', { class: 'dcard__head' }, h('b', {}, 'Glycemic Impact'),
+          h('span', { class: `gl gl--${glTone(info.glycemicLoad.value)}` }, h('b', {}, String(Math.trunc(info.glycemicLoad.value))), h('small', {}, glWord(info.glycemicLoad.value)))),
+        h('div', { class: 'glbar', role: 'img', 'aria-label': `Glycemic load ${Math.trunc(info.glycemicLoad.value)} of 30` }, bar),
+        info.glycemicLoad.explanation ? h('p', { class: 'muted' }, info.glycemicLoad.explanation) : null) : null,
+      info.carbs ? h('div', { class: 'dcard' },
+        h('b', {}, 'Carbohydrate Breakdown'),
+        h('dl', { class: 'carbs' },
+          h('div', {}, h('dt', {}, 'Total Carbs'), h('dd', {}, grams(info.carbs.totalCarbs))),
+          h('div', {}, h('dt', {}, 'Net Carbs'), h('dd', {}, grams(info.carbs.netCarbs))),
+          h('div', {}, h('dt', {}, 'Fiber'), h('dd', {}, grams(info.carbs.fiber))))) : null,
+      info.guidance.map((g) => h('details', { class: 'guide' },
+        h('summary', {}, h('b', {}, g.title), g.summary ? h('span', { class: 'muted guide__sum' }, g.summary) : null),
+        g.detailedExplanation ? h('p', {}, g.detailedExplanation) : null,
+        g.practicalTips.length ? [h('p', { class: 'guide__tips' }, 'Tips:'), h('ul', {}, g.practicalTips.map((tip) => h('li', {}, tip)))] : null)),
+      info.substitutions.length ? h('div', { class: 'alts' },
+        h('h3', {}, 'Healthier Alternatives'),
+        h('ul', {}, info.substitutions.map((x) => h('li', {},
+          h('s', {}, x.originalIngredient), ' → ', h('b', {}, x.substitute),
+          x.reason ? h('span', { class: 'muted alts__why' }, x.reason) : null)))) : null,
+      h('details', { class: 'dsources' },
+        h('summary', {}, `Based on ${info.sources.length} verified source${info.sources.length === 1 ? '' : 's'}`,
+          info.lastUpdated ? h('span', { class: 'muted' }, ` · Last updated: ${fmtDate(info.lastUpdated)}`) : null),
+        info.sources.length ? h('ul', {}, info.sources.map((src) => h('li', {},
+          src.url ? h('a', { href: src.url, rel: 'noopener noreferrer', target: '_blank' }, src.title) : src.title,
+          src.organization ? h('span', { class: 'muted' }, ` — ${src.organization}`) : null,
+          src.publishDate ? h('span', { class: 'muted' }, ` · ${fmtDate(src.publishDate)}`) : null))) : null),
+    ];
+  } else {
+    analysis = h('p', { class: 'muted dnone' },
+      'No Claude analysis has been published for this recipe yet. It appears here after someone taps “Analyze for Diabetic-Friendly Info” on this recipe in the Reczipes app.');
+  }
+
+  return rememberedDetails('reczipes.panel.diabetes', 'health health--diabetes', true,
+    [h('span', { class: 'health__title' }, 'Diabetic-Friendly Analysis'), consensus ? chip(consensus[0], consensus[1]) : null],
+    h('p', { class: 'callout callout--info' }, h('b', {}, 'Informational Only. '), 'This analysis is not medical advice. Consult your healthcare provider.'),
+    check,
+    analysis);
 }
 
 // ---------- Books ----------

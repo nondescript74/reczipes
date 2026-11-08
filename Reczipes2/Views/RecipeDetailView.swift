@@ -1167,6 +1167,7 @@ struct RecipeDetailView: View {
             // Progress: Analysis complete
             analysisProgress = 1.0
             AppLog.info("Diabetic analysis completed successfully", category: .recipe)
+            refreshPublicCopyWithAnalysis()
             
         } catch {
             // Handle error - show alert to user
@@ -1176,6 +1177,26 @@ struct RecipeDetailView: View {
         }
     }
     
+    /// Puts the analysis on the recipe's public copy so the web shows it too. Only for a
+    /// recipe already public; one not yet published picks the analysis up when it is.
+    private func refreshPublicCopyWithAnalysis() {
+        guard let recipeID = recipe.id else { return }
+        let descriptor = FetchDescriptor<SharedRecipe>(
+            predicate: #Predicate<SharedRecipe> { $0.recipeID == recipeID && $0.isActive == true }
+        )
+        guard let tracked = try? modelContext.fetch(descriptor), !tracked.isEmpty else { return }
+        let recipe = self.recipe
+        let modelContext = self.modelContext
+        Task { @MainActor in
+            do {
+                _ = try await CloudKitSharingService.shared.shareRecipe(recipe, modelContext: modelContext, refreshExisting: true)
+                AppLog.info("Published diabetic analysis with '\(recipe.safeTitle)'", category: .sharing)
+            } catch {
+                AppLog.error("Failed to publish diabetic analysis with '\(recipe.safeTitle)': \(error)", category: .sharing)
+            }
+        }
+    }
+
     private func rerunDiabeticAnalysis() async {
         // Clear existing analysis
         diabeticInfo = nil

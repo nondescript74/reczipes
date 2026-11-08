@@ -67,6 +67,11 @@ struct CloudKitRecipe: Codable, Identifiable {
     /// Set when the recipe was removed as an exact copy of another (duplicate merge):
     /// receivers drop their copy quietly when this one is still published.
     var replacedByID: UUID? = nil
+    /// The owner's Diabetic-Friendly Analysis (the cached `DiabeticInfo` JSON, ISO-8601 dates),
+    /// so the web shows what the app shows. A string, not a typed field: a future change to
+    /// DiabeticInfo can never make a whole CloudKitRecipe fail to decode. Inside the JSON, so
+    /// no CloudKit schema change; older builds ignore it.
+    var diabeticInfoJSON: String? = nil
 
     /// Keys to encode/decode — excludes imageData so it doesn't break the JSON round-trip.
     enum CodingKeys: String, CodingKey {
@@ -75,6 +80,7 @@ struct CloudKitRecipe: Codable, Identifiable {
         case notes, reference, imageName, additionalImageNames
         case sharedByUserID, sharedByUserName, sharedDate
         case deletedByOwner, deletedDate, replacedByID
+        case diabeticInfoJSON
         // imageData intentionally omitted
     }
 }

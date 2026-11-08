@@ -8,9 +8,12 @@
 //   SharedRecipeBook.recipePreviews JSON of [RecipePreviewData] (Reczipes2/Views/CloudKitRecipePreview.swift)
 //   SharedRecipeBook.coverImage    CKAsset
 // Sections/ingredients/steps/notes come from Reczipes2/Models/RecipeDisplayItem.swift.
+//   CloudKitRecipe.diabeticInfoJSON  JSON of DiabeticInfo (the app's cached Claude analysis), optional
 
 // Swift's JSONEncoder default date strategy (.deferredToDate) writes seconds
 // since 2001-01-01T00:00:00Z. CloudKit TIMESTAMP fields arrive as ms since 1970.
+import { normDiabeticInfo } from './health.js';
+
 const APPLE_EPOCH_OFFSET_S = 978307200;
 
 export function swiftDateToISO(value) {
@@ -119,6 +122,7 @@ export function decodeSharedRecipe(record) {
     sharedByName: str(fieldValue(record, 'sharedByName')) ?? str(data.sharedByUserName),
     sharedDate,
     imageURL: assetURL(record, 'mainImage'),
+    diabeticInfo: normDiabeticInfo(data.diabeticInfoJSON),
     ...ownerDeletedFields(data),
   };
 }
@@ -339,7 +343,10 @@ export function collapseCopies(recipes) {
         (b.sharedDate ?? '').localeCompare(a.sharedDate ?? ''),
     );
     const [keep, ...rest] = group;
-    kept.push(keep);
+    // A copy has the same ingredients, so an analysis published on any copy (newest
+    // first) describes the kept one too.
+    const analysed = keep.diabeticInfo ? null : rest.find((d) => d.diabeticInfo);
+    kept.push(analysed ? { ...keep, diabeticInfo: analysed.diabeticInfo } : keep);
     for (const d of rest) alias.set(d.id.toUpperCase(), keep.id);
   }
   return { kept, alias };
@@ -371,7 +378,10 @@ export function collapseBookCopies(books, recipeAlias = new Map()) {
         (b.sharedDate ?? '').localeCompare(a.sharedDate ?? ''),
     );
     const [keep, ...rest] = group;
-    kept.push(keep);
+    // A copy has the same ingredients, so an analysis published on any copy (newest
+    // first) describes the kept one too.
+    const analysed = keep.diabeticInfo ? null : rest.find((d) => d.diabeticInfo);
+    kept.push(analysed ? { ...keep, diabeticInfo: analysed.diabeticInfo } : keep);
     for (const d of rest) alias.set(d.id.toUpperCase(), keep.id);
   }
   return { kept, alias };

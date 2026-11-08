@@ -89,6 +89,27 @@ Same pattern as the Japan 2027 trip page and hvhoa-jena: **two locks, one door.*
 Live counts now need a signed-in browser: `/api/status` is behind the login like everything else (only `/healthz` is open, and
 it says only `{"ok":true}`).
 
+## FODMAP and diabetes (same as the app, from 2026-11-08)
+
+Every recipe page shows the two panels the app's recipe page shows:
+
+- **FODMAP Friendly Options** — high-FODMAP ingredients, their categories, portion notes and
+  substitutes, plus a "⇄ FODMAP substitute" flag on each such ingredient. Shown only when the
+  recipe has something to swap, as in the app.
+- **Diabetic-Friendly Analysis** — the ingredient check (DiabetesAnalyzer: Excellent … Avoid,
+  the higher-sugar / refined-carb / helpful ingredients) and, when the owner has run it in the
+  app, Claude's analysis: glycemic impact, carbohydrate breakdown, guidance, healthier
+  alternatives, sources. The web never runs that analysis; the app publishes its cached copy
+  inside `recipeData` as `diabeticInfoJSON` (no CloudKit schema change). `/api/status` reports
+  how many recipes carry one (`diabeticAnalyses`).
+
+The FODMAP and diabetes tables are generated from the app's Swift source — never edit
+`lib/health-data.js` by hand:
+
+    node scripts/gen-health-data.mjs     # reads ../Reczipes2/Models/*.swift
+
+`test/health.test.js` fails if the generated tables and the Swift source disagree.
+
 ## Run it
 
 ```bash

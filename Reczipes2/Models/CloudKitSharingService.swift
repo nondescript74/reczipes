@@ -602,7 +602,7 @@ class CloudKitSharingService: ObservableObject {
         if let existingRecordToUpdate { record = existingRecordToUpdate }
         else { record = try await publicRecordForUpsert(type: CloudKitRecordType.sharedRecipe, name: PublicRecordName.recipe(recipe.safeID)) }
         
-        let cloudRecipe = CloudKitRecipe(
+        var cloudRecipe = CloudKitRecipe(
             id: recipe.safeID,
             title: recipe.safeTitle,
             headerNotes: recipe.headerNotes,
@@ -617,6 +617,7 @@ class CloudKitSharingService: ObservableObject {
             sharedByUserName: currentUserName,
             sharedDate: Date()
         )
+        cloudRecipe.diabeticInfoJSON = publishableDiabeticInfoJSON(for: recipe, modelContext: modelContext)
         
         // Encode to JSON and store in CloudKit
         let encoder = JSONEncoder()
@@ -666,6 +667,25 @@ class CloudKitSharingService: ObservableObject {
         return savedRecord.recordID.recordName
     }
     
+    /// Largest diabetic analysis published with a recipe (a typical one is a few KB).
+    static let diabeticInfoByteBudget = 64_000
+
+    /// The recipe's cached Diabetic-Friendly Analysis as published JSON, or nil when there is
+    /// none, it no longer matches the ingredients, or it is too large. Age alone does not hold
+    /// it back: an analysis older than the app's 30-day refresh still describes the recipe.
+    func publishableDiabeticInfoJSON(for recipe: RecipeX, modelContext: ModelContext) -> String? {
+        let recipeID = recipe.safeID
+        let descriptor = FetchDescriptor<CachedDiabeticAnalysis>(
+            predicate: #Predicate<CachedDiabeticAnalysis> { $0.recipeId == recipeID },
+            sortBy: [SortDescriptor(\.cachedAt, order: .reverse)]
+        )
+        guard let cached = try? modelContext.fetch(descriptor).first,
+              !cached.isIngredientsOutdated(recipe: recipe),
+              cached.analysisData.count <= Self.diabeticInfoByteBudget,
+              let json = String(data: cached.analysisData, encoding: .utf8) else { return nil }
+        return json
+    }
+
     // MARK: - Share Recipe Book
     
     /// Bytes allowed for the encoded recipePreviews field, leaving headroom under the

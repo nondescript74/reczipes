@@ -7,6 +7,7 @@
 // it never quietly substitutes sample data for real data (MTA M-19).
 
 import { readFile } from 'node:fs/promises';
+import { recipeHealth } from './health.js';
 import { decodeSharedRecipe, decodeSharedBook, decodeSharedBookPicture, attachBookPictures, newestPerId, collapseCopies, collapseBookCopies, summarize, dropOwnerDeleted } from './decode.js';
 
 export function createStore({ cloudkit, fixturesPath, ttlMs = 5 * 60 * 1000, now = () => Date.now() }) {
@@ -62,6 +63,8 @@ export function createStore({ cloudkit, fixturesPath, ttlMs = 5 * 60 * 1000, now
       bookAlias: bookCopies.alias,
       ownerDeleted: { recipes: liveRecipes.deletedCount, books: liveBooks.deletedCount },
       rawCounts: { recipes: recipeRecords.length, books: bookRecords.length, pictures: pictureRecords.length },
+      diabeticAnalyses: recipes.filter((r) => r.diabeticInfo).length,
+      health: new Map(), // recipe id -> recipeHealth(), filled on first view
       loadedAt: new Date(now()).toISOString(),
       loadedAtMs: now(),
     };
@@ -130,6 +133,7 @@ export function createStore({ cloudkit, fixturesPath, ttlMs = 5 * 60 * 1000, now
         collapsedCopies: state?.collapsedCopies ?? 0,
         collapsedBookCopies: state?.collapsedBookCopies ?? 0,
         ownerDeleted: state?.ownerDeleted ?? { recipes: 0, books: 0 },
+        diabeticAnalyses: state?.diabeticAnalyses ?? 0,
         lastError,
       };
     },
@@ -139,7 +143,10 @@ export function createStore({ cloudkit, fixturesPath, ttlMs = 5 * 60 * 1000, now
     },
     async getRecipe(id) {
       await ensure();
-      return state.byId.get(String(id).toUpperCase()) ?? null;
+      const r = state.byId.get(String(id).toUpperCase());
+      if (!r) return null;
+      if (!state.health.has(r.id)) state.health.set(r.id, recipeHealth(r));
+      return { ...r, health: state.health.get(r.id) };
     },
     async listBooks() {
       await ensure();
