@@ -10,8 +10,10 @@ import SwiftData
 import Combine
 
 struct RecipeSearchView: View {
-    @Binding var recipes: [RecipeX]
-    @Binding var selectedRecipe: RecipeX?
+    /// Everything the Recipes screen holds: owned (RecipeX) and community
+    /// (CachedSharedRecipe). Search always covers both, whatever Mine/Shared shows.
+    @Binding var recipes: [any RecipeDisplayProtocol]
+    @Binding var selectedRecipe: (any RecipeDisplayProtocol)?
     
     @Environment(\.modelContext) private var modelContext
     @Query private var recipeXEntities: [RecipeX]
@@ -24,10 +26,22 @@ struct RecipeSearchView: View {
     @State private var showingFilters = false
     @State private var useCookingTimeFilter = false
     
-    private var searchResults: [RecipeX] {
-        // Use live @Query data so search always sees the current recipe store,
-        // falling back to the passed-in binding only when the query is empty.
-        let source = recipeXEntities.isEmpty ? recipes : recipeXEntities
+    /// Owned recipes come from the live @Query (current store, nothing detached);
+    /// community recipes from the passed-in list, minus any that are the
+    /// user's own recipe shared back (same id) so each recipe shows once.
+    private var searchSource: [any RecipeDisplayProtocol] {
+        let owned: [any RecipeDisplayProtocol] = recipeXEntities.isEmpty
+            ? recipes.filter { !$0.isSharedRecipe }
+            : recipeXEntities
+                .filter { $0.modelContext != nil && !$0.isDeleted }
+                .map { $0 as any RecipeDisplayProtocol }
+        let ownedIDs = Set(owned.map { $0.displayID })
+        let community = recipes.filter { $0.isSharedRecipe && !ownedIDs.contains($0.displayID) }
+        return owned + community
+    }
+
+    private var searchResults: [any RecipeDisplayProtocol] {
+        let source = searchSource
         let criteria = RecipeSearchService.SearchCriteria(
             searchText: searchText,
             dishTypes: selectedDishTypes,
@@ -49,9 +63,9 @@ struct RecipeSearchView: View {
             }
             
             // Results list
-            List(searchResults) { recipe in
+            List(searchResults, id: \.displayID) { recipe in
                 NavigationLink {
-                    RecipeDetailView(recipe: recipe)
+                    detailView(for: recipe)
                 } label: {
                     recipeRow(recipe: recipe)
                 }
@@ -187,11 +201,26 @@ struct RecipeSearchView: View {
     
     // MARK: - Recipe Row
     
-    private func recipeRow(recipe: RecipeX) -> some View {
+    @ViewBuilder
+    private func detailView(for recipe: any RecipeDisplayProtocol) -> some View {
+        if let recipeX = recipe as? RecipeX {
+            RecipeDetailView(recipe: recipeX)
+        } else if let cached = recipe as? CachedSharedRecipe {
+            CachedRecipeDetailView(cachedRecipe: cached)
+        }
+    }
+
+    private func thumbnailData(for recipe: any RecipeDisplayProtocol) -> Data? {
+        if let recipeX = recipe as? RecipeX { return recipeX.imageData }
+        if let cached = recipe as? CachedSharedRecipe { return cached.imageData }
+        return nil
+    }
+
+    private func recipeRow(recipe: any RecipeDisplayProtocol) -> some View {
         VStack(alignment: .leading, spacing: 8) {
             HStack(spacing: 12) {
                 // Thumbnail
-                if let imageData = recipe.imageData, let uiImage = PlatformImage(data: imageData) {
+                if let imageData = thumbnailData(for: recipe), let uiImage = PlatformImage(data: imageData) {
                     Image(platformImage: uiImage)
                         .resizable()
                         .aspectRatio(contentMode: .fill)
@@ -214,7 +243,7 @@ struct RecipeSearchView: View {
                 }
                 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text(recipe.safeTitle)
+                    Text(recipe.displayTitle)
                         .font(.headline)
                         .foregroundStyle(.primary)
                     
@@ -234,6 +263,13 @@ struct RecipeSearchView: View {
                                 .lineLimit(1)
                         }
                         
+                        if recipe.isSharedRecipe, let sharer = recipe.sharedByUserName, !sharer.isEmpty {
+                            Label("Shared by \(sharer)", systemImage: "person.2.fill")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
+                        }
+
                         if let cookingTime = searchService.getCookingTimeString(for: recipe) {
                             Label(cookingTime, systemImage: "clock")
                                 .font(.caption)
@@ -366,22 +402,9 @@ struct RecipeSearchModalView: View {
     @Binding var recipes: [any RecipeDisplayProtocol]
     @Binding var selectedRecipe: (any RecipeDisplayProtocol)?
     
-    // Extract RecipeX objects for the search view (which only works with RecipeX)
-    private var recipeXObjects: [RecipeX] {
-        recipes.compactMap { $0 as? RecipeX }
-    }
-    
-    // Binding adapter to convert between protocols
-    private var recipeXSelection: Binding<RecipeX?> {
-        Binding(
-            get: { selectedRecipe as? RecipeX },
-            set: { selectedRecipe = $0 }
-        )
-    }
-    
     var body: some View {
         NavigationStack {
-            RecipeSearchView(recipes: .constant(recipeXObjects), selectedRecipe: recipeXSelection)
+            RecipeSearchView(recipes: $recipes, selectedRecipe: $selectedRecipe)
                 .toolbar {
                     ToolbarItem(placement: .platformNavBarTrailing) {
                         CloudKitSyncBadge()
@@ -433,7 +456,7 @@ struct RecipeSearchModalView: View {
     
     return NavigationStack {
         RecipeSearchView(
-            recipes: .constant([sampleRecipe]),
+            recipes: .constant([sampleRecipe as any RecipeDisplayProtocol]),
             selectedRecipe: .constant(nil)
         )
     }

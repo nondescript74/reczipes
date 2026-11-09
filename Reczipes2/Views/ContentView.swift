@@ -84,6 +84,15 @@ struct ContentView: View {
         return applyContentFilter(to: live)
     }
     
+    /// What the search button searches: owned and community recipes together,
+    /// whatever Mine/Shared or the filter chips show (live RecipeX only).
+    private var searchableRecipes: [any RecipeDisplayProtocol] {
+        cachedAllRecipes.filter { recipe in
+            guard let recipeX = recipe as? RecipeX else { return true }
+            return recipeX.modelContext != nil && !recipeX.isDeleted
+        }
+    }
+
     /// Applies the content filter (mine/shared) to recipes
     private func applyContentFilter(to recipes: [any RecipeDisplayProtocol]) -> [any RecipeDisplayProtocol] {
         switch contentFilter {
@@ -821,7 +830,7 @@ struct ContentView: View {
             }
             .sheet(isPresented: $showingSearch) {
                 RecipeSearchModalView(
-                    recipes: .constant(availableRecipes),
+                    recipes: .constant(searchableRecipes),
                     selectedRecipe: $selectedRecipe
                 )
                 .macOSSheetFrame()

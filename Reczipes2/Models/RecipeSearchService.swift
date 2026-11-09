@@ -113,21 +113,25 @@ class RecipeSearchService {
         }
     }
     
-    /// Search results with relevance scoring
-    struct SearchResult {
-        let recipe: RecipeX
+    /// Which part of a recipe matched the search
+    enum MatchField: Equatable {
+        case title
+        case author
+        case ingredient(name: String)
+        case dishType(DishType)
+        case cookingTime
+        case headerNotes
+        case instructions
+    }
+
+    /// Search results with relevance scoring. `Recipe` is RecipeX for the
+    /// owned-only callers, or `any RecipeDisplayProtocol` when owned and
+    /// community recipes are searched together (the Recipes search button).
+    struct SearchResult<Recipe> {
+        typealias MatchField = RecipeSearchService.MatchField
+        let recipe: Recipe
         let score: Double
         let matchedFields: [MatchField]
-        
-        enum MatchField: Equatable {
-            case title
-            case author
-            case ingredient(name: String)
-            case dishType(DishType)
-            case cookingTime
-            case headerNotes
-            case instructions
-        }
     }
     
     // MARK: - Search Methods
@@ -137,17 +141,27 @@ class RecipeSearchService {
     ///   - recipes: The recipes to search through
     ///   - criteria: The search criteria to apply
     /// - Returns: An array of search results, sorted by relevance score (highest first)
-    func search(recipes: [RecipeX], criteria: SearchCriteria) -> [SearchResult] {
+    func search<R: RecipeDisplayProtocol>(recipes: [R], criteria: SearchCriteria) -> [SearchResult<R>] {
+        rank(recipes, criteria: criteria) { $0 }
+    }
+
+    /// Owned and community recipes together (RecipeX and CachedSharedRecipe)
+    func search(recipes: [any RecipeDisplayProtocol], criteria: SearchCriteria) -> [SearchResult<any RecipeDisplayProtocol>] {
+        rank(recipes, criteria: criteria) { $0 }
+    }
+
+    private func rank<R>(_ items: [R], criteria: SearchCriteria, as view: (R) -> any RecipeDisplayProtocol) -> [SearchResult<R>] {
         guard !criteria.isEmpty else {
             // Return all recipes with default score when no criteria
-            return recipes.map { SearchResult(recipe: $0, score: 1.0, matchedFields: []) }
+            return items.map { SearchResult(recipe: $0, score: 1.0, matchedFields: []) }
         }
         
-        var results: [SearchResult] = []
+        var results: [SearchResult<R>] = []
         
-        for recipe in recipes {
+        for item in items {
+            let recipe = view(item)
             var score: Double = 0
-            var matchedFields: [SearchResult.MatchField] = []
+            var matchedFields: [MatchField] = []
             
             // Dish type matching - this acts as a FILTER when specified
             if !criteria.dishTypes.isEmpty {
@@ -172,7 +186,9 @@ class RecipeSearchService {
             
             // Author matching - acts as a FILTER when specified
             if let authorQuery = criteria.author, !authorQuery.isEmpty {
-                guard let reference = recipe.reference, reference.localizedCaseInsensitiveContains(authorQuery) else {
+                let byReference = recipe.reference?.localizedCaseInsensitiveContains(authorQuery) == true
+                let bySharer = recipe.sharedByUserName?.localizedCaseInsensitiveContains(authorQuery) == true
+                guard byReference || bySharer else {
                     // Recipe doesn't match author requirement - skip it
                     continue
                 }
@@ -196,7 +212,7 @@ class RecipeSearchService {
             
             // Only include recipes with matches
             if score > 0 {
-                results.append(SearchResult(recipe: recipe, score: score, matchedFields: matchedFields))
+                results.append(SearchResult(recipe: item, score: score, matchedFields: matchedFields))
             }
         }
         
@@ -205,19 +221,23 @@ class RecipeSearchService {
     }
     
     /// Convenience method to get just the recipes without search metadata
-    func searchRecipes(recipes: [RecipeX], criteria: SearchCriteria) -> [RecipeX] {
+    func searchRecipes<R: RecipeDisplayProtocol>(recipes: [R], criteria: SearchCriteria) -> [R] {
+        search(recipes: recipes, criteria: criteria).map { $0.recipe }
+    }
+
+    func searchRecipes(recipes: [any RecipeDisplayProtocol], criteria: SearchCriteria) -> [any RecipeDisplayProtocol] {
         search(recipes: recipes, criteria: criteria).map { $0.recipe }
     }
     
     // MARK: - Private Helper Methods
     
-    private func searchText(in recipe: RecipeX, searchText: String) -> (score: Double, fields: [SearchResult.MatchField]) {
+    private func searchText(in recipe: any RecipeDisplayProtocol, searchText: String) -> (score: Double, fields: [MatchField]) {
         var score: Double = 0
-        var fields: [SearchResult.MatchField] = []
+        var fields: [MatchField] = []
         let query = searchText.lowercased()
         
         // Title matching (highest weight)
-        if recipe.safeTitle.localizedCaseInsensitiveContains(query) {
+        if recipe.displayTitle.localizedCaseInsensitiveContains(query) {
             score += 10.0
             fields.append(.title)
         }
@@ -274,12 +294,16 @@ class RecipeSearchService {
         if let reference = recipe.reference, reference.localizedCaseInsensitiveContains(query) {
             score += 4.0
             fields.append(.author)
+        } else if let sharer = recipe.sharedByUserName, sharer.localizedCaseInsensitiveContains(query) {
+            // Community recipe: who shared it
+            score += 4.0
+            fields.append(.author)
         }
         
         return (score, fields)
     }
     
-    private func matchDishTypes(in recipe: RecipeX, types: Set<DishType>) -> [DishType] {
+    private func matchDishTypes(in recipe: any RecipeDisplayProtocol, types: Set<DishType>) -> [DishType] {
         var matches: [DishType] = []
         
         for dishType in types {
@@ -292,9 +316,9 @@ class RecipeSearchService {
     }
     
     /// Detect if a recipe matches a specific dish type
-    private func detectDishType(_ recipe: RecipeX, type: DishType) -> Bool {
+    private func detectDishType(_ recipe: any RecipeDisplayProtocol, type: DishType) -> Bool {
         let searchableText = [
-            recipe.safeTitle,
+            recipe.displayTitle,
             recipe.headerNotes ?? "",
             recipe.notes.map { $0.text }.joined(separator: " ")
         ].joined(separator: " ").lowercased()
@@ -306,9 +330,9 @@ class RecipeSearchService {
     }
     
     /// Extract cooking time from recipe (in minutes)
-    private func extractCookingTime(from recipe: RecipeX) -> Int? {
-        // First check if cookTimeMinutes is set
-        if let cookTime = recipe.cookTimeMinutes, cookTime > 0 {
+    private func extractCookingTime(from recipe: any RecipeDisplayProtocol) -> Int? {
+        // First check if cookTimeMinutes is set (owned recipes only)
+        if let cookTime = (recipe as? RecipeX)?.cookTimeMinutes, cookTime > 0 {
             return cookTime
         }
         
@@ -363,12 +387,12 @@ class RecipeSearchService {
     // MARK: - Helper Methods for UI
     
     /// Get all detected dish types for a recipe
-    func detectAllDishTypes(for recipe: RecipeX) -> [DishType] {
+    func detectAllDishTypes(for recipe: any RecipeDisplayProtocol) -> [DishType] {
         DishType.allCases.filter { detectDishType(recipe, type: $0) }
     }
     
     /// Get cooking time display string for a recipe
-    func getCookingTimeString(for recipe: RecipeX) -> String? {
+    func getCookingTimeString(for recipe: any RecipeDisplayProtocol) -> String? {
         guard let minutes = extractCookingTime(from: recipe) else { return nil }
         
         if minutes < 60 {
