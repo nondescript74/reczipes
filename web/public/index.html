@@ -16,25 +16,26 @@
   <script src="/app.js" type="module" defer></script>
 </head>
 <body>
-  <a class="skip" href="#main">Skip to content</a>
+  <a class="skip" href="#main" data-i18n="Skip to content">Skip to content</a>
   <header class="masthead">
     <div class="wrap masthead__row">
-      <a class="brand" href="#/" aria-label="Reczipes home">
+      <a class="brand" href="#/" aria-label="Reczipes home" data-i18n-aria="Reczipes home">
         <img src="/icon.svg" alt="" width="32" height="32">
         <span>Reczipes</span>
       </a>
-      <nav class="tabs" aria-label="Sections">
-        <a href="#/" data-tab="recipes">Recipes</a>
-        <a href="#/books" data-tab="books">Books</a>
+      <nav class="tabs" aria-label="Sections" data-i18n-aria="Sections">
+        <a href="#/" data-tab="recipes" data-i18n="Recipes">Recipes</a>
+        <a href="#/books" data-tab="books" data-i18n="Books">Books</a>
       </nav>
+      <div class="lang" id="lang"></div>
     </div>
   </header>
   <div id="banner" class="wrap" role="status" aria-live="polite"></div>
   <main id="main" class="wrap" tabindex="-1">
-    <p class="muted">Loading recipes…</p>
+    <p class="muted" data-i18n="Loading recipes…">Loading recipes…</p>
   </main>
   <footer class="wrap footer">
-    <p>Recipes shared from the Reczipes app for iPhone, iPad and Mac. <span id="source"></span></p>
+    <p><span data-i18n="Recipes shared from the Reczipes app for iPhone, iPad and Mac.">Recipes shared from the Reczipes app for iPhone, iPad and Mac.</span> <span id="source"></span></p>
   </footer>
   <noscript><p class="wrap">Reczipes needs JavaScript turned on to show recipes.</p></noscript>
 </body>
