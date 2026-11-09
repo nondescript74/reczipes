@@ -77,44 +77,44 @@ nonisolated enum ClaudeServiceIssue: Error, Equatable, Identifiable {
 
     var title: String {
         switch self {
-        case .keyMissing:       String(localized: "Claude isn't set up yet", comment: "Error title: no Claude API key saved")
-        case .keyRejected:      String(localized: "Your Claude key was refused", comment: "Error title: Anthropic rejected the API key (HTTP 401)")
-        case .accessDenied:     String(localized: "This key can't use Claude", comment: "Error title: API key lacks permission (HTTP 403)")
-        case .outOfCredit:      String(localized: "Your Claude account is out of credit", comment: "Error title: no API credit left")
-        case .rateLimited:      String(localized: "Claude needs a short break", comment: "Error title: too many requests (HTTP 429)")
-        case .busy:             String(localized: "Claude is busy right now", comment: "Error title: Anthropic overloaded or server error")
-        case .modelUnavailable: String(localized: "This Claude model isn't available", comment: "Error title: model not found (HTTP 404)")
-        case .tooLong:          String(localized: "The answer was too long to finish", comment: "Error title: Claude's reply was cut off")
-        case .timedOut:         String(localized: "Claude took too long to answer", comment: "Error title: request timed out")
-        case .offline:          String(localized: "You're offline", comment: "Error title: no internet connection")
-        case .unexpected:       String(localized: "Something went wrong with Claude", comment: "Error title: unrecognised Claude failure")
+        case .keyMissing:       String(localized: "Claude isn't set up yet", bundle: .appLanguage, comment: "Error title: no Claude API key saved")
+        case .keyRejected:      String(localized: "Your Claude key was refused", bundle: .appLanguage, comment: "Error title: Anthropic rejected the API key (HTTP 401)")
+        case .accessDenied:     String(localized: "This key can't use Claude", bundle: .appLanguage, comment: "Error title: API key lacks permission (HTTP 403)")
+        case .outOfCredit:      String(localized: "Your Claude account is out of credit", bundle: .appLanguage, comment: "Error title: no API credit left")
+        case .rateLimited:      String(localized: "Claude needs a short break", bundle: .appLanguage, comment: "Error title: too many requests (HTTP 429)")
+        case .busy:             String(localized: "Claude is busy right now", bundle: .appLanguage, comment: "Error title: Anthropic overloaded or server error")
+        case .modelUnavailable: String(localized: "This Claude model isn't available", bundle: .appLanguage, comment: "Error title: model not found (HTTP 404)")
+        case .tooLong:          String(localized: "The answer was too long to finish", bundle: .appLanguage, comment: "Error title: Claude's reply was cut off")
+        case .timedOut:         String(localized: "Claude took too long to answer", bundle: .appLanguage, comment: "Error title: request timed out")
+        case .offline:          String(localized: "You're offline", bundle: .appLanguage, comment: "Error title: no internet connection")
+        case .unexpected:       String(localized: "Something went wrong with Claude", bundle: .appLanguage, comment: "Error title: unrecognised Claude failure")
         }
     }
 
     var message: String {
         switch self {
         case .keyMissing:
-            String(localized: "Add your Claude API key once and this will work everywhere in the app.", comment: "Error message: no Claude key")
+            String(localized: "Add your Claude API key once and this will work everywhere in the app.", bundle: .appLanguage, comment: "Error message: no Claude key")
         case .keyRejected:
-            String(localized: "The key saved in Reczipes is no longer accepted. It may have been removed or replaced. Paste a current key from your Anthropic account.", comment: "Error message: key refused")
+            String(localized: "The key saved in Reczipes is no longer accepted. It may have been removed or replaced. Paste a current key from your Anthropic account.", bundle: .appLanguage, comment: "Error message: key refused")
         case .accessDenied:
-            String(localized: "Your Anthropic account doesn't allow this key to do that. Check the key's workspace in your Anthropic account, or paste a different key.", comment: "Error message: key lacks permission")
+            String(localized: "Your Anthropic account doesn't allow this key to do that. Check the key's workspace in your Anthropic account, or paste a different key.", bundle: .appLanguage, comment: "Error message: key lacks permission")
         case .outOfCredit:
-            String(localized: "Add credit to your Anthropic account, then try again.", comment: "Error message: out of credit")
+            String(localized: "Add credit to your Anthropic account, then try again.", bundle: .appLanguage, comment: "Error message: out of credit")
         case .rateLimited:
-            String(localized: "Too many requests in a short time. Wait a minute and try again.", comment: "Error message: rate limited")
+            String(localized: "Too many requests in a short time. Wait a minute and try again.", bundle: .appLanguage, comment: "Error message: rate limited")
         case .busy:
-            String(localized: "Anthropic's service is overloaded or having trouble. Your recipe is fine. Try again in a few minutes.", comment: "Error message: service busy")
+            String(localized: "Anthropic's service is overloaded or having trouble. Your recipe is fine. Try again in a few minutes.", bundle: .appLanguage, comment: "Error message: service busy")
         case .modelUnavailable:
-            String(localized: "Reczipes asked for a Claude model your account can't use. Updating the app should fix this.", comment: "Error message: model not found")
+            String(localized: "Reczipes asked for a Claude model your account can't use. Updating the app should fix this.", bundle: .appLanguage, comment: "Error message: model not found")
         case .tooLong:
-            String(localized: "Claude's reply was cut off before it finished. Trying again usually works.", comment: "Error message: reply truncated")
+            String(localized: "Claude's reply was cut off before it finished. Trying again usually works.", bundle: .appLanguage, comment: "Error message: reply truncated")
         case .timedOut:
-            String(localized: "No answer arrived in time. Check your connection and try again.", comment: "Error message: timed out")
+            String(localized: "No answer arrived in time. Check your connection and try again.", bundle: .appLanguage, comment: "Error message: timed out")
         case .offline:
-            String(localized: "Connect to the internet and try again.", comment: "Error message: offline")
+            String(localized: "Connect to the internet and try again.", bundle: .appLanguage, comment: "Error message: offline")
         case .unexpected:
-            String(localized: "Try again. If it keeps happening, the Diagnostic Log in Settings has the details.", comment: "Error message: unknown failure")
+            String(localized: "Try again. If it keeps happening, the Diagnostic Log in Settings has the details.", bundle: .appLanguage, comment: "Error message: unknown failure")
         }
     }
 
@@ -128,9 +128,9 @@ nonisolated enum ClaudeServiceIssue: Error, Equatable, Identifiable {
 
     var fixLabel: String {
         switch fix {
-        case .openClaudeKey: String(localized: "Enter Claude Key", comment: "Button: opens the Claude API key screen")
-        case .openBilling:   String(localized: "Open Anthropic Billing", comment: "Button: opens the Anthropic billing page")
-        case .tryAgain:      String(localized: "Try Again", comment: "Button: retries the failed request")
+        case .openClaudeKey: String(localized: "Enter Claude Key", bundle: .appLanguage, comment: "Button: opens the Claude API key screen")
+        case .openBilling:   String(localized: "Open Anthropic Billing", bundle: .appLanguage, comment: "Button: opens the Anthropic billing page")
+        case .tryAgain:      String(localized: "Try Again", bundle: .appLanguage, comment: "Button: retries the failed request")
         }
     }
 }
@@ -170,7 +170,7 @@ private struct ClaudeIssueAlert: ViewModifier {
                         retry()
                     }
                 }
-                Button(String(localized: "Not Now", comment: "Button: dismisses an error"), role: .cancel) { }
+                Button(String(localized: "Not Now", bundle: .appLanguage, comment: "Button: dismisses an error"), role: .cancel) { }
             } message: { current in
                 Text(current.message)
             }

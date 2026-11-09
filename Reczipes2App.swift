@@ -62,6 +62,7 @@ struct Reczipes2App: App {
         fatalError("Legacy container initializer should not be called - use ModelContainerManager.shared instead")
     }()
     
+    @AppStorage(AppLanguage.storageKey) private var languageCode: String = AppLanguage.current.rawValue
     @State private var showLicenseAgreement = !LicenseHelper.hasAcceptedLicense
     @State private var showAPIKeySetup = false
     @State private var showLaunchScreen = false
@@ -193,6 +194,8 @@ struct Reczipes2App: App {
                     #endif
                 }
             }
+            // The language chosen from the toolbar flag (AppLanguage); every view and sheet follows it.
+            .environment(\.locale, (AppLanguage(rawValue: languageCode) ?? .english).locale)
             .onChange(of: scenePhase) { oldPhase, newPhase in
                 logInfo("Scene phase changing: \(String(describing: oldPhase)) -> \(String(describing: newPhase))", category: "state")
                 handleScenePhaseChange(oldPhase: oldPhase, newPhase: newPhase)
@@ -637,9 +640,15 @@ struct MainTabView: View {
         .toolbar {
             #if os(iOS)
             ToolbarItem(placement: .topBarTrailing) {
+                LanguageFlagMenu()
+            }
+            ToolbarItem(placement: .topBarTrailing) {
                 DiagnosticButton()
             }
             #else
+            ToolbarItem(placement: .primaryAction) {
+                LanguageFlagMenu()
+            }
             ToolbarItem(placement: .primaryAction) {
                 DiagnosticButton()
             }

@@ -810,11 +810,11 @@ enum DiabeticAnalysisError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .invalidRecipe:
-            return String(localized: "This recipe is missing the details needed for an analysis.", comment: "Diabetic analysis error")
+            return String(localized: "This recipe is missing the details needed for an analysis.", bundle: .appLanguage, comment: "Diabetic analysis error")
         case .invalidRequest, .invalidResponse, .noContentInResponse:
-            return String(localized: "Claude's answer couldn't be used. Try again.", comment: "Diabetic analysis error")
+            return String(localized: "Claude's answer couldn't be used. Try again.", bundle: .appLanguage, comment: "Diabetic analysis error")
         case .invalidJSON:
-            return String(localized: "Claude's answer couldn't be read. Try again.", comment: "Diabetic analysis error")
+            return String(localized: "Claude's answer couldn't be read. Try again.", bundle: .appLanguage, comment: "Diabetic analysis error")
         }
     }
 }

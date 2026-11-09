@@ -1181,7 +1181,7 @@ struct RecipeDetailView: View {
             if let issue = ClaudeServiceIssue(error) {
                 claudeIssue = issue
             } else {
-                remindersAlertMessage = String(localized: "The diabetic analysis couldn't be completed. Try again; if it keeps happening, the Diagnostic Log in Settings has the details.",
+                remindersAlertMessage = String(localized: "The diabetic analysis couldn't be completed. Try again; if it keeps happening, the Diagnostic Log in Settings has the details.", bundle: .appLanguage,
                                                comment: "Alert: diabetic analysis failed for an unrecognised reason")
                 showingRemindersAlert = true
             }

@@ -38,7 +38,7 @@ struct APIKeyManagerView: View {
                                      comment: "Shown on the API key screen when an error sent the user here")
                                     .font(.subheadline)
                                     .foregroundStyle(.secondary)
-                                Link(String(localized: "Open Anthropic API Keys", comment: "Link to the Anthropic console key page"),
+                                Link(String(localized: "Open Anthropic API Keys", bundle: .appLanguage, comment: "Link to the Anthropic console key page"),
                                      destination: URL(string: "https://console.anthropic.com/settings/keys")!)
                                     .font(.subheadline)
                             }
