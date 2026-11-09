@@ -434,11 +434,11 @@ actor DiabeticAnalysisService {
         request.setValue(apiKey, forHTTPHeaderField: "x-api-key")
         request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
         request.setValue("application/json", forHTTPHeaderField: "content-type")
-        request.timeoutInterval = 120 // 2 minutes for analysis
+        request.timeoutInterval = 300 // 5 minutes: Opus writes a long analysis
         
         let requestBody: [String: Any] = [
             "model": "claude-opus-5-5", // same model as recipe extraction (ClaudeAPIClient)
-            "max_tokens": 8192,
+            "max_tokens": 32000, // Opus 5.5 overran 8,192 and the JSON came back cut off
             "messages": [
                 [
                     "role": "user",
@@ -466,9 +466,14 @@ actor DiabeticAnalysisService {
                 let text: String?
             }
             let content: [ContentBlock]
+            let stop_reason: String?
         }
         
         let claudeResponse = try JSONDecoder().decode(ClaudeResponse.self, from: data)
+        if claudeResponse.stop_reason == "max_tokens" {
+            // The analysis JSON is incomplete; decoding it would fail with an unreadable error.
+            throw DiabeticAnalysisError.responseTruncated
+        }
         
         guard let textContent = claudeResponse.content.first(where: { $0.type == "text" }),
               let text = textContent.text else {
@@ -800,6 +805,7 @@ enum DiabeticAnalysisError: LocalizedError {
     case noContentInResponse
     case apiError(statusCode: Int)
     case missingAPIKey
+    case responseTruncated
     
     var errorDescription: String? {
         switch self {
@@ -817,6 +823,8 @@ enum DiabeticAnalysisError: LocalizedError {
             return "Analysis service error (code \(code))"
         case .missingAPIKey:
             return "API key not configured"
+        case .responseTruncated:
+            return "The analysis was too long to finish. Please try again."
         }
     }
 }
