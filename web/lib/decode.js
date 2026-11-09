@@ -224,6 +224,20 @@ export function dropOwnerDeleted(items) {
   return { live, deletedCount: [...marks.keys()].filter((id) => !liveIds.has(id)).length };
 }
 
+// CloudKitRecipeBook.translations (RecipeLocalizer in the app): { code: { bookDescription, source, model } }.
+// Only the description is translated; the book's name stays as its owner entered it.
+// Kept only when a non-empty description exists in English too. Older books: undefined.
+export function decodeBookTranslations(data) {
+  const raw = data?.translations;
+  if (!raw || typeof raw !== 'object' || !str(data.bookDescription)) return undefined;
+  const out = {};
+  for (const [code, tr] of Object.entries(raw)) {
+    const description = str(tr?.bookDescription);
+    if (/^[a-z]{2,3}(-[A-Za-z0-9]+)?$/.test(code) && description) out[code] = { description };
+  }
+  return Object.keys(out).length ? out : undefined;
+}
+
 export function decodeSharedBook(record) {
   if (!record || record.serverErrorCode) return null;
   const data = parseJSONField(record, 'bookData');
@@ -238,6 +252,7 @@ export function decodeSharedBook(record) {
     id: str(data.id) ?? record.recordName,
     name,
     description: str(data.bookDescription),
+    translations: decodeBookTranslations(data),
     color: str(data.color),
     recipeIDs: (Array.isArray(data.recipeIDs) ? data.recipeIDs : []).filter((x) => typeof x === 'string'),
     previews: (Array.isArray(previews) ? previews : [])

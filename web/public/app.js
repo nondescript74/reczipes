@@ -28,17 +28,23 @@ let backTo = { href: '#/', label: t('All recipes') };
 
 // Recipe text in the reader's language: the app publishes each recipe in every app
 // language (translations), already lined up with the English. Missing → English.
+// Titles stay as their owner entered them, in whatever language (Z, 2026-11-09);
+// only the text under them follows the reader.
 const trOf = (r) => r?.translations?.[lang()] ?? null;
 const localSummary = (r) => {
   const tr = trOf(r);
-  return tr ? { ...r, title: tr.title ?? r.title, yield: tr.yield ?? r.yield, headerNotes: tr.headerNotes ?? r.headerNotes } : r;
+  return tr ? { ...r, yield: tr.yield ?? r.yield, headerNotes: tr.headerNotes ?? r.headerNotes } : r;
+};
+// A book's description in the reader's language (the name stays as entered).
+const localBook = (b) => {
+  const d = b?.translations?.[lang()]?.description;
+  return d ? { ...b, description: d } : b;
 };
 function localRecipe(r) {
   const tr = trOf(r);
   if (!tr) return r;
   return {
     ...r,
-    title: tr.title ?? r.title,
     headerNotes: tr.headerNotes ?? r.headerNotes,
     yield: tr.yield ?? r.yield,
     ingredientSections: tr.ingredientSections,
@@ -479,7 +485,7 @@ async function showBooks() {
   document.title = `${t('Books')} · Reczipes`;
   let books;
   try {
-    books = await getJSON('/api/books');
+    books = (await getJSON('/api/books')).map(localBook);
   } catch (e) {
     return render(errorView(e));
   }
@@ -592,7 +598,7 @@ async function showBook(id, view = 'recipes') {
   setTab('books');
   let book, recipes;
   try {
-    [book, recipes] = await Promise.all([getJSON(`/api/books/${encodeURIComponent(id)}`), getJSON('/api/recipes').then(localRecipes)]);
+    [book, recipes] = await Promise.all([getJSON(`/api/books/${encodeURIComponent(id)}`).then(localBook), getJSON('/api/recipes').then(localRecipes)]);
   } catch (e) {
     return render(h('a', { class: 'back', href: '#/books' }, t('← All books')), errorView(e));
   }
