@@ -269,36 +269,35 @@ extension CloudKitSharingService {
                     jobs.append((item.id, language, item.source))
                 }
             }
+            // Batches of up to maxConcurrent main-actor tasks (no task group: Swift's
+            // region-based isolation checker could not analyse the group version).
             var stop = false
-            await withTaskGroup(of: (UUID, String, String, Result<RecipeTranslation, Error>).self) { group in
-                // Plain loops, not a nested func that captures `group` and `next`:
-                // Swift's region-based isolation checker rejects that shape.
-                var next = 0
-                while next < min(RecipeLocalizer.maxConcurrent, jobs.count) {
-                    let job = jobs[next]; next += 1
-                    group.addTask { @MainActor in
-                        do { return (job.id, job.language, job.source.fingerprint, .success(try await localizer.translate(job.source, to: job.language))) }
-                        catch { return (job.id, job.language, job.source.fingerprint, .failure(error)) }
+            var next = 0
+            while !stop && next < jobs.count {
+                let batch = Array(jobs[next..<min(next + RecipeLocalizer.maxConcurrent, jobs.count)])
+                next += batch.count
+                let tasks = batch.map { job in
+                    Task { @MainActor () -> Result<RecipeTranslation, Error> in
+                        do { return .success(try await localizer.translate(job.source, to: job.language)) }
+                        catch { return .failure(error) }
                     }
                 }
-                for await (id, language, fingerprint, result) in group {
+                for index in batch.indices {
+                    let job = batch[index]
+                    let result = await tasks[index].value
                     switch result {
-                    case .success(let t):
-                        localizer.store(t, id: id, language: language)
-                    case .failure(let error as RecipeTranslationError):
-                        localizer.markRefused(id, language: language, fingerprint: fingerprint)
-                        AppLog.warning("🌐 Translation refused (\(error)) for \(id) [\(language)]", category: .sharing)
-                    case .failure(let error as ClaudeServiceIssue) where [.keyMissing, .keyRejected, .accessDenied, .outOfCredit].contains(error):
-                        AppLog.warning("🌐 Translations stopped: \(error)", category: .sharing)
-                        stop = true
+                    case .success(let translation):
+                        localizer.store(translation, id: job.id, language: job.language)
                     case .failure(let error):
-                        AppLog.warning("🌐 Translation failed for \(id) [\(language)]: \(error.localizedDescription)", category: .sharing)
-                    }
-                    if !stop, next < jobs.count {
-                        let job = jobs[next]; next += 1
-                        group.addTask { @MainActor in
-                            do { return (job.id, job.language, job.source.fingerprint, .success(try await localizer.translate(job.source, to: job.language))) }
-                            catch { return (job.id, job.language, job.source.fingerprint, .failure(error)) }
+                        if let refusal = error as? RecipeTranslationError {
+                            localizer.markRefused(job.id, language: job.language, fingerprint: job.source.fingerprint)
+                            AppLog.warning("🌐 Translation refused (\(refusal)) for \(job.id) [\(job.language)]", category: .sharing)
+                        } else if let issue = error as? ClaudeServiceIssue,
+                                  [.keyMissing, .keyRejected, .accessDenied, .outOfCredit].contains(issue) {
+                            AppLog.warning("🌐 Translations stopped: \(issue)", category: .sharing)
+                            stop = true
+                        } else {
+                            AppLog.warning("🌐 Translation failed for \(job.id) [\(job.language)]: \(error.localizedDescription)", category: .sharing)
                         }
                     }
                 }
