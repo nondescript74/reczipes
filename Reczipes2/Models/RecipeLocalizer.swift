@@ -93,6 +93,23 @@ final class RecipeLocalizer {
         save(file, id)
     }
 
+    // MARK: Book cache (Application Support/RecipeTranslations/book-<id>.json)
+
+    private func bookFileURL(_ id: UUID) -> URL { folder.appendingPathComponent("book-\(id.uuidString).json") }
+
+    func cachedBook(_ id: UUID, language: String, fingerprint: String) -> BookTranslation? {
+        guard let data = try? Data(contentsOf: bookFileURL(id)),
+              let map = try? JSONDecoder().decode([String: BookTranslation].self, from: data),
+              let t = map[language], t.source == fingerprint else { return nil }
+        return t
+    }
+
+    func storeBook(_ translation: BookTranslation, id: UUID, language: String) {
+        var map = ((try? Data(contentsOf: bookFileURL(id))).flatMap { try? JSONDecoder().decode([String: BookTranslation].self, from: $0) }) ?? [:]
+        map[language] = translation
+        if let data = try? JSONEncoder().encode(map) { try? data.write(to: bookFileURL(id), options: .atomic) }
+    }
+
     // MARK: Claude
 
     func translate(_ source: RecipeTranslationSource, to language: String) async throws -> RecipeTranslation {
@@ -194,23 +211,6 @@ extension CloudKitSharingService {
     }
 
     private static var localizationTask: Task<Void, Never>?
-
-    // MARK: Book cache (Application Support/RecipeTranslations/book-<id>.json)
-
-    private func bookFileURL(_ id: UUID) -> URL { folder.appendingPathComponent("book-\(id.uuidString).json") }
-
-    func cachedBook(_ id: UUID, language: String, fingerprint: String) -> BookTranslation? {
-        guard let data = try? Data(contentsOf: bookFileURL(id)),
-              let map = try? JSONDecoder().decode([String: BookTranslation].self, from: data),
-              let t = map[language], t.source == fingerprint else { return nil }
-        return t
-    }
-
-    func storeBook(_ translation: BookTranslation, id: UUID, language: String) {
-        var map = ((try? Data(contentsOf: bookFileURL(id))).flatMap { try? JSONDecoder().decode([String: BookTranslation].self, from: $0) }) ?? [:]
-        map[language] = translation
-        if let data = try? JSONEncoder().encode(map) { try? data.write(to: bookFileURL(id), options: .atomic) }
-    }
 
     /// Starts the localization pass unless one is running. Called at the end of every
     /// publish pass; does not wait for it.

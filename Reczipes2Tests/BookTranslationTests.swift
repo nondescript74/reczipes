@@ -10,6 +10,7 @@ import Foundation
 @testable import Reczipes2
 
 @Suite("Book description translations")
+@MainActor
 struct BookTranslationTests {
 
     @Test("Fingerprint follows the description")
