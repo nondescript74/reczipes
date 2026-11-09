@@ -271,16 +271,16 @@ extension CloudKitSharingService {
             }
             var stop = false
             await withTaskGroup(of: (UUID, String, String, Result<RecipeTranslation, Error>).self) { group in
+                // Plain loops, not a nested func that captures `group` and `next`:
+                // Swift's region-based isolation checker rejects that shape.
                 var next = 0
-                func addJob() {
-                    guard next < jobs.count else { return }
+                while next < min(RecipeLocalizer.maxConcurrent, jobs.count) {
                     let job = jobs[next]; next += 1
                     group.addTask { @MainActor in
                         do { return (job.id, job.language, job.source.fingerprint, .success(try await localizer.translate(job.source, to: job.language))) }
                         catch { return (job.id, job.language, job.source.fingerprint, .failure(error)) }
                     }
                 }
-                for _ in 0..<RecipeLocalizer.maxConcurrent { addJob() }
                 for await (id, language, fingerprint, result) in group {
                     switch result {
                     case .success(let t):
@@ -294,7 +294,13 @@ extension CloudKitSharingService {
                     case .failure(let error):
                         AppLog.warning("🌐 Translation failed for \(id) [\(language)]: \(error.localizedDescription)", category: .sharing)
                     }
-                    if !stop { addJob() }
+                    if !stop, next < jobs.count {
+                        let job = jobs[next]; next += 1
+                        group.addTask { @MainActor in
+                            do { return (job.id, job.language, job.source.fingerprint, .success(try await localizer.translate(job.source, to: job.language))) }
+                            catch { return (job.id, job.language, job.source.fingerprint, .failure(error)) }
+                        }
+                    }
                 }
             }
 
