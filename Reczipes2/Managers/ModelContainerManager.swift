@@ -157,6 +157,13 @@ class ModelContainerManager: ObservableObject {
         
         if shouldUseCloudKit {
             AppLog.info("📦 Creating container with CloudKit enabled", category: .storage)
+            // Two stores: the library mirrored to the private iCloud database, and the
+            // community caches kept on this device only. If that cannot open, nothing is
+            // deleted — the single-store layout below is used exactly as before.
+            if let container = tryCreateSplitCloudKitContainer() {
+                return (container, true)
+            }
+            AppLog.warning("⚠️ Two-store container unavailable — using the single store (community caches mirrored as before)", category: .storage)
             // Try CloudKit configuration
             if let container = tryCreateCloudKitContainer() {
                 return (container, true)
@@ -170,6 +177,80 @@ class ModelContainerManager: ObservableObject {
         return (createLocalContainer(), false)
     }
     
+    // MARK: - Two-store layout (Δ-223)
+
+    /// Everything that belongs in the user's private iCloud.
+    nonisolated static var syncedModels: [any PersistentModel.Type] {
+        [
+            RecipeX.self,
+            Book.self,
+            BookPicture.self,
+            RecipeImageAssignment.self,
+            UserAllergenProfile.self,
+            CachedDiabeticAnalysis.self,
+            SavedLink.self,
+            CookingSession.self,
+            SharedRecipe.self,
+            SharedRecipeBook.self,
+            SharingPreferences.self,
+            VersionHistoryRecord.self,
+            Meal.self,
+            SharedMeal.self,
+        ]
+    }
+
+    /// Copies of public (community) data. Refilled from the public database, so they
+    /// stay on the device and are never mirrored. No relationships to the synced models.
+    nonisolated static var communityCacheModels: [any PersistentModel.Type] {
+        [
+            CachedSharedRecipe.self,
+            CloudKitRecipePreview.self,
+            CachedSharedMeal.self,
+        ]
+    }
+
+    /// Builds the two-store container. `privateDatabase` nil means no CloudKit at all
+    /// (tests). Throws instead of repairing: callers never delete files on failure.
+    static func makeSplitContainer(libraryURL: URL, cacheURL: URL, privateDatabase: String?) throws -> ModelContainer {
+        let library = ModelConfiguration(
+            "Library",
+            schema: Schema(syncedModels),
+            url: libraryURL,
+            cloudKitDatabase: privateDatabase.map { .private($0) } ?? .none
+        )
+        let cache = ModelConfiguration(
+            "CommunityCache",
+            schema: Schema(communityCacheModels),
+            url: cacheURL,
+            cloudKitDatabase: .none
+        )
+        return try ModelContainer(
+            for: Schema(syncedModels + communityCacheModels),
+            migrationPlan: Reczipes2MigrationPlan.self,
+            configurations: [library, cache]
+        )
+    }
+
+    private static func tryCreateSplitCloudKitContainer() -> ModelContainer? {
+        let libraryURL = URL.applicationSupportDirectory.appending(path: AppBuildInfo.localStoreFileName)
+        let cacheURL = URL.applicationSupportDirectory.appending(path: AppBuildInfo.communityCacheStoreFileName)
+        let cacheIsNew = !FileManager.default.fileExists(atPath: cacheURL.path)
+        do {
+            let container = try makeSplitContainer(libraryURL: libraryURL, cacheURL: cacheURL,
+                                                   privateDatabase: "iCloud.com.headydiscy.reczipes")
+            AppLog.info("✅ ModelContainer: library synced with iCloud; community caches on this device only (\(AppBuildInfo.communityCacheStoreFileName))", category: .storage)
+            if cacheIsNew {
+                // Empty cache store: the next community download is a full one, shown in the banner.
+                LibrarySyncStatus.forgetCompletedCommunityDownload()
+                AppLog.info("   New community cache store — shared recipes will download again", category: .storage)
+            }
+            return container
+        } catch {
+            AppLog.error("❌ Two-store container failed (nothing deleted):\n\(LibrarySyncStatus.describe(error))", category: .storage)
+            return nil
+        }
+    }
+
     private static func tryCreateCloudKitContainer() -> ModelContainer? {
         let cloudKitURL = URL.applicationSupportDirectory.appending(path: AppBuildInfo.localStoreFileName)
         
