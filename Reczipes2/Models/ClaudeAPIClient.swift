@@ -39,15 +39,16 @@ class ClaudeAPIClient {
     
     // Model fallback list - try these in order for validation
     private let validationModels = [
-        "claude-opus-4-5-20251101",      // Latest Opus 4.5 (primary)
-        "claude-sonnet-4-20250514",      // Sonnet 4 (fallback)
+        "claude-opus-5-5",               // Opus 5.5 (primary, same as extraction)
+        "claude-opus-4-5-20251101",      // Opus 4.5 (fallback)
+        "claude-sonnet-4-20250514",      // Sonnet 4
         "claude-3-7-sonnet-20250219",    // Sonnet 3.7
         "claude-3-5-sonnet-20241022",    // Sonnet 3.5 (Oct 2024)
         "claude-3-5-sonnet-20240620"     // Sonnet 3.5 (June 2024)
     ]
     
     // Primary model for recipe extraction
-    private let recipeExtractionModel = "claude-opus-4-5-20251101"
+    private let recipeExtractionModel = "claude-opus-5-5"
     
     // URLSession with custom configuration
     private lazy var urlSession: URLSession = {

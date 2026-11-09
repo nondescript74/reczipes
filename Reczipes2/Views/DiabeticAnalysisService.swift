@@ -437,7 +437,7 @@ actor DiabeticAnalysisService {
         request.timeoutInterval = 120 // 2 minutes for analysis
         
         let requestBody: [String: Any] = [
-            "model": "claude-sonnet-4-20250514", // Latest model
+            "model": "claude-opus-5-5", // same model as recipe extraction (ClaudeAPIClient)
             "max_tokens": 8192,
             "messages": [
                 [

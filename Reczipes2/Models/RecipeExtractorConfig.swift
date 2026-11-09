@@ -13,7 +13,7 @@ struct RecipeExtractorConfig {
     // MARK: - API Configuration
     
     /// The Claude model to use for recipe extraction
-    static let claudeModel = "claude-sonnet-4-20250514"
+    static let claudeModel = "claude-opus-5-5"
     
     /// Maximum tokens for Claude's response
     static let maxTokens = 8192

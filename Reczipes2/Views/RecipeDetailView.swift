@@ -1049,11 +1049,13 @@ struct RecipeDetailView: View {
                     .ignoresSafeArea()
             }
         }
-//        .alert("Reminders", isPresented: $showingRemindersAlert) {
-//            Button("OK", role: .cancel) { }
-//        } message: {
-//            Text(remindersAlertMessage)
-//        }
+        // Shared by Reminders export, Add Tips and Diabetic analysis: without it a failed
+        // analysis reset to the Analyze button with no message.
+        .alert("Reczipes", isPresented: $showingRemindersAlert) {
+            Button("OK", role: .cancel) { }
+        } message: {
+            Text(remindersAlertMessage)
+        }
 //        .alert("Community Sharing Not Available", isPresented: $showCloudKitWarning) {
 //            Button("Set Up Now") {
 //                showCloudKitOnboarding = true

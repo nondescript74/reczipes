@@ -108,7 +108,7 @@ extension AllergenAnalyzer {
         request.setValue("2023-06-01", forHTTPHeaderField: "anthropic-version")
         
         let body: [String: Any] = [
-            "model": "claude-3-5-sonnet-20241022",
+            "model": "claude-opus-5-5",
             "max_tokens": 1024,
             "messages": [
                 [
