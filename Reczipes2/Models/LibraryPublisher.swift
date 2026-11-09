@@ -456,43 +456,7 @@ extension CloudKitSharingService {
 
         // Books (this person's own only, never a community copy)
         if let index = await readOwnPublicIndex(.book) {
-            let deleted = index.deleted
-            let repaired = repairOwnBooks(index: index, deleted: deleted, modelContext: modelContext)
-            let othersBookIDs = Set(((try? modelContext.fetch(FetchDescriptor<SharedRecipeBook>())) ?? [])
-                .filter { $0.sharedByUserID != nil && $0.sharedByUserID != currentUserID }.compactMap(\.bookID))
-            var skipped = (notOwned: 0, imported: 0, othersTracking: 0, incomplete: 0)
-            for book in (try? modelContext.fetch(FetchDescriptor<Book>())) ?? [] {
-                guard let id = book.id, book.name != nil, book.recipeIDs != nil else { skipped.incomplete += 1; continue }
-                guard Book.isOwnedByCurrentUser(ownerUserID: book.ownerUserID, currentUserID: currentUserID) else {
-                    skipped.notOwned += 1
-                    AppLog.debug("📤 Book '\(book.name ?? "?")' skipped: owner \(book.ownerUserID ?? "nil") ≠ me \(currentUserID ?? "nil")", category: .sharing)
-                    continue
-                }
-                guard book.isImported != true else { skipped.imported += 1; continue }
-                guard !othersBookIDs.contains(id) else { skipped.othersTracking += 1; continue }
-                guard !OwnerDeletedStore.shared.isPendingTombstone(.book, id) else { continue }
-                // Picture changes go through setImages → markModified, so dateModified covers them.
-                let modified = book.dateModified ?? book.dateCreated ?? .distantPast
-                let live = deleted[id] == nil ? index.live[id] : nil
-                // A repaired book's public copy froze while it was mis-owned, whatever
-                // its edit date says: refresh it once.
-                var action = PublicTombstones.publishAction(localModified: modified, live: live, deletedDate: deleted[id]?.deletedDate)
-                if case .none = action, repaired.contains(id), let live { action = .refresh(recordName: live.recordName) }
-                switch action {
-                case .none: break
-                case .publishNew:
-                    work.append((book.name ?? "Book", { [weak self] in
-                        guard let self, !book.isDeleted else { return }
-                        _ = try await self.shareRecipeBook(book, modelContext: modelContext, refreshExisting: true)
-                    }))
-                case .refresh(let name):
-                    work.append((book.name ?? "Book", { [weak self] in
-                        guard let self, !book.isDeleted else { return }
-                        _ = try await self.shareRecipeBook(book, modelContext: modelContext, refreshExisting: true, knownRecordName: name)
-                    }))
-                }
-            }
-            AppLog.info("📤 Books: \(index.live.count) public under this account; skipped \(skipped.notOwned) not owned, \(skipped.othersTracking) tracked as someone else's, \(skipped.imported) imported, \(skipped.incomplete) incomplete", category: .sharing)
+            work += bookWork(index: index, modelContext: modelContext, refreshAll: false)
         }
 
         // Meals
@@ -538,5 +502,100 @@ extension CloudKitSharingService {
         }
         status.publishFinished()
         AppLog.info("📤 Publish pass done: \(work.count - failures) published, \(failures) to retry", category: .sharing)
+    }
+
+    // MARK: - Books
+
+    /// The books to publish or refresh: this person's own only, never an imported
+    /// book or one tracked as someone else's. With `refreshAll`, every own book that
+    /// already has a public copy is refreshed too, not just those edited since.
+    private func bookWork(index: OwnPublicIndex, modelContext: ModelContext,
+                          refreshAll: Bool) -> [(label: String, run: @MainActor () async throws -> Void)] {
+        var work: [(label: String, run: @MainActor () async throws -> Void)] = []
+        let deleted = index.deleted
+        let repaired = repairOwnBooks(index: index, deleted: deleted, modelContext: modelContext)
+        let othersBookIDs = Set(((try? modelContext.fetch(FetchDescriptor<SharedRecipeBook>())) ?? [])
+            .filter { $0.sharedByUserID != nil && $0.sharedByUserID != currentUserID }.compactMap(\.bookID))
+        var skipped = (notOwned: 0, imported: 0, othersTracking: 0, incomplete: 0)
+        for book in (try? modelContext.fetch(FetchDescriptor<Book>())) ?? [] {
+            guard let id = book.id, book.name != nil, book.recipeIDs != nil else { skipped.incomplete += 1; continue }
+            guard Book.isOwnedByCurrentUser(ownerUserID: book.ownerUserID, currentUserID: currentUserID) else {
+                skipped.notOwned += 1
+                AppLog.debug("📤 Book '\(book.name ?? "?")' skipped: owner \(book.ownerUserID ?? "nil") ≠ me \(currentUserID ?? "nil")", category: .sharing)
+                continue
+            }
+            guard book.isImported != true else { skipped.imported += 1; continue }
+            guard !othersBookIDs.contains(id) else { skipped.othersTracking += 1; continue }
+            guard !OwnerDeletedStore.shared.isPendingTombstone(.book, id) else { continue }
+            // Picture changes go through setImages → markModified, so dateModified covers them.
+            let modified = book.dateModified ?? book.dateCreated ?? .distantPast
+            let live = deleted[id] == nil ? index.live[id] : nil
+            // A repaired book's public copy froze while it was mis-owned, whatever
+            // its edit date says: refresh it once.
+            var action = PublicTombstones.publishAction(localModified: modified, live: live, deletedDate: deleted[id]?.deletedDate)
+            if case .none = action, repaired.contains(id), let live { action = .refresh(recordName: live.recordName) }
+            // "Update All Public Books": every own book that is already public is
+            // re-sent, whatever its edit date says (an edited recipe inside it, say).
+            if refreshAll, case .none = action, let live { action = .refresh(recordName: live.recordName) }
+            switch action {
+            case .none: break
+            case .publishNew:
+                work.append((book.name ?? "Book", { [weak self] in
+                    guard let self, !book.isDeleted else { return }
+                    _ = try await self.shareRecipeBook(book, modelContext: modelContext, refreshExisting: true)
+                }))
+            case .refresh(let name):
+                work.append((book.name ?? "Book", { [weak self] in
+                    guard let self, !book.isDeleted else { return }
+                    _ = try await self.shareRecipeBook(book, modelContext: modelContext, refreshExisting: true, knownRecordName: name)
+                }))
+            }
+        }
+        AppLog.info("📤 Books: \(index.live.count) public under this account; skipped \(skipped.notOwned) not owned, \(skipped.othersTracking) tracked as someone else's, \(skipped.imported) imported, \(skipped.incomplete) incomplete", category: .sharing)
+        return work
+    }
+
+    struct BookRefreshSummary {
+        let total: Int
+        let failed: [String]
+        var updated: Int { total - failed.count }
+    }
+
+    /// "Update All Public Books": re-sends the public copy of every book this person
+    /// owns, so the website shows exactly what the app shows. Same checks as the
+    /// publish pass. Each copy is overwritten in place (same record); nothing is
+    /// unshared or deleted. Waits for a running publish pass first. Returns nil when
+    /// CloudKit is unavailable or the public book list couldn't be read.
+    func refreshAllPublicBooks(modelContext: ModelContext) async -> BookRefreshSummary? {
+        while let running = publishTask { await running.value }
+        guard isCloudKitAvailable, currentUserID != nil else { return nil }
+        let refresh = Task { @MainActor in await self.performBookRefresh(modelContext: modelContext) }
+        publishTask = Task { @MainActor in _ = await refresh.value }
+        let summary = await refresh.value
+        publishTask = nil
+        return summary
+    }
+
+    private func performBookRefresh(modelContext: ModelContext) async -> BookRefreshSummary? {
+        guard let index = await readOwnPublicIndex(.book) else {
+            AppLog.warning("📤 Update All Public Books: couldn't read the public book list", category: .sharing)
+            return nil
+        }
+        let work = bookWork(index: index, modelContext: modelContext, refreshAll: true)
+        AppLog.info("📤 Update All Public Books: \(work.count) book(s)", category: .sharing)
+        let status = LibrarySyncStatus.shared
+        var failed: [String] = []
+        for (i, item) in work.enumerated() {
+            status.publishProgress(done: i, total: work.count)
+            do {
+                try await item.run()
+            } catch {
+                failed.append(item.label)
+                AppLog.warning("📤 Could not update '\(item.label)': \(error.localizedDescription)", category: .sharing)
+            }
+        }
+        status.publishFinished()
+        AppLog.info("📤 Update All Public Books done: \(work.count - failed.count) updated, \(failed.count) failed", category: .sharing)
+        return BookRefreshSummary(total: work.count, failed: failed)
     }
 }

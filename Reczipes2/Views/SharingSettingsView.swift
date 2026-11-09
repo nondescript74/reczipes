@@ -89,7 +89,9 @@ struct SharingSettingsView: View {
                         .tint(.white)
                     
                     if !sharingStatus.isEmpty {
-                        Text(sharingStatus)
+                        Text(syncStatus.publishTotal > 0
+                             ? "\(sharingStatus) \(syncStatus.publishDone + 1) / \(syncStatus.publishTotal)"
+                             : sharingStatus)
                             .font(.headline)
                             .foregroundStyle(Color.onTint)
                             .multilineTextAlignment(.center)
@@ -284,10 +286,17 @@ struct SharingSettingsView: View {
             if let last = sharingService.lastPublishPass {
                 LabeledContent("Last checked", value: last.formatted(date: .abbreviated, time: .shortened))
             }
+            // One click to bring the website up to date: re-sends every book you own.
+            Button {
+                Task { await updateAllPublicBooks() }
+            } label: {
+                Label("Update All Public Books", systemImage: "arrow.triangle.2.circlepath.circle")
+            }
+            .disabled(!sharingService.isCloudKitAvailable || isSharing || myBooks == 0)
         } header: {
             Text("Library")
         } footer: {
-            Text("Checked automatically every few minutes while the app is open.")
+            Text("Checked automatically every few minutes while the app is open. Update All Public Books re-sends every book you own, so the website shows them as they are here. Nothing is unshared or deleted.")
         }
     }
 
@@ -673,27 +682,22 @@ struct SharingSettingsView: View {
         }
     }
 
-    /// Re-publishes every shared book so the website picks up new members, pictures,
-    /// contents and glossary (the per-book "Update Public Copy", for all books at once).
-    private func updateAllPublicBooks(_ books: [Book]) async {
+    /// Re-sends the public copy of every book this person owns so the website picks up
+    /// new members, edited recipes, pictures, contents and glossary — the per-book
+    /// "Update Public Copy", for all books at once. Overwrites in place; never unshares.
+    private func updateAllPublicBooks() async {
         isSharing = true
-        var successful = 0
-        var failed: [String] = []
-        for (i, book) in books.enumerated() {
-            sharingStatus = String(localized: "Updating public copy \(i + 1) of \(books.count): \(book.displayName)", bundle: .appLanguage)
-            do {
-                _ = try await sharingService.shareRecipeBook(book, modelContext: modelContext, refreshExisting: true)
-                successful += 1
-            } catch {
-                AppLog.error("Failed to update public copy of '\(book.displayName)': \(error)", category: .sharing)
-                failed.append(book.displayName)
-            }
-        }
+        sharingStatus = String(localized: "Updating public books…", bundle: .appLanguage)
+        let summary = await sharingService.refreshAllPublicBooks(modelContext: modelContext)
         isSharing = false
         sharingStatus = ""
-        alertMessage = failed.isEmpty
-            ? "Updated the public copies of all \(successful) books."
-            : "Updated \(successful) of \(books.count) books. Failed: \(failed.joined(separator: ", "))."
+        if let summary {
+            alertMessage = summary.failed.isEmpty
+                ? String(localized: "Updated the public copies of all \(summary.updated) books. The website shows them within a few minutes.", bundle: .appLanguage)
+                : String(localized: "Updated \(summary.updated) of \(summary.total) books. Failed: \(summary.failed.joined(separator: ", ")).", bundle: .appLanguage)
+        } else {
+            alertMessage = String(localized: "Couldn't reach the public books in iCloud. Nothing was changed. Try again in a moment.", bundle: .appLanguage)
+        }
         showingAlert = true
     }
 
@@ -746,8 +750,7 @@ struct SharingSettingsView: View {
             .disabled(!sharingService.isCloudKitAvailable || unsharedBooks.isEmpty)
 
             Button {
-                let books = publicBooks
-                Task { await updateAllPublicBooks(books) }
+                Task { await updateAllPublicBooks() }
             } label: {
                 Label("Update All Public Books (\(publicBooks.count))", systemImage: "arrow.triangle.2.circlepath.circle")
             }
