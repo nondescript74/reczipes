@@ -178,13 +178,13 @@ struct PercentageRow: View {
     
     private var nutrientDisplayName: String {
         switch nutrient.lowercased() {
-        case "calories": return "Calories"
-        case "sodium": return "Sodium"
-        case "saturatedfat": return "Sat. Fat"
-        case "sugar": return "Sugar"
-        case "fiber": return "Fiber"
-        case "protein": return "Protein"
-        case "carbohydrates": return "Carbs"
+        case "calories": return String(localized: "Calories", bundle: .appLanguage)
+        case "sodium": return String(localized: "Sodium", bundle: .appLanguage)
+        case "saturatedfat": return String(localized: "Sat. Fat", bundle: .appLanguage)
+        case "sugar": return String(localized: "Sugar", bundle: .appLanguage)
+        case "fiber": return String(localized: "Fiber", bundle: .appLanguage)
+        case "protein": return String(localized: "Protein", bundle: .appLanguage)
+        case "carbohydrates": return String(localized: "Carbs", bundle: .appLanguage)
         default: return nutrient.capitalized
         }
     }

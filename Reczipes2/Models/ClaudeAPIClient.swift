@@ -1136,15 +1136,15 @@ extension ClaudeAPIError {
         let detail = apiMessage.isEmpty ? "" : " Anthropic said: \(apiMessage)"
         switch statusCode {
         case 401:
-            return "Anthropic refused the request. Check that your API key is still valid and that your Anthropic account hasn't reached its usage or spend limit (Claude Console → Settings → Limits and Billing).\(detail)"
+            return String(localized: "Anthropic refused the request. Check that your API key is still valid and that your Anthropic account hasn't reached its usage or spend limit (Claude Console → Settings → Limits and Billing).\(detail)")
         case 402, 403:
-            return "Anthropic refused the request. This is usually a billing, credit or usage-limit problem on your Anthropic account (Claude Console → Settings → Limits and Billing).\(detail)"
+            return String(localized: "Anthropic refused the request. This is usually a billing, credit or usage-limit problem on your Anthropic account (Claude Console → Settings → Limits and Billing).\(detail)")
         case 404:
-            return "Model '\(model)' not found. It may have been deprecated."
+            return String(localized: "Model '\(model)' not found. It may have been deprecated.")
         case 429:
-            return "Anthropic rate or usage limit reached. Wait a minute and try again, or raise your limits in the Claude Console.\(detail)"
+            return String(localized: "Anthropic rate or usage limit reached. Wait a minute and try again, or raise your limits in the Claude Console.\(detail)")
         case 500...599:
-            return "Anthropic server error. Please try again later."
+            return String(localized: "Anthropic server error. Please try again later.")
         default:
             return apiMessage
         }
@@ -1164,19 +1164,19 @@ enum ClaudeAPIError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .invalidResponse:
-            return "Invalid response from Claude API"
+            return String(localized: "Invalid response from Claude API")
         case .apiError(let statusCode, let message):
-            return "API Error (\(statusCode)): \(message)"
+            return String(localized: "API Error (\(statusCode)): \(message)")
         case .noRecipeFound:
-            return "No recipe could be extracted from the image. Please ensure the image contains a recipe with clear text."
+            return String(localized: "No recipe could be extracted from the image. Please ensure the image contains a recipe with clear text.")
         case .invalidJSON:
-            return "Could not parse recipe JSON"
+            return String(localized: "Could not parse recipe JSON")
         case .networkError(let error):
-            return "Network error: \(error.localizedDescription)"
+            return String(localized: "Network error: \(error.localizedDescription)")
         case .timeout:
-            return "Request timed out. This may happen with very complex images or slow connections. Please try again or use a simpler image."
+            return String(localized: "Request timed out. This may happen with very complex images or slow connections. Please try again or use a simpler image.")
         case .notARecipe:
-            return "This image doesn't appear to contain a recipe. Please select an image with recipe text, ingredients, and instructions."
+            return String(localized: "This image doesn't appear to contain a recipe. Please select an image with recipe text, ingredients, and instructions.")
         }
     }
 }

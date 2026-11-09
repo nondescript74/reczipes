@@ -262,9 +262,9 @@ struct MealImportView: View {
                 try FileManager.default.removeItem(at: destination)
             }
             try FileManager.default.copyItem(at: export.url, to: destination)
-            resultMessage = "Saved to: \(destination.lastPathComponent)"
+            resultMessage = String(localized: "Saved to: \(destination.lastPathComponent)", bundle: .appLanguage)
         } catch {
-            errorMessage = "Failed to save file: \(error.localizedDescription)"
+            errorMessage = String(localized: "Failed to save file: \(error.localizedDescription)", bundle: .appLanguage)
         }
     }
 #endif
@@ -302,7 +302,7 @@ struct MealImportView: View {
                 guard let url = urls.first else { return }
 
                 guard url.startAccessingSecurityScopedResource() else {
-                    errorMessage = "Cannot access selected file."
+                    errorMessage = String(localized: "Cannot access selected file.", bundle: .appLanguage)
                     return
                 }
                 defer { url.stopAccessingSecurityScopedResource() }

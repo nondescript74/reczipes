@@ -19,11 +19,11 @@ enum MealExportError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .nothingToExport:
-            return "There are no meals to export."
+            return String(localized: "There are no meals to export.", bundle: .appLanguage)
         case .encodingFailed(let error):
-            return "Could not encode meals to JSON: \(error.localizedDescription)"
+            return String(localized: "Could not encode meals to JSON: \(error.localizedDescription)", bundle: .appLanguage)
         case .writeFailed(let error):
-            return "Could not write the export file: \(error.localizedDescription)"
+            return String(localized: "Could not write the export file: \(error.localizedDescription)", bundle: .appLanguage)
         }
     }
 }

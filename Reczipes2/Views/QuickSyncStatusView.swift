@@ -99,8 +99,8 @@ struct QuickSyncStatusView: View {
     
     private var accountStatus: String {
         switch monitor.accountStatus {
-        case .available: return "✅ Signed In"
-        case .noAccount: return "❌ Not Signed In"
+        case .available: return String(localized: "✅ Signed In", bundle: .appLanguage)
+        case .noAccount: return String(localized: "❌ Not Signed In", bundle: .appLanguage)
         default: return "⚠️ \(monitor.accountStatus)"
         }
     }

@@ -589,7 +589,7 @@ struct RecipeExtractorView: View {
         .sheet(isPresented: $showImportLinks) {
             ImportLinksSheet(
                 onImportComplete: { count in
-                    importResultMessage = "Successfully imported \(count) new link(s)"
+                    importResultMessage = String(localized: "Successfully imported \(count) new link(s)", bundle: .appLanguage)
                     showingImportResult = true
                 }
             )

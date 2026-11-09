@@ -177,7 +177,7 @@ struct APIKeyManagerView: View {
         // Basic validation
         if !cleanedKey.hasPrefix("sk-ant-") && !cleanedKey.hasPrefix("rapi_") {
             showError = true
-            errorMessage = "Invalid API key format. Keys should start with 'sk-ant-' or 'rapi_'."
+            errorMessage = String(localized: "Invalid API key format. Keys should start with 'sk-ant-' or 'rapi_'.", bundle: .appLanguage)
             isValidating = false
             return
         }
@@ -187,7 +187,7 @@ struct APIKeyManagerView: View {
         if isClaudeKey {
             if cleanedKey.count < 50 {
                 showError = true
-                errorMessage = "Claude API key seems too short. Please verify you copied the entire key."
+                errorMessage = String(localized: "Claude API key seems too short. Please verify you copied the entire key.", bundle: .appLanguage)
                 isValidating = false
                 return
             }
@@ -230,7 +230,7 @@ struct APIKeyManagerView: View {
             } else {
                 print("🔑 Failed to save to Keychain")
                 showError = true
-                errorMessage = "Failed to save the API key to Keychain."
+                errorMessage = String(localized: "Failed to save the API key to Keychain.", bundle: .appLanguage)
             }
         } else {
             print("🔑 API key validation failed")

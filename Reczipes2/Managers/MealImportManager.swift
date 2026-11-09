@@ -26,13 +26,13 @@ enum MealImportError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .bundledFileMissing:
-            return "The bundled meal plans file was not found."
+            return String(localized: "The bundled meal plans file was not found.", bundle: .appLanguage)
         case .fileNotReadable:
-            return "The selected file could not be read."
+            return String(localized: "The selected file could not be read.", bundle: .appLanguage)
         case .invalidJSON(let error):
-            return "The file is not a valid meal-plan JSON: \(error.localizedDescription)"
+            return String(localized: "The file is not a valid meal-plan JSON: \(error.localizedDescription)", bundle: .appLanguage)
         case .unsupportedVersion(let version):
-            return "This meal-plan file uses version \(version), which this app cannot import."
+            return String(localized: "This meal-plan file uses version \(version), which this app cannot import.", bundle: .appLanguage)
         }
     }
 }

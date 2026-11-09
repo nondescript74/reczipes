@@ -211,7 +211,7 @@ struct DatabaseDiagnosticsView: View {
         
         if isHealthy {
             AppLog.info("✅ Health check passed", category: .storage)
-            alertTitle = "✅ Health Check Passed"
+            alertTitle = String(localized: "✅ Health Check Passed", bundle: .appLanguage)
             alertMessage = """
             Container Status: Healthy
             CloudKit Sync: \(cloudKitStatus)
@@ -221,7 +221,7 @@ struct DatabaseDiagnosticsView: View {
             """
         } else {
             AppLog.warning("⚠️ Health check failed", category: .storage)
-            alertTitle = "⚠️ Health Issues Detected"
+            alertTitle = String(localized: "⚠️ Health Issues Detected", bundle: .appLanguage)
             alertMessage = """
             Container Status: Warning
             CloudKit Sync: \(cloudKitStatus)
@@ -276,7 +276,7 @@ struct DatabaseDiagnosticsView: View {
             message += "\n\n⚠️ Recent failures detected. Consider reinstalling if issues persist."
         }
         
-        alertTitle = "📊 Full Diagnostics"
+        alertTitle = String(localized: "📊 Full Diagnostics", bundle: .appLanguage)
         alertMessage = message
         
         isRunningCheck = false
@@ -286,13 +286,13 @@ struct DatabaseDiagnosticsView: View {
     private func formatTimeAgo(_ date: Date) -> String {
         let interval = Date().timeIntervalSince(date)
         if interval < 60 {
-            return "\(Int(interval))s ago"
+            return String(localized: "\(Int(interval))s ago", bundle: .appLanguage)
         } else if interval < 3600 {
-            return "\(Int(interval / 60))m ago"
+            return String(localized: "\(Int(interval / 60))m ago", bundle: .appLanguage)
         } else if interval < 86400 {
-            return "\(Int(interval / 3600))h ago"
+            return String(localized: "\(Int(interval / 3600))h ago", bundle: .appLanguage)
         } else {
-            return "\(Int(interval / 86400))d ago"
+            return String(localized: "\(Int(interval / 86400))d ago", bundle: .appLanguage)
         }
     }
 }
@@ -343,13 +343,13 @@ private struct LastAttemptRow: View {
     private var timeAgo: String {
         let interval = Date().timeIntervalSince(attempt.timestamp)
         if interval < 60 {
-            return "\(Int(interval))s ago"
+            return String(localized: "\(Int(interval))s ago", bundle: .appLanguage)
         } else if interval < 3600 {
-            return "\(Int(interval / 60))m ago"
+            return String(localized: "\(Int(interval / 60))m ago", bundle: .appLanguage)
         } else if interval < 86400 {
-            return "\(Int(interval / 3600))h ago"
+            return String(localized: "\(Int(interval / 3600))h ago", bundle: .appLanguage)
         } else {
-            return "\(Int(interval / 86400))d ago"
+            return String(localized: "\(Int(interval / 86400))d ago", bundle: .appLanguage)
         }
     }
     

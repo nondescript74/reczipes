@@ -222,7 +222,7 @@ struct BookEditorView: View {
             .fileImporter(isPresented: $showingGlossaryImporter, allowedContentTypes: [.json]) { result in
                 switch result {
                 case .success(let url): importGlossary(from: url)
-                case .failure(let error): glossaryMessage = "Couldn't open the file: \(error.localizedDescription)"
+                case .failure(let error): glossaryMessage = String(localized: "Couldn't open the file: \(error.localizedDescription)", bundle: .appLanguage)
                 }
             }
             .alert("Glossary", isPresented: Binding(
@@ -399,9 +399,9 @@ struct BookEditorView: View {
         do {
             let entries = try FlexibleGlossaryEntry.entries(from: Data(contentsOf: url))
             glossary = entries
-            glossaryMessage = "Loaded \(entries.count) glossary terms. Tap Save to keep them."
+            glossaryMessage = String(localized: "Loaded \(entries.count) glossary terms. Tap Save to keep them.", bundle: .appLanguage)
         } catch {
-            glossaryMessage = "That file isn't a glossary list: \(error.localizedDescription)"
+            glossaryMessage = String(localized: "That file isn't a glossary list: \(error.localizedDescription)", bundle: .appLanguage)
         }
     }
 

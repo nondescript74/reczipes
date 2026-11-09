@@ -438,9 +438,9 @@ enum ExtractionRetryError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .allRetriesFailed:
-            return "All retry attempts failed"
+            return String(localized: "All retry attempts failed")
         case .operationCancelled:
-            return "Operation was cancelled"
+            return String(localized: "Operation was cancelled")
         }
     }
 }

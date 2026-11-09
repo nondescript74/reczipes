@@ -679,15 +679,15 @@ class ModelContainerManager: ObservableObject {
                 let reason: String
                 switch status {
                 case .noAccount:
-                    reason = "No iCloud account signed in"
+                    reason = String(localized: "No iCloud account signed in", bundle: .appLanguage)
                 case .restricted:
-                    reason = "iCloud access is restricted"
+                    reason = String(localized: "iCloud access is restricted", bundle: .appLanguage)
                 case .couldNotDetermine:
-                    reason = "Could not determine iCloud status"
+                    reason = String(localized: "Could not determine iCloud status", bundle: .appLanguage)
                 case .temporarilyUnavailable:
-                    reason = "iCloud temporarily unavailable"
+                    reason = String(localized: "iCloud temporarily unavailable", bundle: .appLanguage)
                 default:
-                    reason = "Unknown status: \(status.rawValue)"
+                    reason = String(localized: "Unknown status: \(status.rawValue)", bundle: .appLanguage)
                 }
                 
                 logUserDiagnostic(

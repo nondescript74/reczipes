@@ -93,7 +93,7 @@ struct CombinedRecipeScore: Identifiable, Sendable {
             if let nutrition = nutritionalScore, !nutrition.isCompatible {
                 return nutrition.overallSeverity == .high ? "High Risk" : "Moderate"
             }
-            return "Safe"
+            return String(localized: "Safe", bundle: .appLanguage)
         }
     }
     

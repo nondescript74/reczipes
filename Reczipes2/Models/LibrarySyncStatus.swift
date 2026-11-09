@@ -177,18 +177,18 @@ final class LibrarySyncStatus: ObservableObject {
         switch quiet ? .notStarted : communityPhase {
         case .downloading(let fetched, let expected):
             if let expected, expected > 0 {
-                return "Downloading shared recipes… \(min(fetched, expected).formatted()) of about \(expected.formatted())"
+                return String(localized: "Downloading shared recipes… \(min(fetched, expected).formatted()) of about \(expected.formatted())", bundle: .appLanguage)
             }
             return fetched > 0 ? "Downloading shared recipes… \(fetched.formatted())" : "Downloading shared recipes…"
         case .downloadingPhotos(let done, let total):
-            return "Downloading recipe photos… \(done.formatted()) of \(total.formatted())"
+            return String(localized: "Downloading recipe photos… \(done.formatted()) of \(total.formatted())", bundle: .appLanguage)
         case .incomplete:
-            return "Library not fully downloaded"
+            return String(localized: "Library not fully downloaded", bundle: .appLanguage)
         case .notStarted, .complete:
             break
         }
         if publishShown {
-            return "Sharing your library with everyone… \(publishDone.formatted()) of \(publishTotal.formatted())"
+            return String(localized: "Sharing your library with everyone… \(publishDone.formatted()) of \(publishTotal.formatted())", bundle: .appLanguage)
         }
         if privateImportActive { return "Syncing your library with iCloud…" }
         if let privateImportError { return "iCloud sync problem: \(privateImportError)" }

@@ -153,7 +153,7 @@ struct SavedLinksView: View {
             .sheet(isPresented: $showingImportSheet) {
                 ImportLinksSheet(
                     onImportComplete: { count in
-                        importResultMessage = "Successfully imported \(count) new link(s)"
+                        importResultMessage = String(localized: "Successfully imported \(count) new link(s)", bundle: .appLanguage)
                         showingImportResult = true
                     }
                 )
@@ -197,7 +197,7 @@ struct SavedLinksView: View {
                         apiKey: apiKey,
                         onComplete: {
                             // Refresh or show completion message
-                            importResultMessage = "Batch extraction completed"
+                            importResultMessage = String(localized: "Batch extraction completed", bundle: .appLanguage)
                             showingImportResult = true
                         }
                     )
@@ -658,7 +658,7 @@ struct ImportLinksSheet: View {
                     isValidating = false
                     
                     if !result.isValid {
-                        importError = "Cannot import: file has \(result.errors.count) error(s)"
+                        importError = String(localized: "Cannot import: file has \(result.errors.count) error(s)", bundle: .appLanguage)
                     }
                     
                     AppLog.info("Validation complete: \(result.linkCount) links, \(result.errors.count) errors, \(result.warnings.count) warnings", category: .batch)

@@ -159,15 +159,15 @@ struct PerformanceIndicator: View {
     private var impactText: String {
         switch level {
         case .off:
-            return "No Impact - Logging Disabled"
+            return String(localized: "No Impact - Logging Disabled", bundle: .appLanguage)
         case .errors:
-            return "Minimal Impact"
+            return String(localized: "Minimal Impact", bundle: .appLanguage)
         case .warnings:
-            return "Slight Impact"
+            return String(localized: "Slight Impact", bundle: .appLanguage)
         case .info:
-            return "Moderate Impact"
+            return String(localized: "Moderate Impact", bundle: .appLanguage)
         case .debug:
-            return "Significant Impact"
+            return String(localized: "Significant Impact", bundle: .appLanguage)
         }
     }
     

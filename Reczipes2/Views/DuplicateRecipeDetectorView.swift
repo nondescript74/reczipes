@@ -83,9 +83,9 @@ struct DuplicateCluster: Identifiable {
 
         var label: String {
             switch self {
-            case .exactCopy: return "Exact Copy"
-            case .likely:    return "Likely Same Recipe"
-            case .possible:  return "Possible — Review"
+            case .exactCopy: return String(localized: "Exact Copy", bundle: .appLanguage)
+            case .likely:    return String(localized: "Likely Same Recipe", bundle: .appLanguage)
+            case .possible:  return String(localized: "Possible — Review", bundle: .appLanguage)
             }
         }
 
@@ -165,10 +165,10 @@ struct DuplicateCluster: Identifiable {
 extension DuplicateCluster.MatchReason {
     var label: String {
         switch self {
-        case .fingerprint:     return "Exact Match"
-        case .sameSourceURL:   return "Same URL"
-        case .sameIngredients: return "Same Ingredients"
-        case .similarTitle:    return "Same Title"
+        case .fingerprint:     return String(localized: "Exact Match", bundle: .appLanguage)
+        case .sameSourceURL:   return String(localized: "Same URL", bundle: .appLanguage)
+        case .sameIngredients: return String(localized: "Same Ingredients", bundle: .appLanguage)
+        case .similarTitle:    return String(localized: "Same Title", bundle: .appLanguage)
         }
     }
 
@@ -518,7 +518,7 @@ struct DuplicateRecipeDetectorView: View {
     static func summary(_ recipe: RecipeX) -> String {
         let ingredients = recipe.ingredientSections.reduce(0) { $0 + $1.ingredients.count }
         let steps = recipe.instructionSections.reduce(0) { $0 + $1.steps.count }
-        return "\(ingredients) ingredients, \(steps) steps"
+        return String(localized: "\(ingredients) ingredients, \(steps) steps", bundle: .appLanguage)
     }
 
     @ViewBuilder
@@ -568,7 +568,7 @@ struct DuplicateRecipeDetectorView: View {
     private func mergeWithinBooks(_ cluster: DuplicateCluster) async {
         let keep = keeper(for: cluster)
         guard canMergeWithinBooks(cluster, keep: keep) else {
-            mergeMessage = "Not merged: a book lists a copy but not the kept recipe."
+            mergeMessage = String(localized: "Not merged: a book lists a copy but not the kept recipe.", bundle: .appLanguage)
             return
         }
         let removedIDs = Set(cluster.recipes.compactMap(\.id)).subtracting([keep.id].compactMap { $0 })
@@ -591,7 +591,11 @@ struct DuplicateRecipeDetectorView: View {
             }
         }
         findDuplicates()
-        mergeMessage = "Merged \(merged) cop\(merged == 1 ? "y" : "ies") of '\(keep.title ?? "")' in \(BookMembershipGuard.listPhrase(touchedBooks.map(\.displayName)))."
+        let keptTitle = keep.title ?? ""
+        let bookList = BookMembershipGuard.listPhrase(touchedBooks.map(\.displayName))
+        mergeMessage = merged == 1
+            ? String(localized: "Merged 1 copy of '\(keptTitle)' in \(bookList).", bundle: .appLanguage)
+            : String(localized: "Merged \(merged) copies of '\(keptTitle)' in \(bookList).", bundle: .appLanguage)
     }
 
     // MARK: - Same recipe stored twice under one ID
@@ -652,7 +656,10 @@ struct DuplicateRecipeDetectorView: View {
             AppLog.error("Failed to save after removing same-id copies: \(error)", category: .recipe)
         }
         findDuplicates()
-        mergeMessage = "Removed \(removed) extra stored cop\(removed == 1 ? "y" : "ies")." + (differing > 0 ? " Kept \(differing) whose content differs — review them." : "")
+        mergeMessage = (removed == 1
+            ? String(localized: "Removed 1 extra stored copy.", bundle: .appLanguage)
+            : String(localized: "Removed \(removed) extra stored copies.", bundle: .appLanguage))
+            + (differing > 0 ? " " + String(localized: "Kept \(differing) whose content differs — review them.", bundle: .appLanguage) : "")
     }
 
 
@@ -1099,7 +1106,9 @@ struct DuplicateRecipeDetectorView: View {
         keeperOverrides[cluster.stableKey] = nil
         findDuplicates()
         if skipped > 0 {
-            mergeMessage = "\(skipped) cop\(skipped == 1 ? "y was" : "ies were") kept because \(skipped == 1 ? "it is" : "they are") in a book. Remove a copy from its book first if you really want it gone."
+            mergeMessage = skipped == 1
+                ? String(localized: "1 copy was kept because it is in a book. Remove a copy from its book first if you really want it gone.", bundle: .appLanguage)
+                : String(localized: "\(skipped) copies were kept because they are in a book. Remove a copy from its book first if you really want it gone.", bundle: .appLanguage)
         }
     }
 
@@ -1122,7 +1131,10 @@ struct DuplicateRecipeDetectorView: View {
         }
         monitor.duplicatesDetected = 0
         findDuplicates()
-        mergeMessage = "Merged \(merged) extra copies." + (protectedSkipped > 0 ? " Kept \(protectedSkipped) cop\(protectedSkipped == 1 ? "y" : "ies") that are in a book." : "")
+        mergeMessage = String(localized: "Merged \(merged) extra copies.", bundle: .appLanguage)
+            + (protectedSkipped == 0 ? "" : " " + (protectedSkipped == 1
+                ? String(localized: "Kept 1 copy that is in a book.", bundle: .appLanguage)
+                : String(localized: "Kept \(protectedSkipped) copies that are in a book.", bundle: .appLanguage)))
     }
 }
 

@@ -177,7 +177,7 @@ struct RecipeDataDiagnosticView: View {
         }
         
         // Build scan results message
-        var resultsMessage = "Scanned \(allRecipes.count) recipes.\n\n"
+        var resultsMessage = String(localized: "Scanned \(allRecipes.count) recipes.\n\n", bundle: .appLanguage)
         
         if issueCount == 0 {
             resultsMessage += "✅ All recipes look good!"

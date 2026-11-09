@@ -222,9 +222,9 @@ enum EnhancementError: Error, LocalizedError {
     var errorDescription: String? {
         switch self {
         case .invalidResponse:
-            return "Invalid response from enhancement service"
+            return String(localized: "Invalid response from enhancement service", bundle: .appLanguage)
         case .validationFailed:
-            return "Recipe validation failed"
+            return String(localized: "Recipe validation failed", bundle: .appLanguage)
         }
     }
 }

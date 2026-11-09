@@ -73,20 +73,20 @@ enum ImageDownloadError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .invalidURL:
-            return "Invalid image URL"
+            return String(localized: "Invalid image URL", bundle: .appLanguage)
         case .networkError:
-            return "Network error while downloading image"
+            return String(localized: "Network error while downloading image", bundle: .appLanguage)
         case .httpError(let statusCode):
             switch statusCode {
             case 403:
-                return "Access denied to image"
+                return String(localized: "Access denied to image", bundle: .appLanguage)
             case 404:
-                return "Image not found"
+                return String(localized: "Image not found", bundle: .appLanguage)
             default:
-                return "HTTP error: \(statusCode)"
+                return String(localized: "HTTP error: \(statusCode)", bundle: .appLanguage)
             }
         case .invalidImageData:
-            return "Downloaded data is not a valid image"
+            return String(localized: "Downloaded data is not a valid image", bundle: .appLanguage)
         }
     }
 }

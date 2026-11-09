@@ -122,7 +122,7 @@ class RecipeRepairService: ObservableObject {
         var errorDescription: String? {
             switch self {
             case .noSource:
-                return "No source URL or image available to re-extract from"
+                return String(localized: "No source URL or image available to re-extract from", bundle: .appLanguage)
             }
         }
     }

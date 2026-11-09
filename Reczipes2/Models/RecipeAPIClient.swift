@@ -110,13 +110,13 @@ enum RecipeAPIError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .missingAPIKey:
-            return "Recipe API key is missing."
+            return String(localized: "Recipe API key is missing.", bundle: .appLanguage)
         case .invalidResponse:
-            return "Invalid response from recipe-api.com."
+            return String(localized: "Invalid response from recipe-api.com.", bundle: .appLanguage)
         case .requestFailed(let code, let message):
-            return "Recipe API request failed (\(code)): \(message)"
+            return String(localized: "Recipe API request failed (\(code)): \(message)", bundle: .appLanguage)
         case .decodingFailed:
-            return "Could not decode recipe-api.com response."
+            return String(localized: "Could not decode recipe-api.com response.", bundle: .appLanguage)
         }
     }
 }

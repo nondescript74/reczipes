@@ -222,7 +222,7 @@ struct DiabetesScore: Identifiable, Sendable {
     
     var summary: String {
         if isDiabeticFriendly {
-            return "Diabetes-friendly"
+            return String(localized: "Diabetes-friendly", bundle: .appLanguage)
         }
         return suitability.displayName
     }

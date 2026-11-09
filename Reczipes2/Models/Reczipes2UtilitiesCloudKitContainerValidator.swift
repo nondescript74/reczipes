@@ -27,21 +27,21 @@ actor CloudKitContainerValidator {
             
             switch status {
             case .available:
-                result.accountStatusMessage = "✅ iCloud account available"
+                result.accountStatusMessage = String(localized: "✅ iCloud account available", bundle: .appLanguage)
             case .noAccount:
-                result.accountStatusMessage = "❌ Not signed into iCloud"
+                result.accountStatusMessage = String(localized: "❌ Not signed into iCloud", bundle: .appLanguage)
             case .restricted:
-                result.accountStatusMessage = "🚫 iCloud access restricted"
+                result.accountStatusMessage = String(localized: "🚫 iCloud access restricted", bundle: .appLanguage)
             case .couldNotDetermine:
-                result.accountStatusMessage = "❓ Could not determine account status"
+                result.accountStatusMessage = String(localized: "❓ Could not determine account status", bundle: .appLanguage)
             case .temporarilyUnavailable:
-                result.accountStatusMessage = "⏳ Temporarily unavailable"
+                result.accountStatusMessage = String(localized: "⏳ Temporarily unavailable", bundle: .appLanguage)
             @unknown default:
-                result.accountStatusMessage = "❓ Unknown status"
+                result.accountStatusMessage = String(localized: "❓ Unknown status", bundle: .appLanguage)
             }
         } catch {
             result.accountStatusError = error.localizedDescription
-            result.accountStatusMessage = "❌ Error checking account: \(error.localizedDescription)"
+            result.accountStatusMessage = String(localized: "❌ Error checking account: \(error.localizedDescription)", bundle: .appLanguage)
         }
         
         // 3. Try to access the container's database
@@ -53,25 +53,25 @@ actor CloudKitContainerValidator {
             let userRecordID = try await container.userRecordID()
             result.userRecordID = userRecordID.recordName
             result.canFetchUserRecord = true
-            result.containerAccessMessage = "✅ Container accessible"
+            result.containerAccessMessage = String(localized: "✅ Container accessible", bundle: .appLanguage)
         } catch {
             result.containerAccessError = error.localizedDescription
-            result.containerAccessMessage = "❌ Cannot access container: \(error.localizedDescription)"
+            result.containerAccessMessage = String(localized: "❌ Cannot access container: \(error.localizedDescription)", bundle: .appLanguage)
             
             // Parse specific errors
             let nsError = error as NSError
             if nsError.domain == CKErrorDomain {
                 switch CKError.Code(rawValue: nsError.code) {
                 case .notAuthenticated:
-                    result.containerAccessMessage = "❌ Not authenticated to iCloud"
+                    result.containerAccessMessage = String(localized: "❌ Not authenticated to iCloud", bundle: .appLanguage)
                 case .networkUnavailable, .networkFailure:
-                    result.containerAccessMessage = "❌ Network issue - check connection"
+                    result.containerAccessMessage = String(localized: "❌ Network issue - check connection", bundle: .appLanguage)
                 case .serviceUnavailable:
-                    result.containerAccessMessage = "❌ CloudKit service unavailable"
+                    result.containerAccessMessage = String(localized: "❌ CloudKit service unavailable", bundle: .appLanguage)
                 case .badContainer:
-                    result.containerAccessMessage = "❌ Container identifier is invalid or doesn't exist"
+                    result.containerAccessMessage = String(localized: "❌ Container identifier is invalid or doesn't exist", bundle: .appLanguage)
                 case .permissionFailure:
-                    result.containerAccessMessage = "❌ Permission denied - check entitlements"
+                    result.containerAccessMessage = String(localized: "❌ Permission denied - check entitlements", bundle: .appLanguage)
                 default:
                     break
                 }
@@ -259,13 +259,13 @@ struct ValidationResult: Sendable {
         
         if issues.isEmpty {
             emoji = "✅"
-            summary = "All checks passed - CloudKit should work!"
+            summary = String(localized: "All checks passed - CloudKit should work!", bundle: .appLanguage)
         } else if issues.count == 1 {
             emoji = "⚠️"
-            summary = "1 issue found: \(issues[0])"
+            summary = String(localized: "1 issue found: \(issues[0])", bundle: .appLanguage)
         } else {
             emoji = "❌"
-            summary = "\(issues.count) issues found"
+            summary = String(localized: "\(issues.count) issues found", bundle: .appLanguage)
         }
         
         return Diagnosis(emoji: emoji, summary: summary, issues: issues, recommendations: recommendations)

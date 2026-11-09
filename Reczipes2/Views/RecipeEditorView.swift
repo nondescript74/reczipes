@@ -263,11 +263,11 @@ struct RecipeEditorView: View {
         let sectionCount = ingredientSections.count
         
         if sectionCount == 0 {
-            return "No ingredients yet"
+            return String(localized: "No ingredients yet", bundle: .appLanguage)
         } else if sectionCount == 1 {
             return "\(ingredientCount) ingredient\(ingredientCount == 1 ? "" : "s")"
         } else {
-            return "\(ingredientCount) ingredients in \(sectionCount) sections"
+            return String(localized: "\(ingredientCount) ingredients in \(sectionCount) sections", bundle: .appLanguage)
         }
     }
     
@@ -276,18 +276,18 @@ struct RecipeEditorView: View {
         let sectionCount = instructionSections.count
         
         if sectionCount == 0 {
-            return "No instructions yet"
+            return String(localized: "No instructions yet", bundle: .appLanguage)
         } else if sectionCount == 1 {
             return "\(stepCount) step\(stepCount == 1 ? "" : "s")"
         } else {
-            return "\(stepCount) steps in \(sectionCount) sections"
+            return String(localized: "\(stepCount) steps in \(sectionCount) sections", bundle: .appLanguage)
         }
     }
     
     private var notesCountText: String {
         let count = notes.count
         if count == 0 {
-            return "No notes yet"
+            return String(localized: "No notes yet", bundle: .appLanguage)
         } else {
             return "\(count) note\(count == 1 ? "" : "s")"
         }
@@ -296,11 +296,11 @@ struct RecipeEditorView: View {
     private var imageCountText: String {
         let count = recipe.imageCount
         if count == 0 {
-            return "No images"
+            return String(localized: "No images", bundle: .appLanguage)
         } else if count == 1 {
             return "1 image"
         } else {
-            return "\(count) images"
+            return String(localized: "\(count) images", bundle: .appLanguage)
         }
     }
     
@@ -616,11 +616,11 @@ struct IngredientsEditorView: View {
         
         // If there's only one section, just call it "Ingredients"
         if sections.count == 1 {
-            return "Ingredients"
+            return String(localized: "Ingredients", bundle: .appLanguage)
         }
         
         // If multiple sections, use "Section 1", "Section 2", etc.
-        return "Section \(index + 1)"
+        return String(localized: "Section \(index + 1)", bundle: .appLanguage)
     }
 }
 
@@ -897,11 +897,11 @@ struct InstructionsEditorView: View {
         
         // If there's only one section, just call it "Instructions"
         if sections.count == 1 {
-            return "Instructions"
+            return String(localized: "Instructions", bundle: .appLanguage)
         }
         
         // If multiple sections, use "Section 1", "Section 2", etc.
-        return "Section \(index + 1)"
+        return String(localized: "Section \(index + 1)", bundle: .appLanguage)
     }
 }
 

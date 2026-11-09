@@ -657,9 +657,9 @@ enum InvestigationError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .currentDatabaseNotFound:
-            return "Current database file not found"
+            return String(localized: "Current database file not found", bundle: .appLanguage)
         case .cannotOpenDatabase(let name):
-            return "Cannot open database: \(name)"
+            return String(localized: "Cannot open database: \(name)", bundle: .appLanguage)
         }
     }
 }

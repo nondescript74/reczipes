@@ -256,30 +256,30 @@ struct RecipeFilterStatusHeader: View {
     private var headerText: String {
         switch filterMode {
         case .none:
-            return "All Recipes"
+            return String(localized: "All Recipes", bundle: .appLanguage)
         case .allergenFODMAP:
             if showOnlySafe {
-                return "Safe for Allergens & FODMAP"
+                return String(localized: "Safe for Allergens & FODMAP", bundle: .appLanguage)
             } else {
-                return "Sorted by Allergen Safety"
+                return String(localized: "Sorted by Allergen Safety", bundle: .appLanguage)
             }
         case .diabetes:
             if showOnlySafe {
-                return "Diabetes-Friendly Recipes"
+                return String(localized: "Diabetes-Friendly Recipes", bundle: .appLanguage)
             } else {
-                return "Sorted by Diabetes Suitability"
+                return String(localized: "Sorted by Diabetes Suitability", bundle: .appLanguage)
             }
         case .nutrition:
             if showOnlySafe {
-                return "Nutrient-Rich Recipes"
+                return String(localized: "Nutrient-Rich Recipes", bundle: .appLanguage)
             } else {
-                return "Sorted by Nutritional Value"
+                return String(localized: "Sorted by Nutritional Value", bundle: .appLanguage)
             }
         case .all:
             if showOnlySafe {
-                return "Safe for All Conditions"
+                return String(localized: "Safe for All Conditions", bundle: .appLanguage)
             } else {
-                return "Sorted by Overall Safety"
+                return String(localized: "Sorted by Overall Safety", bundle: .appLanguage)
             }
         }
     }

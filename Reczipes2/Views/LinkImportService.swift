@@ -222,13 +222,13 @@ enum LinkImportError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .fileNotFound:
-            return "Could not find the JSON file in the app bundle"
+            return String(localized: "Could not find the JSON file in the app bundle", bundle: .appLanguage)
         case .invalidJSON:
-            return "The JSON file format is invalid"
+            return String(localized: "The JSON file format is invalid", bundle: .appLanguage)
         case .duplicateURL:
-            return "This URL has already been imported"
+            return String(localized: "This URL has already been imported", bundle: .appLanguage)
         case .databaseError:
-            return "Failed to save links to the database"
+            return String(localized: "Failed to save links to the database", bundle: .appLanguage)
         }
     }
 }

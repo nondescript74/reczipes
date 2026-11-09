@@ -200,13 +200,13 @@ struct DuplicateResolutionView: View {
     
     private var warningMessage: String {
         if isShared && isInRecipeBook {
-            return "This recipe is shared with others AND part of \(recipeBookNames.count) recipe book(s). Replacing it would affect all users and recipe books."
+            return String(localized: "This recipe is shared with others AND part of \(recipeBookNames.count) recipe book(s). Replacing it would affect all users and recipe books.", bundle: .appLanguage)
         } else if isShared {
-            return "This recipe is currently shared with others. Replacing it would affect all users who have access."
+            return String(localized: "This recipe is currently shared with others. Replacing it would affect all users who have access.", bundle: .appLanguage)
         } else {
             let names = recipeBookNames.prefix(3).joined(separator: ", ")
             let more = recipeBookNames.count > 3 ? " and \(recipeBookNames.count - 3) more" : ""
-            return "This recipe is part of: \(names)\(more). Replacing it would affect these recipe books."
+            return String(localized: "This recipe is part of: \(names)\(more). Replacing it would affect these recipe books.", bundle: .appLanguage)
         }
     }
     

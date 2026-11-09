@@ -156,13 +156,13 @@ struct RecipeAllergenDetailView: View {
     
     private var recommendationText: String {
         if score.isSafe {
-            return "This recipe appears safe based on your allergen profile. Always check ingredient labels carefully."
+            return String(localized: "This recipe appears safe based on your allergen profile. Always check ingredient labels carefully.", bundle: .appLanguage)
         } else if score.score < 5 {
-            return "This recipe contains minor allergens based on your profile. Consider substitutions or proceed with caution."
+            return String(localized: "This recipe contains minor allergens based on your profile. Consider substitutions or proceed with caution.", bundle: .appLanguage)
         } else if score.score < 10 {
-            return "This recipe contains moderate allergens. We recommend finding alternatives or making significant substitutions."
+            return String(localized: "This recipe contains moderate allergens. We recommend finding alternatives or making significant substitutions.", bundle: .appLanguage)
         } else {
-            return "This recipe contains severe allergens based on your profile. We strongly recommend avoiding this recipe."
+            return String(localized: "This recipe contains severe allergens based on your profile. We strongly recommend avoiding this recipe.", bundle: .appLanguage)
         }
     }
 }

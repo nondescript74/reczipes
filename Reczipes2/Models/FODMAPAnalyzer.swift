@@ -20,13 +20,13 @@ enum FODMAPCategory: String, Codable, CaseIterable, Hashable {
     var description: String {
         switch self {
         case .oligosaccharides:
-            return "Fructans & Galacto-oligosaccharides (GOS)"
+            return String(localized: "Fructans & Galacto-oligosaccharides (GOS)", bundle: .appLanguage)
         case .disaccharides:
-            return "Lactose"
+            return String(localized: "Lactose", bundle: .appLanguage)
         case .monosaccharides:
-            return "Excess Fructose"
+            return String(localized: "Excess Fructose", bundle: .appLanguage)
         case .polyols:
-            return "Sugar Alcohols (Sorbitol, Mannitol, etc.)"
+            return String(localized: "Sugar Alcohols (Sorbitol, Mannitol, etc.)", bundle: .appLanguage)
         }
     }
     
@@ -209,7 +209,7 @@ struct FODMAPAnalysisResult: Identifiable {
     
     var summary: String {
         if isSafe {
-            return "Low FODMAP - Generally suitable"
+            return String(localized: "Low FODMAP - Generally suitable", bundle: .appLanguage)
         }
         let count = detectedFoods.count
         return "\(count) high FODMAP ingredient\(count == 1 ? "" : "s") detected"

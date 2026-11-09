@@ -30,12 +30,12 @@ private enum SettingsCategory: String, CaseIterable, Identifiable {
 
     var title: String {
         switch self {
-        case .extraction:  return "Extraction"
-        case .sync:        return "iCloud & Sync"
-        case .community:   return "Community"
-        case .dietary:     return "Dietary"
-        case .maintenance: return "Maintenance"
-        case .helpAbout:   return "Help & About"
+        case .extraction:  return String(localized: "Extraction", bundle: .appLanguage)
+        case .sync:        return String(localized: "iCloud & Sync", bundle: .appLanguage)
+        case .community:   return String(localized: "Community", bundle: .appLanguage)
+        case .dietary:     return String(localized: "Dietary", bundle: .appLanguage)
+        case .maintenance: return String(localized: "Maintenance", bundle: .appLanguage)
+        case .helpAbout:   return String(localized: "Help & About", bundle: .appLanguage)
         }
     }
 
@@ -63,12 +63,12 @@ private enum SettingsCategory: String, CaseIterable, Identifiable {
 
     var description: String {
         switch self {
-        case .extraction:  return "API keys, auto-extract & image settings"
-        case .sync:        return "iCloud sync, health checks & diagnostics"
-        case .community:   return "Browse & share community content"
-        case .dietary:     return "FODMAP and diabetic preferences"
-        case .maintenance: return "Database tools & logging"
-        case .helpAbout:   return "Help, legal & app information"
+        case .extraction:  return String(localized: "API keys, auto-extract & image settings", bundle: .appLanguage)
+        case .sync:        return String(localized: "iCloud sync, health checks & diagnostics", bundle: .appLanguage)
+        case .community:   return String(localized: "Browse & share community content", bundle: .appLanguage)
+        case .dietary:     return String(localized: "FODMAP and diabetic preferences", bundle: .appLanguage)
+        case .maintenance: return String(localized: "Database tools & logging", bundle: .appLanguage)
+        case .helpAbout:   return String(localized: "Help, legal & app information", bundle: .appLanguage)
         }
     }
 
@@ -1106,11 +1106,11 @@ struct LoggingStatusBadge: View {
 
     private var statusText: String {
         switch settings.loggingLevel {
-        case .off:      return "Off"
-        case .errors:   return "Errors"
-        case .warnings: return "Warnings"
-        case .info:     return "Info"
-        case .debug:    return "Debug"
+        case .off:      return String(localized: "Off", bundle: .appLanguage)
+        case .errors:   return String(localized: "Errors", bundle: .appLanguage)
+        case .warnings: return String(localized: "Warnings", bundle: .appLanguage)
+        case .info:     return String(localized: "Info", bundle: .appLanguage)
+        case .debug:    return String(localized: "Debug", bundle: .appLanguage)
         }
     }
 }

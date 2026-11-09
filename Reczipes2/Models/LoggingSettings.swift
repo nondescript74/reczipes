@@ -38,15 +38,15 @@ final class LoggingSettings {
         var description: String {
             switch self {
             case .off:
-                return "No logging - best performance"
+                return String(localized: "No logging - best performance")
             case .errors:
-                return "Only critical errors - minimal impact"
+                return String(localized: "Only critical errors - minimal impact")
             case .warnings:
-                return "Warnings and errors - slight impact"
+                return String(localized: "Warnings and errors - slight impact")
             case .info:
-                return "General information - moderate impact"
+                return String(localized: "General information - moderate impact")
             case .debug:
-                return "Everything including debug - performance impact"
+                return String(localized: "Everything including debug - performance impact")
             }
         }
     }
@@ -105,26 +105,26 @@ final class LoggingSettings {
 
         var description: String {
             switch self {
-            case .general: return "General app operations"
-            case .allergen: return "Allergen detection and matching"
-            case .fodmap: return "FODMAP analysis"
-            case .recipe: return "Recipe CRUD operations"
-            case .network: return "API calls and network activity"
-            case .storage: return "Database and file operations"
-            case .ui: return "User interface events"
-            case .extraction: return "Recipe extraction from text/images"
-            case .image: return "Image processing and compression"
-            case .cloudkit: return "iCloud synchronization"
-            case .analytics: return "Usage analytics and metrics"
-            case .background: return "Background task scheduling and execution"
-            case .lifecycle: return "App scene-phase transitions"
-            case .sync: return "Sync engine activity"
-            case .sharing: return "Recipe and book sharing"
-            case .backup: return "Backup creation and restore"
-            case .onboarding: return "First-launch onboarding flow"
-            case .api: return "Claude / external API calls"
-            case .batch: return "Batch import and extraction"
-            case .state: return "App state transitions"
+            case .general: return String(localized: "General app operations")
+            case .allergen: return String(localized: "Allergen detection and matching")
+            case .fodmap: return String(localized: "FODMAP analysis")
+            case .recipe: return String(localized: "Recipe CRUD operations")
+            case .network: return String(localized: "API calls and network activity")
+            case .storage: return String(localized: "Database and file operations")
+            case .ui: return String(localized: "User interface events")
+            case .extraction: return String(localized: "Recipe extraction from text/images")
+            case .image: return String(localized: "Image processing and compression")
+            case .cloudkit: return String(localized: "iCloud synchronization")
+            case .analytics: return String(localized: "Usage analytics and metrics")
+            case .background: return String(localized: "Background task scheduling and execution")
+            case .lifecycle: return String(localized: "App scene-phase transitions")
+            case .sync: return String(localized: "Sync engine activity")
+            case .sharing: return String(localized: "Recipe and book sharing")
+            case .backup: return String(localized: "Backup creation and restore")
+            case .onboarding: return String(localized: "First-launch onboarding flow")
+            case .api: return String(localized: "Claude / external API calls")
+            case .batch: return String(localized: "Batch import and extraction")
+            case .state: return String(localized: "App state transitions")
             }
         }
     }

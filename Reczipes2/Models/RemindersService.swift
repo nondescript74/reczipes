@@ -175,22 +175,22 @@ enum RemindersError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .permissionDenied:
-            return "Permission to access Reminders was denied. Please enable it in Settings > Privacy & Security > Reminders."
+            return String(localized: "Permission to access Reminders was denied. Please enable it in Settings > Privacy & Security > Reminders.", bundle: .appLanguage)
         case .noSourceAvailable:
-            return "No reminder source is available. Please check your device's reminder settings."
+            return String(localized: "No reminder source is available. Please check your device's reminder settings.", bundle: .appLanguage)
         case .saveFailed:
-            return "Failed to save reminders. Please try again."
+            return String(localized: "Failed to save reminders. Please try again.", bundle: .appLanguage)
         }
     }
     
     var recoverySuggestion: String? {
         switch self {
         case .permissionDenied:
-            return "Go to Settings > Privacy & Security > Reminders and enable access for this app."
+            return String(localized: "Go to Settings > Privacy & Security > Reminders and enable access for this app.", bundle: .appLanguage)
         case .noSourceAvailable:
-            return "Make sure you have at least one reminder account configured in Settings > Reminders."
+            return String(localized: "Make sure you have at least one reminder account configured in Settings > Reminders.", bundle: .appLanguage)
         case .saveFailed:
-            return "Check your network connection and try again."
+            return String(localized: "Check your network connection and try again.", bundle: .appLanguage)
         }
     }
 }

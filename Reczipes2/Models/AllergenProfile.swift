@@ -307,7 +307,7 @@ struct RecipeAllergenScore: Identifiable, Sendable {
     
     var summary: String {
         if isSafe {
-            return "No detected allergens"
+            return String(localized: "No detected allergens", bundle: .appLanguage)
         }
         let count = detectedAllergens.count
         return "\(count) allergen\(count == 1 ? "" : "s") detected"
@@ -317,7 +317,7 @@ struct RecipeAllergenScore: Identifiable, Sendable {
         if isSafe { return "Safe" }
         if score < 5 { return "Low Risk" }
         if score < 10 { return "Medium Risk" }
-        return "High Risk"
+        return String(localized: "High Risk", bundle: .appLanguage)
     }
 }
 
@@ -528,37 +528,37 @@ enum FoodIntoleranceType: String, Codable, CaseIterable {
     var description: String {
         switch self {
         case .gluten:
-            return "Protein found in wheat, barley, and rye"
+            return String(localized: "Protein found in wheat, barley, and rye", bundle: .appLanguage)
         case .dairy:
-            return "All milk products and derivatives"
+            return String(localized: "All milk products and derivatives", bundle: .appLanguage)
         case .lactose:
-            return "Milk sugar found in dairy products"
+            return String(localized: "Milk sugar found in dairy products", bundle: .appLanguage)
         case .eggs:
-            return "Chicken eggs and egg products"
+            return String(localized: "Chicken eggs and egg products", bundle: .appLanguage)
         case .soy:
-            return "Soybeans and soy-derived products"
+            return String(localized: "Soybeans and soy-derived products", bundle: .appLanguage)
         case .peanuts:
-            return "Legume commonly causing allergic reactions"
+            return String(localized: "Legume commonly causing allergic reactions", bundle: .appLanguage)
         case .treeNuts:
-            return "Nuts from trees (almonds, cashews, etc.)"
+            return String(localized: "Nuts from trees (almonds, cashews, etc.)", bundle: .appLanguage)
         case .fish:
-            return "Finned fish species"
+            return String(localized: "Finned fish species", bundle: .appLanguage)
         case .shellfish:
-            return "Crustaceans and mollusks"
+            return String(localized: "Crustaceans and mollusks", bundle: .appLanguage)
         case .wheat:
-            return "Wheat grain and wheat-based products"
+            return String(localized: "Wheat grain and wheat-based products", bundle: .appLanguage)
         case .sesame:
-            return "Sesame seeds and sesame oil"
+            return String(localized: "Sesame seeds and sesame oil", bundle: .appLanguage)
         case .sulfites:
-            return "Preservatives in wine, dried fruit, etc."
+            return String(localized: "Preservatives in wine, dried fruit, etc.", bundle: .appLanguage)
         case .fodmap:
-            return "Fermentable carbohydrates (6 categories)"
+            return String(localized: "Fermentable carbohydrates (6 categories)", bundle: .appLanguage)
         case .nightshades:
-            return "Tomatoes, potatoes, peppers, eggplant"
+            return String(localized: "Tomatoes, potatoes, peppers, eggplant", bundle: .appLanguage)
         case .corn:
-            return "Corn and corn-derived products"
+            return String(localized: "Corn and corn-derived products", bundle: .appLanguage)
         case .yeast:
-            return "Baker's and brewer's yeast"
+            return String(localized: "Baker's and brewer's yeast", bundle: .appLanguage)
         }
     }
     
@@ -578,10 +578,10 @@ enum AllergenSeverity: String, Codable, CaseIterable {
     
     var displayName: String {
         switch self {
-        case .mild: return "Mild"
-        case .moderate: return "Moderate"
-        case .severe: return "Severe"
-        case .lifeThreatening: return "Life-Threatening"
+        case .mild: return String(localized: "Mild", bundle: .appLanguage)
+        case .moderate: return String(localized: "Moderate", bundle: .appLanguage)
+        case .severe: return String(localized: "Severe", bundle: .appLanguage)
+        case .lifeThreatening: return String(localized: "Life-Threatening", bundle: .appLanguage)
         }
     }
     
@@ -645,6 +645,6 @@ struct RecipeAllergenAnalysis: Identifiable {
         if isSafe { return "Safe" }
         if score < 5 { return "Low Risk" }
         if score < 10 { return "Moderate Risk" }
-        return "High Risk"
+        return String(localized: "High Risk", bundle: .appLanguage)
     }
 }

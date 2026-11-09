@@ -569,7 +569,7 @@ struct BatchImageExtractorView: View {
         panel.canChooseDirectories = false
         panel.canChooseFiles = true
         panel.allowedContentTypes = [.image]
-        panel.message = "Select recipe images to extract"
+        panel.message = String(localized: "Select recipe images to extract", bundle: .appLanguage)
         panel.prompt = "Add"
         panel.begin { response in
             guard response == .OK else {
@@ -1336,9 +1336,9 @@ struct LoadingProgress {
     
     var progressText: String {
         if !currentFileName.isEmpty {
-            return "Loading \(current + 1) of \(total): \(currentFileName)"
+            return String(localized: "Loading \(current + 1) of \(total): \(currentFileName)", bundle: .appLanguage)
         } else {
-            return "Loading \(current) of \(total)"
+            return String(localized: "Loading \(current) of \(total)", bundle: .appLanguage)
         }
     }
 }

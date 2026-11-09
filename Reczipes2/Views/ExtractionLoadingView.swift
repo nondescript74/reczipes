@@ -68,9 +68,9 @@ struct ExtractionLoadingView: View {
         var subMessage: String {
             switch self {
             case .image:
-                return "This typically takes 10-30 seconds"
+                return String(localized: "This typically takes 10-30 seconds", bundle: .appLanguage)
             case .url, .link:
-                return "This typically takes 15-45 seconds"
+                return String(localized: "This typically takes 15-45 seconds", bundle: .appLanguage)
             }
         }
     }

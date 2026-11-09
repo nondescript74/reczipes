@@ -32,9 +32,9 @@ enum DiabetesStatus: String, Codable, CaseIterable, Sendable {
     
     var description: String {
         switch self {
-        case .none: return "No diabetes concerns"
-        case .prediabetic: return "Monitor blood sugar levels"
-        case .diabetic: return "Requires blood sugar management"
+        case .none: return String(localized: "No diabetes concerns", bundle: .appLanguage)
+        case .prediabetic: return String(localized: "Monitor blood sugar levels", bundle: .appLanguage)
+        case .diabetic: return String(localized: "Requires blood sugar management", bundle: .appLanguage)
         }
     }
 }

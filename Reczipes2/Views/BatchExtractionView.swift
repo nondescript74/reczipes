@@ -524,7 +524,7 @@ struct BatchExtractionView: View {
         let remainingSeconds = Int(seconds) % 60
         
         if minutes > 0 {
-            return "\(minutes)m \(remainingSeconds)s"
+            return String(localized: "\(minutes)m \(remainingSeconds)s", bundle: .appLanguage)
         } else {
             return "\(remainingSeconds)s"
         }
@@ -535,7 +535,7 @@ struct BatchExtractionView: View {
         let remainingSeconds = Int(seconds) % 60
         
         if minutes > 0 {
-            return "\(minutes)m \(remainingSeconds)s"
+            return String(localized: "\(minutes)m \(remainingSeconds)s", bundle: .appLanguage)
         } else {
             return "\(remainingSeconds)s"
         }

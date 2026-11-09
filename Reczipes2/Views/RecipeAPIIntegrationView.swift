@@ -140,7 +140,7 @@ struct RecipeAPIIntegrationView: View {
         guard cleanedKey.hasPrefix("rapi_") else {
             isSavingKey = false
             showError = true
-            errorMessage = "Recipe API keys should start with 'rapi_'."
+            errorMessage = String(localized: "Recipe API keys should start with 'rapi_'.", bundle: .appLanguage)
             recipeAPILog.warning("RecipeAPIIntegrationView: Key rejected — wrong prefix")
             return
         }
@@ -152,7 +152,7 @@ struct RecipeAPIIntegrationView: View {
             guard isValid else {
                 isSavingKey = false
                 showError = true
-                errorMessage = "Could not validate key with /api/v1/categories. Verify the key is active, or enable 'Skip validation'."
+                errorMessage = String(localized: "Could not validate key with /api/v1/categories. Verify the key is active, or enable 'Skip validation'.", bundle: .appLanguage)
                 recipeAPILog.error("RecipeAPIIntegrationView: Validation failed")
                 return
             }
@@ -170,7 +170,7 @@ struct RecipeAPIIntegrationView: View {
             refreshStatus()
         } else {
             showError = true
-            errorMessage = "Failed to save key to Keychain."
+            errorMessage = String(localized: "Failed to save key to Keychain.", bundle: .appLanguage)
             recipeAPILog.error("RecipeAPIIntegrationView: Keychain save failed")
         }
 
@@ -179,7 +179,7 @@ struct RecipeAPIIntegrationView: View {
 
     private func removeKey() {
         _ = APIKeyHelper.removeRecipeAPIKey()
-        statusMessage = "Recipe API key removed."
+        statusMessage = String(localized: "Recipe API key removed.", bundle: .appLanguage)
         showError = false
         errorMessage = ""
         refreshStatus()
@@ -191,7 +191,7 @@ struct RecipeAPIIntegrationView: View {
         showError = false
         do {
             let health = try await RecipeAPIClient().fetchHealth()
-            statusMessage = "Health OK: \(health.status)"
+            statusMessage = String(localized: "Health OK: \(health.status)", bundle: .appLanguage)
             recipeAPILog.info("RecipeAPIIntegrationView: Health check OK — \(health.status, privacy: .public)")
         } catch {
             showError = true
@@ -207,7 +207,7 @@ struct RecipeAPIIntegrationView: View {
         showError = false
         do {
             let recipe = try await RecipeAPIClient().fetchDinnerRecipe()
-            statusMessage = "Dinner sample fetched: \(recipe.name) (\(recipe.id))"
+            statusMessage = String(localized: "Dinner sample fetched: \(recipe.name) (\(recipe.id))", bundle: .appLanguage)
             recipeAPILog.info("RecipeAPIIntegrationView: Dinner check OK — \(recipe.name, privacy: .public)")
         } catch {
             showError = true
@@ -223,13 +223,13 @@ struct RecipeAPIIntegrationView: View {
         showError = false
         guard let key = APIKeyHelper.getRecipeAPIKey() else {
             showError = true
-            errorMessage = "Recipe API key is not configured."
+            errorMessage = String(localized: "Recipe API key is not configured.", bundle: .appLanguage)
             isRunningTest = false
             return
         }
         do {
             let categories = try await RecipeAPIClient(apiKey: key).fetchCategories()
-            statusMessage = "Authenticated successfully. Categories returned: \(categories.count)"
+            statusMessage = String(localized: "Authenticated successfully. Categories returned: \(categories.count)", bundle: .appLanguage)
             recipeAPILog.info("RecipeAPIIntegrationView: Categories check OK — \(categories.count) categories")
         } catch {
             showError = true

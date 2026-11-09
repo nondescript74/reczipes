@@ -256,7 +256,7 @@ struct SharedRecipesBrowserView: View {
             try await sharingService.importSharedRecipe(recipe, modelContext: modelContext)
             // Show success message
         } catch {
-            errorMessage = "Failed to import: \(error.localizedDescription)"
+            errorMessage = String(localized: "Failed to import: \(error.localizedDescription)", bundle: .appLanguage)
         }
     }
 }

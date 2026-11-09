@@ -518,7 +518,7 @@ class CloudKitOnboardingService: ObservableObject {
     /// Export diagnostics as JSON string for support tickets
     func exportDiagnostics() -> String {
         guard let diagnostics = diagnostics else {
-            return "No diagnostics available"
+            return String(localized: "No diagnostics available", bundle: .appLanguage)
         }
         
         let encoder = JSONEncoder()
@@ -527,7 +527,7 @@ class CloudKitOnboardingService: ObservableObject {
         
         guard let jsonData = try? encoder.encode(diagnostics),
               let jsonString = String(data: jsonData, encoding: .utf8) else {
-            return "Failed to encode diagnostics"
+            return String(localized: "Failed to encode diagnostics", bundle: .appLanguage)
         }
         
         return jsonString
@@ -594,13 +594,13 @@ enum CloudKitError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .statusUnknown:
-            return "Could not determine CloudKit status"
+            return String(localized: "Could not determine CloudKit status", bundle: .appLanguage)
         case .containerInaccessible:
-            return "CloudKit container is not accessible"
+            return String(localized: "CloudKit container is not accessible", bundle: .appLanguage)
         case .publicDatabaseUnavailable:
-            return "Public database is not available"
+            return String(localized: "Public database is not available", bundle: .appLanguage)
         case .unknownIssue:
-            return "An unknown CloudKit issue occurred"
+            return String(localized: "An unknown CloudKit issue occurred", bundle: .appLanguage)
         }
     }
 }

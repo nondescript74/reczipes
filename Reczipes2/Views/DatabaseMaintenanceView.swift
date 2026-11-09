@@ -339,7 +339,7 @@ struct DatabaseMaintenanceView: View {
         let keepID = keepChoice[group.key] ?? group.keep.id
         let merged = BookMerger.merge(keepID: keepID, extraIDs: all.map(\.id).filter { $0 != keepID }, in: modelContext)
         findDuplicateBooks()
-        bookMergeMessage = "Merged \(merged) copies of \u{201C}\(group.keep.name)\u{201D}. The website drops the old copies on its next refresh (about 5 minutes)."
+        bookMergeMessage = String(localized: "Merged \(merged) copies of \u{201C}\(group.keep.name)\u{201D}. The website drops the old copies on its next refresh (about 5 minutes).", bundle: .appLanguage)
     }
 
     private func findRetirable() async {
@@ -348,7 +348,7 @@ struct DatabaseMaintenanceView: View {
         retireMessage = nil
         guard let found = await CloudKitSharingService.shared.findRetirableBooks(modelContext: modelContext) else {
             retirable = nil
-            retireMessage = "Couldn't read your public books completely. Nothing was changed; try again."
+            retireMessage = String(localized: "Couldn't read your public books completely. Nothing was changed; try again.", bundle: .appLanguage)
             return
         }
         retirable = found
@@ -367,7 +367,7 @@ struct DatabaseMaintenanceView: View {
             : "Retired \(done) of \(chosen.count); the rest stay queued and are retried on the next sync."
         await findRetirable()
         if done == chosen.count {
-            retireMessage = "Retired \(done) old copies. The website drops them on its next refresh (within about 5 minutes)."
+            retireMessage = String(localized: "Retired \(done) old copies. The website drops them on its next refresh (within about 5 minutes).", bundle: .appLanguage)
         }
     }
 

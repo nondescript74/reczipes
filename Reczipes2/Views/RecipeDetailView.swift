@@ -1127,13 +1127,16 @@ struct RecipeDetailView: View {
             // Count total ingredients
             let totalIngredients = recipe.ingredientSections.reduce(0) { $0 + $1.ingredients.count }
             
-            remindersAlertMessage = "Successfully added \(totalIngredients) ingredient\(totalIngredients == 1 ? "" : "s") to your Reminders app in a list called '\(String(describing: recipe.title))'."
+            let listName = recipe.safeTitle
+            remindersAlertMessage = totalIngredients == 1
+                ? String(localized: "Added 1 ingredient to your Reminders app in a list called '\(listName)'.", bundle: .appLanguage)
+                : String(localized: "Added \(totalIngredients) ingredients to your Reminders app in a list called '\(listName)'.", bundle: .appLanguage)
             showingRemindersAlert = true
         } catch RemindersError.permissionDenied {
-            remindersAlertMessage = "Permission to access Reminders was denied. Please enable it in Settings > Privacy & Security > Reminders to use this feature."
+            remindersAlertMessage = String(localized: "Permission to access Reminders was denied. Please enable it in Settings > Privacy & Security > Reminders to use this feature.", bundle: .appLanguage)
             showingRemindersAlert = true
         } catch {
-            remindersAlertMessage = "Failed to add ingredients to Reminders: \(error.localizedDescription)"
+            remindersAlertMessage = String(localized: "Failed to add ingredients to Reminders: \(error.localizedDescription)", bundle: .appLanguage)
             showingRemindersAlert = true
         }
         
@@ -1305,11 +1308,13 @@ struct RecipeDetailView: View {
                 pendingTips.removeAll()
                 
                 // Show success feedback with correct count
-                remindersAlertMessage = "Successfully added \(tipCount) tip\(tipCount == 1 ? "" : "s") to the recipe!"
+                remindersAlertMessage = tipCount == 1
+                    ? String(localized: "Added 1 tip to the recipe.", bundle: .appLanguage)
+                    : String(localized: "Added \(tipCount) tips to the recipe.", bundle: .appLanguage)
                 showingRemindersAlert = true
             } catch {
                 AppLog.error("Failed to save tips: \(error)", category: .ui)
-                remindersAlertMessage = "Failed to save tips: \(error.localizedDescription)"
+                remindersAlertMessage = String(localized: "Failed to save tips: \(error.localizedDescription)", bundle: .appLanguage)
                 showingRemindersAlert = true
             }
         }
@@ -1369,7 +1374,7 @@ struct RecipeDetailView: View {
         AppLog.info("Community sharing initiated for recipe: \(recipe.safeTitle)", category: .cloudKit)
         
         // For now, show a coming soon alert
-        remindersAlertMessage = "Community sharing is coming soon! Once enabled, you'll be able to share your recipes with other users and discover new recipes from the community."
+        remindersAlertMessage = String(localized: "Community sharing is coming soon! Once enabled, you'll be able to share your recipes with other users and discover new recipes from the community.", bundle: .appLanguage)
         showingRemindersAlert = true
     }
 }

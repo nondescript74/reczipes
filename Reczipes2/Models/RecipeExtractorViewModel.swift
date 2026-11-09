@@ -24,11 +24,11 @@ enum URLExtractionProviderPreference: String, CaseIterable, Identifiable {
     var displayName: String {
         switch self {
         case .recipeAPIFirstThenClaude:
-            return "Auto (Recipe API -> Claude)"
+            return String(localized: "Auto (Recipe API -> Claude)", bundle: .appLanguage)
         case .recipeAPIOnly:
-            return "Recipe API Only"
+            return String(localized: "Recipe API Only", bundle: .appLanguage)
         case .claudeOnly:
-            return "Claude Only"
+            return String(localized: "Claude Only", bundle: .appLanguage)
         }
     }
 }
@@ -150,7 +150,7 @@ class RecipeExtractorViewModel: ObservableObject {
             AppLog.info("Recipe saved successfully: \(recipe.safeTitle) (RecipeX with CloudKit sync)", category: .extraction)
         } catch {
             AppLog.error("Failed to save recipe: \(error)", category: .extraction)
-            errorMessage = "Failed to save recipe: \(error.localizedDescription)"
+            errorMessage = String(localized: "Failed to save recipe: \(error.localizedDescription)", bundle: .appLanguage)
         }
     }
     
@@ -199,7 +199,7 @@ class RecipeExtractorViewModel: ObservableObject {
             AppLog.info("Recipe replaced successfully: \(existingRecipe.safeTitle)", category: .extraction)
         } catch {
             AppLog.error("Failed to replace recipe: \(error)", category: .extraction)
-            errorMessage = "Failed to replace recipe: \(error.localizedDescription)"
+            errorMessage = String(localized: "Failed to replace recipe: \(error.localizedDescription)", bundle: .appLanguage)
         }
     }
     
@@ -259,7 +259,7 @@ class RecipeExtractorViewModel: ObservableObject {
             }
         } catch {
             await MainActor.run {
-                self.errorMessage = "Unexpected error: \(error.localizedDescription)"
+                self.errorMessage = String(localized: "Unexpected error: \(error.localizedDescription)", bundle: .appLanguage)
                 AppLog.error("Unexpected error during URL extraction: \(error.localizedDescription)", category: .extraction)
             }
         }
@@ -525,7 +525,7 @@ class RecipeExtractorViewModel: ObservableObject {
             }
         } catch {
             await MainActor.run {
-                self.errorMessage = "Unexpected error: \(error.localizedDescription)"
+                self.errorMessage = String(localized: "Unexpected error: \(error.localizedDescription)", bundle: .appLanguage)
                 AppLog.error("Unexpected error during extraction: \(error.localizedDescription)", category: .extraction)
             }
         }
@@ -562,7 +562,7 @@ class RecipeExtractorViewModel: ObservableObject {
         } catch let error as ClaudeAPIError {
             await MainActor.run { self.errorMessage = error.errorDescription }
         } catch {
-            await MainActor.run { self.errorMessage = "Unexpected error: \(error.localizedDescription)" }
+            await MainActor.run { self.errorMessage = String(localized: "Unexpected error: \(error.localizedDescription)", bundle: .appLanguage) }
         }
         await MainActor.run { isLoading = false }
     }
@@ -635,7 +635,7 @@ class RecipeExtractorViewModel: ObservableObject {
             }
         } catch {
             await MainActor.run {
-                self.errorMessage = "Validation failed: \(error.localizedDescription)"
+                self.errorMessage = String(localized: "Validation failed: \(error.localizedDescription)", bundle: .appLanguage)
                 AppLog.error("Validation error: \(error.localizedDescription)", category: .recipe)
             }
         }

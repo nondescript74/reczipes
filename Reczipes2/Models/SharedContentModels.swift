@@ -150,21 +150,21 @@ enum SharingError: LocalizedError, Equatable {
     var errorDescription: String? {
         switch self {
         case .notAuthenticated:
-            return "You must be signed in to iCloud to share content."
+            return String(localized: "You must be signed in to iCloud to share content.", bundle: .appLanguage)
         case .cloudKitUnavailable(let message):
             return message ?? "CloudKit is not available. Check your iCloud settings."
         case .recipeNotFound:
-            return "The recipe you're trying to share was not found."
+            return String(localized: "The recipe you're trying to share was not found.", bundle: .appLanguage)
         case .bookNotFound:
-            return "The recipe book you're trying to share was not found."
+            return String(localized: "The recipe book you're trying to share was not found.", bundle: .appLanguage)
         case .uploadFailed(let error):
-            return "Failed to upload: \(error.localizedDescription)"
+            return String(localized: "Failed to upload: \(error.localizedDescription)", bundle: .appLanguage)
         case .downloadFailed(let error):
-            return "Failed to download: \(error.localizedDescription)"
+            return String(localized: "Failed to download: \(error.localizedDescription)", bundle: .appLanguage)
         case .invalidData:
-            return "The shared content contains invalid data."
+            return String(localized: "The shared content contains invalid data.", bundle: .appLanguage)
         case .imageUploadFailed(let error):
-            return "Failed to upload image: \(error.localizedDescription)"
+            return String(localized: "Failed to upload image: \(error.localizedDescription)", bundle: .appLanguage)
         }
     }
     
@@ -212,7 +212,7 @@ struct CloudKitRecipeStatus: Identifiable {
         if isTracked { return "Tracked" }
         if inBook { return "Not tracked — recipe is in a book (re-link, never delete)" }
         if inLocalLibrary { return "Not tracked — recipe is in your library (re-link)" }
-        return "Orphaned (recipe not on this device)"
+        return String(localized: "Orphaned (recipe not on this device)", bundle: .appLanguage)
     }
 }
 

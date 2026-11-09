@@ -116,11 +116,11 @@ struct RecipeDiabeticBadge: View {
         let glycemicLoad = info.estimatedGlycemicLoad?.value ?? 100
         
         if glycemicLoad < 10 {
-            return "Low Impact"
+            return String(localized: "Low Impact", bundle: .appLanguage)
         } else if glycemicLoad < 20 {
-            return "Moderate Impact"
+            return String(localized: "Moderate Impact", bundle: .appLanguage)
         } else {
-            return "High Impact"
+            return String(localized: "High Impact", bundle: .appLanguage)
         }
     }
 }

@@ -145,7 +145,7 @@ struct RecipeBatchAdminDeleteView: View {
                 : "Deleted \(count) recipes. Removed from \(BookMembershipGuard.listPhrase(removedFrom)) first."
         } catch {
             modelContext.rollback()
-            resultMessage = "Not deleted: \(error.localizedDescription)"
+            resultMessage = String(localized: "Not deleted: \(error.localizedDescription)", bundle: .appLanguage)
         }
     }
 }

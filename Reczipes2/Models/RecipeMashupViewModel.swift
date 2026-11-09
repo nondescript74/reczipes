@@ -135,7 +135,7 @@ class RecipeMashupViewModel: ObservableObject {
         }
         
         guard !sources[index].url.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else {
-            sources[index].errorMessage = "Please enter a URL"
+            sources[index].errorMessage = String(localized: "Please enter a URL", bundle: .appLanguage)
             return
         }
         
@@ -167,7 +167,7 @@ class RecipeMashupViewModel: ObservableObject {
             
             AppLog.info("Mashup: Extracted recipe '\(recipe.safeTitle)' from \(url)", category: .recipe)
         } catch {
-            sources[index].errorMessage = "Extraction failed: \(error.localizedDescription)"
+            sources[index].errorMessage = String(localized: "Extraction failed: \(error.localizedDescription)", bundle: .appLanguage)
             AppLog.error("Mashup extraction error for source \(index): \(error)", category: .recipe)
         }
         

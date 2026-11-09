@@ -269,7 +269,7 @@ extension DiagnosticEvent {
                 )
             ]
         case let r where r.contains("restricted"):
-            message = "iCloud is restricted on this device. Your recipes are saved locally."
+            message = String(localized: "iCloud is restricted on this device. Your recipes are saved locally.", bundle: .appLanguage)
             actions = [
                 DiagnosticAction(
                     title: "Check Restrictions",
@@ -278,7 +278,7 @@ extension DiagnosticEvent {
                 )
             ]
         default:
-            message = "iCloud sync is temporarily unavailable. Your recipes are saved locally."
+            message = String(localized: "iCloud sync is temporarily unavailable. Your recipes are saved locally.", bundle: .appLanguage)
             actions = [
                 DiagnosticAction(
                     title: "Check iCloud Settings",

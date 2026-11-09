@@ -151,15 +151,15 @@ struct CombinedRecipeBadge: View {
     private var subtitleText: String {
         switch score.filterMode {
         case .none:
-            return "No filters active"
+            return String(localized: "No filters active", bundle: .appLanguage)
         case .allergenFODMAP:
-            return "Allergen & FODMAP Analysis"
+            return String(localized: "Allergen & FODMAP Analysis", bundle: .appLanguage)
         case .diabetes:
-            return "Diabetes Analysis"
+            return String(localized: "Diabetes Analysis", bundle: .appLanguage)
         case .nutrition:
-            return "Nutrition Analysis"
+            return String(localized: "Nutrition Analysis", bundle: .appLanguage)
         case .all:
-            return "Complete Health Analysis"
+            return String(localized: "Complete Health Analysis", bundle: .appLanguage)
         }
     }
     

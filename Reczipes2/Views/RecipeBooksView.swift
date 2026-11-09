@@ -220,18 +220,18 @@ struct RecipeBooksView: View {
     private var emptyStateTitle: String {
         switch contentFilter {
         case .mine:
-            return "No Recipe Books"
+            return String(localized: "No Recipe Books", bundle: .appLanguage)
         case .shared:
-            return "No Shared Books"
+            return String(localized: "No Shared Books", bundle: .appLanguage)
         }
     }
     
     private var emptyStateDescriptionText: String {
         switch contentFilter {
         case .mine:
-            return "Create a book to organize your recipes"
+            return String(localized: "Create a book to organize your recipes", bundle: .appLanguage)
         case .shared:
-            return "No books have been shared by the community yet. Check back later or create and share your own books!"
+            return String(localized: "No books have been shared by the community yet. Check back later or create and share your own books!", bundle: .appLanguage)
         }
     }
     
@@ -258,14 +258,14 @@ struct RecipeBooksView: View {
     
     private var emptyFilterDescription: String {
         if !searchText.isEmpty {
-            return "No books match your search"
+            return String(localized: "No books match your search", bundle: .appLanguage)
         }
         
         switch contentFilter {
         case .mine:
-            return "You don't have any personal books yet"
+            return String(localized: "You don't have any personal books yet", bundle: .appLanguage)
         case .shared:
-            return "No books have been shared with you"
+            return String(localized: "No books have been shared with you", bundle: .appLanguage)
         }
     }
     

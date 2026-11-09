@@ -607,27 +607,27 @@ struct CloudKitOnboardingView: View {
     
     private var statusTitle: String {
         switch onboarding.onboardingState {
-        case .checking: return "Checking Setup..."
-        case .ready: return "Ready to Share!"
-        case .needsiCloudSignIn: return "iCloud Sign-In Required"
-        case .needsContainerPermission: return "Permission Needed"
-        case .needsPublicDBSetup: return "Database Setup Required"
-        case .needsUserIdentity: return "User Identity Required"
-        case .restricted: return "CloudKit Restricted"
-        case .failed: return "Setup Issue"
+        case .checking: return String(localized: "Checking Setup...", bundle: .appLanguage)
+        case .ready: return String(localized: "Ready to Share!", bundle: .appLanguage)
+        case .needsiCloudSignIn: return String(localized: "iCloud Sign-In Required", bundle: .appLanguage)
+        case .needsContainerPermission: return String(localized: "Permission Needed", bundle: .appLanguage)
+        case .needsPublicDBSetup: return String(localized: "Database Setup Required", bundle: .appLanguage)
+        case .needsUserIdentity: return String(localized: "User Identity Required", bundle: .appLanguage)
+        case .restricted: return String(localized: "CloudKit Restricted", bundle: .appLanguage)
+        case .failed: return String(localized: "Setup Issue", bundle: .appLanguage)
         }
     }
     
     private var statusMessage: String {
         switch onboarding.onboardingState {
-        case .checking: return "Please wait while we verify your CloudKit setup..."
-        case .ready: return "Your device is fully configured for community sharing."
-        case .needsiCloudSignIn: return "Sign in to iCloud to enable community features."
-        case .needsContainerPermission: return "We need permission to access the CloudKit container."
-        case .needsPublicDBSetup: return "The community sharing database needs initialization."
-        case .needsUserIdentity: return "We need to create your user identity for sharing."
-        case .restricted: return "CloudKit features are restricted on this device."
-        case .failed: return "We encountered an issue. Let's try to fix it."
+        case .checking: return String(localized: "Please wait while we verify your CloudKit setup...", bundle: .appLanguage)
+        case .ready: return String(localized: "Your device is fully configured for community sharing.", bundle: .appLanguage)
+        case .needsiCloudSignIn: return String(localized: "Sign in to iCloud to enable community features.", bundle: .appLanguage)
+        case .needsContainerPermission: return String(localized: "We need permission to access the CloudKit container.", bundle: .appLanguage)
+        case .needsPublicDBSetup: return String(localized: "The community sharing database needs initialization.", bundle: .appLanguage)
+        case .needsUserIdentity: return String(localized: "We need to create your user identity for sharing.", bundle: .appLanguage)
+        case .restricted: return String(localized: "CloudKit features are restricted on this device.", bundle: .appLanguage)
+        case .failed: return String(localized: "We encountered an issue. Let's try to fix it.", bundle: .appLanguage)
         }
     }
 }
@@ -717,12 +717,12 @@ struct OnboardingStepRow: View {
     
     private var stepTitle: String {
         switch step {
-        case .checkingAccount: return "Checking iCloud account..."
-        case .requestingPermissions: return "Requesting permissions..."
-        case .initializingPublicDB: return "Initializing public database..."
-        case .creatingUserIdentity: return "Creating user identity..."
-        case .verifyingAccess: return "Verifying access..."
-        case .complete: return "Setup complete!"
+        case .checkingAccount: return String(localized: "Checking iCloud account...", bundle: .appLanguage)
+        case .requestingPermissions: return String(localized: "Requesting permissions...", bundle: .appLanguage)
+        case .initializingPublicDB: return String(localized: "Initializing public database...", bundle: .appLanguage)
+        case .creatingUserIdentity: return String(localized: "Creating user identity...", bundle: .appLanguage)
+        case .verifyingAccess: return String(localized: "Verifying access...", bundle: .appLanguage)
+        case .complete: return String(localized: "Setup complete!", bundle: .appLanguage)
         }
     }
 }

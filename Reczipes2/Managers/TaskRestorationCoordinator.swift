@@ -35,9 +35,9 @@ class TaskRestorationCoordinator: ObservableObject {
             
             switch task.taskType {
             case .extraction:
-                restorationMessage = "You were extracting a recipe. Would you like to continue?"
+                restorationMessage = String(localized: "You were extracting a recipe. Would you like to continue?", bundle: .appLanguage)
             case .diabeticAnalysis:
-                restorationMessage = "You were analyzing a recipe for diabetic information. Would you like to continue?"
+                restorationMessage = String(localized: "You were analyzing a recipe for diabetic information. Would you like to continue?", bundle: .appLanguage)
             }
             
             showRestorationPrompt = true

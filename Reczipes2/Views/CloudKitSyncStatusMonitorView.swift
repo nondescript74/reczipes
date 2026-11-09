@@ -211,17 +211,17 @@ struct CloudKitSyncStatusMonitorView: View {
     private var accountStatusText: String {
         switch monitor.accountStatus {
         case .available:
-            return "Signed In"
+            return String(localized: "Signed In", bundle: .appLanguage)
         case .noAccount:
-            return "Not Signed In"
+            return String(localized: "Not Signed In", bundle: .appLanguage)
         case .restricted:
-            return "Restricted"
+            return String(localized: "Restricted", bundle: .appLanguage)
         case .couldNotDetermine:
-            return "Unknown"
+            return String(localized: "Unknown", bundle: .appLanguage)
         case .temporarilyUnavailable:
-            return "Temporarily Unavailable"
+            return String(localized: "Temporarily Unavailable", bundle: .appLanguage)
         @unknown default:
-            return "Unknown"
+            return String(localized: "Unknown", bundle: .appLanguage)
         }
     }
     

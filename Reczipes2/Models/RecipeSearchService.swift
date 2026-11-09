@@ -372,14 +372,14 @@ class RecipeSearchService {
         guard let minutes = extractCookingTime(from: recipe) else { return nil }
         
         if minutes < 60 {
-            return "\(minutes) min"
+            return String(localized: "\(minutes) min", bundle: .appLanguage)
         } else {
             let hours = minutes / 60
             let remainingMinutes = minutes % 60
             if remainingMinutes == 0 {
-                return "\(hours) hr"
+                return String(localized: "\(hours) hr", bundle: .appLanguage)
             } else {
-                return "\(hours) hr \(remainingMinutes) min"
+                return String(localized: "\(hours) hr \(remainingMinutes) min", bundle: .appLanguage)
             }
         }
     }

@@ -85,9 +85,9 @@ class RecipeBookImportService {
         
         var description: String {
             switch self {
-            case .replace: return "Replace existing book"
-            case .keepBoth: return "Keep both versions"
-            case .merge: return "Merge recipes into existing book"
+            case .replace: return String(localized: "Replace existing book", bundle: .appLanguage)
+            case .keepBoth: return String(localized: "Keep both versions", bundle: .appLanguage)
+            case .merge: return String(localized: "Merge recipes into existing book", bundle: .appLanguage)
             }
         }
     }
@@ -114,19 +114,19 @@ class RecipeBookImportService {
         var errorDescription: String? {
             switch self {
             case .invalidFile:
-                return "The selected file is not a valid recipe book."
+                return String(localized: "The selected file is not a valid recipe book.", bundle: .appLanguage)
             case .decodingFailed(let error):
-                return "Could not read recipe book: \(error.localizedDescription)"
+                return String(localized: "Could not read recipe book: \(error.localizedDescription)", bundle: .appLanguage)
             case .existingBookConflict(let name):
-                return "A book named '\(name)' already exists. Choose how to handle this conflict."
+                return String(localized: "A book named '\(name)' already exists. Choose how to handle this conflict.", bundle: .appLanguage)
             case .extractionFailed(let error):
-                return "Failed to extract recipe book: \(error.localizedDescription)"
+                return String(localized: "Failed to extract recipe book: \(error.localizedDescription)", bundle: .appLanguage)
             case .imageCopyFailed(let error):
-                return "Failed to import images: \(error.localizedDescription)"
+                return String(localized: "Failed to import images: \(error.localizedDescription)", bundle: .appLanguage)
             case .saveFailed(let error):
-                return "Failed to save imported book: \(error.localizedDescription)"
+                return String(localized: "Failed to save imported book: \(error.localizedDescription)", bundle: .appLanguage)
             case .unsupportedVersion(let version):
-                return "This recipe book version (\(version)) is not supported by this app version."
+                return String(localized: "This recipe book version (\(version)) is not supported by this app version.", bundle: .appLanguage)
             }
         }
     }

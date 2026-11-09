@@ -289,7 +289,7 @@ class RecipeXCloudKitSyncService: ObservableObject {
             // User exceeded CloudKit quota
             AppLog.error("CloudKit quota exceeded for user", category: .cloudKit)
             recipe.markSyncFailed(error: "iCloud storage full")
-            lastError = "iCloud storage quota exceeded. Please free up space."
+            lastError = String(localized: "iCloud storage quota exceeded. Please free up space.", bundle: .appLanguage)
             
         case .serverRecordChanged:
             // Conflict - server has a newer version
@@ -301,7 +301,7 @@ class RecipeXCloudKitSyncService: ObservableObject {
             // User not signed into iCloud
             AppLog.error("User not signed into iCloud", category: .cloudKit)
             recipe.markSyncFailed(error: "Not signed into iCloud")
-            lastError = "Please sign into iCloud to sync recipes"
+            lastError = String(localized: "Please sign into iCloud to sync recipes", bundle: .appLanguage)
             
         default:
             // Other error

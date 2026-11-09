@@ -23,19 +23,19 @@ enum RecipeBackupError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .noRecipesToBackup:
-            return "No recipes available to backup"
+            return String(localized: "No recipes available to backup", bundle: .appLanguage)
         case .fileCreationFailed:
-            return "Failed to create backup file"
+            return String(localized: "Failed to create backup file", bundle: .appLanguage)
         case .encodingFailed(let error):
-            return "Failed to encode recipes: \(error.localizedDescription)"
+            return String(localized: "Failed to encode recipes: \(error.localizedDescription)", bundle: .appLanguage)
         case .decodingFailed(let error):
-            return "Failed to decode backup file: \(error.localizedDescription)"
+            return String(localized: "Failed to decode backup file: \(error.localizedDescription)", bundle: .appLanguage)
         case .imageLoadFailed(let name):
-            return "Failed to load image: \(name)"
+            return String(localized: "Failed to load image: \(name)", bundle: .appLanguage)
         case .invalidBackupFile:
-            return "Invalid or corrupted backup file"
+            return String(localized: "Invalid or corrupted backup file", bundle: .appLanguage)
         case .importFailed(let error):
-            return "Failed to import recipes: \(error.localizedDescription)"
+            return String(localized: "Failed to import recipes: \(error.localizedDescription)", bundle: .appLanguage)
         }
     }
 }

@@ -220,10 +220,12 @@ struct AutoFileRecipesView: View {
         do {
             try modelContext.save()
             AppLog.info("Auto-filed \(filed) recipes; created books: \(created.joined(separator: ", "))", category: .recipe)
-            resultMessage = "Filed \(filed) recipes." + (created.isEmpty ? "" : " New books: \(created.joined(separator: ", ")).")
+            let newBooks = created.joined(separator: ", ")
+            resultMessage = String(localized: "Filed \(filed) recipes.", bundle: .appLanguage)
+                + (created.isEmpty ? "" : " " + String(localized: "New books: \(newBooks).", bundle: .appLanguage))
         } catch {
             AppLog.error("Auto-file failed to save: \(error)", category: .recipe)
-            resultMessage = "Couldn't save: \(error.localizedDescription)"
+            resultMessage = String(localized: "Couldn't save: \(error.localizedDescription)", bundle: .appLanguage)
         }
     }
 }

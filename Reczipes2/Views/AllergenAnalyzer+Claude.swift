@@ -235,10 +235,10 @@ struct EnhancedAllergenScore: Identifiable {
         
         var label: String {
             switch self {
-            case .safe: return "Safe"
-            case .lowRisk: return "Low Risk"
-            case .mediumRisk: return "Medium Risk"
-            case .highRisk: return "High Risk"
+            case .safe: return String(localized: "Safe", bundle: .appLanguage)
+            case .lowRisk: return String(localized: "Low Risk", bundle: .appLanguage)
+            case .mediumRisk: return String(localized: "Medium Risk", bundle: .appLanguage)
+            case .highRisk: return String(localized: "High Risk", bundle: .appLanguage)
             }
         }
     }
@@ -255,13 +255,13 @@ enum AllergenAnalysisError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .invalidResponse:
-            return "Could not parse allergen analysis response"
+            return String(localized: "Could not parse allergen analysis response", bundle: .appLanguage)
         case .apiError:
-            return "API request failed"
+            return String(localized: "API request failed", bundle: .appLanguage)
         case .networkError:
-            return "Network connection error"
+            return String(localized: "Network connection error", bundle: .appLanguage)
         case .decodingError:
-            return "Failed to decode response data"
+            return String(localized: "Failed to decode response data", bundle: .appLanguage)
         }
     }
 }
@@ -396,11 +396,11 @@ struct EnhancedAllergenDetailView: View {
     private var recommendationText: String {
         switch score.claudeAnalysis.recommendation {
         case .safe:
-            return "This recipe appears safe for your dietary needs. Always verify ingredient labels."
+            return String(localized: "This recipe appears safe for your dietary needs. Always verify ingredient labels.", bundle: .appLanguage)
         case .caution:
-            return "This recipe contains some concerning ingredients. Consider the suggested substitutions or consult with a healthcare professional."
+            return String(localized: "This recipe contains some concerning ingredients. Consider the suggested substitutions or consult with a healthcare professional.", bundle: .appLanguage)
         case .avoid:
-            return "This recipe is not recommended for your dietary profile. Please find an alternative recipe."
+            return String(localized: "This recipe is not recommended for your dietary profile. Please find an alternative recipe.", bundle: .appLanguage)
         }
     }
 }

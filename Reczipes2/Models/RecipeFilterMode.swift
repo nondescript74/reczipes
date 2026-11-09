@@ -39,15 +39,15 @@ enum RecipeFilterMode: String, CaseIterable, Identifiable {
     var description: String {
         switch self {
         case .none:
-            return "Show all recipes without filtering"
+            return String(localized: "Show all recipes without filtering", bundle: .appLanguage)
         case .nutrition:
-            return "Filter based on nutritional information"
+            return String(localized: "Filter based on nutritional information", bundle: .appLanguage)
         case .allergenFODMAP:
-            return "Filter based on allergens and FODMAP sensitivities"
+            return String(localized: "Filter based on allergens and FODMAP sensitivities", bundle: .appLanguage)
         case .diabetes:
-            return "Filter for diabetes-friendly recipes (low sugar, complex carbs)"
+            return String(localized: "Filter for diabetes-friendly recipes (low sugar, complex carbs)", bundle: .appLanguage)
         case .all:
-            return "Apply all filters: allergens, FODMAP, and diabetes"
+            return String(localized: "Apply all filters: allergens, FODMAP, and diabetes", bundle: .appLanguage)
         }
     }
     

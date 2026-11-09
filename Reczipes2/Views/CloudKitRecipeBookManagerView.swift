@@ -270,7 +270,7 @@ struct CloudKitRecipeBookManagerView: View {
             print("❌ Generic Error: \(error)")
             print("❌ Error type: \(type(of: error))")
             await MainActor.run {
-                errorMessage = "Failed to load recipe books: \(error.localizedDescription)"
+                errorMessage = String(localized: "Failed to load recipe books: \(error.localizedDescription)", bundle: .appLanguage)
                 isLoading = false
             }
         }
@@ -301,7 +301,7 @@ struct CloudKitRecipeBookManagerView: View {
                 }
             } catch {
                 await MainActor.run {
-                    errorMessage = "Failed to delete recipe book: \(error.localizedDescription)"
+                    errorMessage = String(localized: "Failed to delete recipe book: \(error.localizedDescription)", bundle: .appLanguage)
                     isLoading = false
                 }
             }
@@ -325,7 +325,7 @@ struct CloudKitRecipeBookManagerView: View {
                 await loadBooks()
             } catch {
                 await MainActor.run {
-                    errorMessage = "Failed to re-track recipe book: \(error.localizedDescription)"
+                    errorMessage = String(localized: "Failed to re-track recipe book: \(error.localizedDescription)", bundle: .appLanguage)
                     isLoading = false
                 }
             }
@@ -349,7 +349,7 @@ struct CloudKitRecipeBookManagerView: View {
             }
         } catch {
             await MainActor.run {
-                errorMessage = "Failed to delete orphaned recipe books: \(error.localizedDescription)"
+                errorMessage = String(localized: "Failed to delete orphaned recipe books: \(error.localizedDescription)", bundle: .appLanguage)
                 isLoading = false
             }
         }

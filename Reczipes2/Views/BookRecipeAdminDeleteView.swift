@@ -99,11 +99,11 @@ struct BookRecipeAdminDeleteView: View {
             // Δ-163: the public copy is marked deleted (never removed)
             CloudKitSharingService.shared.ownerDeleted(.recipe, id: rid, modelContext: modelContext)
             pendingRecipe = nil
-            resultMessage = "Deleted '\(title)'. It was removed from \(BookMembershipGuard.listPhrase(removedFrom))."
+            resultMessage = String(localized: "Deleted '\(title)'. It was removed from \(BookMembershipGuard.listPhrase(removedFrom)).", bundle: .appLanguage)
         } catch {
             modelContext.rollback()
             pendingRecipe = nil
-            resultMessage = "Not deleted: \(error.localizedDescription)"
+            resultMessage = String(localized: "Not deleted: \(error.localizedDescription)", bundle: .appLanguage)
         }
     }
 }

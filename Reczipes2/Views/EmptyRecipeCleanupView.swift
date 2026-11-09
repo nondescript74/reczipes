@@ -201,7 +201,7 @@ struct EmptyRecipeCleanupView: View {
         }
         
         // Build scan results message
-        var resultsMessage = "Scanned \(allRecipes.count) recipes.\n\n"
+        var resultsMessage = String(localized: "Scanned \(allRecipes.count) recipes.\n\n", bundle: .appLanguage)
         
         if emptyCount == 0 {
             resultsMessage += "✅ No empty recipes found!"

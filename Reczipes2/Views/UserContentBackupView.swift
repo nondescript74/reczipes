@@ -466,11 +466,11 @@ struct UserContentBackupView: View {
         // Fall back to default messages
         switch selectedTab {
         case .recipes:
-            return "Backup created with \(recipes.count) recipes. Share it to save somewhere safe."
+            return String(localized: "Backup created with \(recipes.count) recipes. Share it to save somewhere safe.", bundle: .appLanguage)
         case .books:
-            return "Book backup created successfully. You can now share it with others."
+            return String(localized: "Book backup created successfully. You can now share it with others.", bundle: .appLanguage)
         case .meals:
-            return "Meal import complete."
+            return String(localized: "Meal import complete.", bundle: .appLanguage)
         }
     }
     
@@ -506,7 +506,7 @@ struct UserContentBackupView: View {
             exportResult = "Saved to: \(destination.lastPathComponent)"
             showExportSuccess = true
         } catch {
-            errorMessage = "Failed to save file: \(error.localizedDescription)"
+            errorMessage = String(localized: "Failed to save file: \(error.localizedDescription)", bundle: .appLanguage)
         }
         isExporting = false
 #else
@@ -556,7 +556,7 @@ struct UserContentBackupView: View {
             }
         } catch {
             await MainActor.run {
-                errorMessage = "Export failed: \(error.localizedDescription)"
+                errorMessage = String(localized: "Export failed: \(error.localizedDescription)", bundle: .appLanguage)
             }
         }
         
@@ -583,7 +583,7 @@ struct UserContentBackupView: View {
             loadAvailableBackups()
             
         } catch {
-            errorMessage = "Import failed: \(error.localizedDescription)"
+            errorMessage = String(localized: "Import failed: \(error.localizedDescription)", bundle: .appLanguage)
         }
         
         isImporting = false
@@ -596,13 +596,13 @@ struct UserContentBackupView: View {
         do {
             let urls = try result.get()
             guard let url = urls.first else {
-                errorMessage = "No file selected"
+                errorMessage = String(localized: "No file selected", bundle: .appLanguage)
                 isImporting = false
                 return
             }
             
             guard url.startAccessingSecurityScopedResource() else {
-                errorMessage = "Cannot access file"
+                errorMessage = String(localized: "Cannot access file", bundle: .appLanguage)
                 isImporting = false
                 return
             }
@@ -623,7 +623,7 @@ struct UserContentBackupView: View {
             showImportSuccess = true
             
         } catch {
-            errorMessage = "Import failed: \(error.localizedDescription)"
+            errorMessage = String(localized: "Import failed: \(error.localizedDescription)", bundle: .appLanguage)
         }
         
         isImporting = false
@@ -642,7 +642,7 @@ struct UserContentBackupView: View {
             }
             
             let url = try await BookBackupManager.shared.createBackup(from: uniqueBooks)
-            let resultMessage = "Successfully exported \(uniqueBooks.count) Books with CloudKit sync data"
+            let resultMessage = String(localized: "Successfully exported \(uniqueBooks.count) Books with CloudKit sync data", bundle: .appLanguage)
 
             await MainActor.run {
                 exportedURL = url
@@ -652,7 +652,7 @@ struct UserContentBackupView: View {
             
         } catch {
             await MainActor.run {
-                errorMessage = "Export all books failed: \(error.localizedDescription)"
+                errorMessage = String(localized: "Export all books failed: \(error.localizedDescription)", bundle: .appLanguage)
             }
         }
         
@@ -678,7 +678,7 @@ struct UserContentBackupView: View {
             
         } catch {
             await MainActor.run {
-                errorMessage = "Export failed: \(error.localizedDescription)"
+                errorMessage = String(localized: "Export failed: \(error.localizedDescription)", bundle: .appLanguage)
             }
         }
         
@@ -694,13 +694,13 @@ struct UserContentBackupView: View {
         do {
             let urls = try result.get()
             guard let url = urls.first else {
-                errorMessage = "No file selected"
+                errorMessage = String(localized: "No file selected", bundle: .appLanguage)
                 isImporting = false
                 return
             }
             
             guard url.startAccessingSecurityScopedResource() else {
-                errorMessage = "Cannot access file"
+                errorMessage = String(localized: "Cannot access file", bundle: .appLanguage)
                 isImporting = false
                 return
             }
@@ -724,7 +724,7 @@ struct UserContentBackupView: View {
                 self.importResult = "Successfully imported \(importResult.totalBooks) books.\n\(importResult.summary)"
                 
             } else {
-                errorMessage = "Unsupported file type: .\(fileExtension). Expected .bookbackup or .reczipes"
+                errorMessage = String(localized: "Unsupported file type: .\(fileExtension). Expected .bookbackup or .reczipes", bundle: .appLanguage)
                 isImporting = false
                 return
             }
@@ -733,7 +733,7 @@ struct UserContentBackupView: View {
             loadAvailableBackups()
             
         } catch {
-            errorMessage = "Import failed: \(error.localizedDescription)"
+            errorMessage = String(localized: "Import failed: \(error.localizedDescription)", bundle: .appLanguage)
         }
         
         isImporting = false

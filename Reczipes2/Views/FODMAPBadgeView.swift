@@ -315,13 +315,13 @@ struct FODMAPRecommendationCard: View {
     private var descriptionForRecommendation: String {
         switch recommendation {
         case .safe:
-            return "This recipe appears to be low FODMAP and suitable for a low FODMAP diet. Always verify ingredients and portion sizes."
+            return String(localized: "This recipe appears to be low FODMAP and suitable for a low FODMAP diet. Always verify ingredients and portion sizes.", bundle: .appLanguage)
         case .caution:
-            return "This recipe contains some moderate FODMAP ingredients. Pay attention to portion sizes."
+            return String(localized: "This recipe contains some moderate FODMAP ingredients. Pay attention to portion sizes.", bundle: .appLanguage)
         case .modify:
-            return "This recipe contains high FODMAP ingredients but can be modified. See suggested alternatives below."
+            return String(localized: "This recipe contains high FODMAP ingredients but can be modified. See suggested alternatives below.", bundle: .appLanguage)
         case .avoid:
-            return "This recipe contains multiple high FODMAP ingredients and is not recommended for a low FODMAP diet without significant modifications."
+            return String(localized: "This recipe contains multiple high FODMAP ingredients and is not recommended for a low FODMAP diet without significant modifications.", bundle: .appLanguage)
         }
     }
 }

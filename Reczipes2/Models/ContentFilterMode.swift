@@ -27,9 +27,9 @@ enum ContentFilterMode: String, CaseIterable, Identifiable {
     var description: String {
         switch self {
         case .mine:
-            return "My Content"
+            return String(localized: "My Content", bundle: .appLanguage)
         case .shared:
-            return "Shared by Others"
+            return String(localized: "Shared by Others", bundle: .appLanguage)
         }
     }
 }

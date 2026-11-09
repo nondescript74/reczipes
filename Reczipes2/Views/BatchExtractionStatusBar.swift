@@ -383,7 +383,7 @@ struct BatchExtractionDetailsSheet: View {
         let minutes = Int(seconds) / 60
         let secs = Int(seconds) % 60
         if minutes > 0 {
-            return "\(minutes)m \(secs)s"
+            return String(localized: "\(minutes)m \(secs)s", bundle: .appLanguage)
         } else {
             return "\(secs)s"
         }

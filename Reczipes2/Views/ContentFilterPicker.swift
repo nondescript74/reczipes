@@ -45,9 +45,9 @@ struct ContentFilterPicker: View {
     private var filterDescription: String {
         switch selectedFilter {
         case .mine:
-            return "Showing only your \(contentType.lowercased())"
+            return String(localized: "Showing only your \(contentType.lowercased())", bundle: .appLanguage)
         case .shared:
-            return "Showing \(contentType.lowercased()) shared by others"
+            return String(localized: "Showing \(contentType.lowercased()) shared by others", bundle: .appLanguage)
         }
     }
 }

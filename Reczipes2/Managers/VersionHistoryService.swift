@@ -205,9 +205,9 @@ enum VersionHistoryError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .contextNotInitialized:
-            return "Version history service not initialized with model context"
+            return String(localized: "Version history service not initialized with model context", bundle: .appLanguage)
         case .versionAlreadyExists:
-            return "This version already exists in history"
+            return String(localized: "This version already exists in history", bundle: .appLanguage)
         }
     }
 }

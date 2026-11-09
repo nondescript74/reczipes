@@ -132,10 +132,10 @@ struct ConsensusLevelBadge: View {
     
     private var levelText: String {
         switch level {
-        case .strongConsensus: return "Verified"
-        case .moderateConsensus: return "Moderate"
-        case .limitedEvidence: return "Limited"
-        case .needsReview: return "Review"
+        case .strongConsensus: return String(localized: "Verified", bundle: .appLanguage)
+        case .moderateConsensus: return String(localized: "Moderate", bundle: .appLanguage)
+        case .limitedEvidence: return String(localized: "Limited", bundle: .appLanguage)
+        case .needsReview: return String(localized: "Review", bundle: .appLanguage)
         }
     }
     

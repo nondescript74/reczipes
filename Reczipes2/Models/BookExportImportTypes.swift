@@ -82,9 +82,9 @@ enum BookImportMode {
     
     var description: String {
         switch self {
-        case .replace: return "Replace existing book"
-        case .keepBoth: return "Keep both versions"
-        case .merge: return "Merge recipes into existing book"
+        case .replace: return String(localized: "Replace existing book", bundle: .appLanguage)
+        case .keepBoth: return String(localized: "Keep both versions", bundle: .appLanguage)
+        case .merge: return String(localized: "Merge recipes into existing book", bundle: .appLanguage)
         }
     }
 }

@@ -680,7 +680,7 @@ struct SharingSettingsView: View {
         var successful = 0
         var failed: [String] = []
         for (i, book) in books.enumerated() {
-            sharingStatus = "Updating public copy \(i + 1) of \(books.count): \(book.displayName)"
+            sharingStatus = String(localized: "Updating public copy \(i + 1) of \(books.count): \(book.displayName)", bundle: .appLanguage)
             do {
                 _ = try await sharingService.shareRecipeBook(book, modelContext: modelContext, refreshExisting: true)
                 successful += 1
@@ -711,7 +711,7 @@ struct SharingSettingsView: View {
         do {
             repairPreview = try await sharingService.repairSharingRecords(modelContext: modelContext, dryRun: true)
         } catch {
-            repairMessage = "Couldn't check sharing records: \(error.localizedDescription)"
+            repairMessage = String(localized: "Couldn't check sharing records: \(error.localizedDescription)", bundle: .appLanguage)
         }
     }
 
@@ -723,7 +723,7 @@ struct SharingSettingsView: View {
             repairPreview = nil
             repairMessage = report.summary
         } catch {
-            repairMessage = "Repair failed — nothing was changed: \(error.localizedDescription)"
+            repairMessage = String(localized: "Repair failed — nothing was changed: \(error.localizedDescription)", bundle: .appLanguage)
         }
     }
 
@@ -901,7 +901,7 @@ struct SharingSettingsView: View {
         guard !recipeXEntities.isEmpty else { return }
         
         isSharing = true
-        sharingStatus = "Sharing all recipes..."
+        sharingStatus = String(localized: "Sharing all recipes...", bundle: .appLanguage)
         // Use RecipeX entities directly
         let result = await sharingService.shareMultipleRecipes(recipeXEntities, modelContext: modelContext)
         isSharing = false
@@ -911,13 +911,13 @@ struct SharingSettingsView: View {
             alertMessage = message
             showingAlert = true
         case .partialSuccess(let successful, let failed):
-            alertMessage = "Shared \(successful) recipes. \(failed) failed."
+            alertMessage = String(localized: "Shared \(successful) recipes. \(failed) failed.", bundle: .appLanguage)
             showingAlert = true
         case .failure(let error):
             if let sharingError = error as? SharingError {
                 currentSharingError = sharingError
             } else {
-                alertMessage = "Failed to share recipes: \(error.localizedDescription)"
+                alertMessage = String(localized: "Failed to share recipes: \(error.localizedDescription)", bundle: .appLanguage)
                 showingAlert = true
             }
         }
@@ -927,7 +927,7 @@ struct SharingSettingsView: View {
         guard !allBooks.isEmpty else { return }
 
         isSharing = true
-        sharingStatus = "Sharing all books..."
+        sharingStatus = String(localized: "Sharing all books...", bundle: .appLanguage)
 
         var successful = 0
         var failed = 0
@@ -949,9 +949,9 @@ struct SharingSettingsView: View {
         isSharing = false
 
         if failed == 0 {
-            alertMessage = "Successfully shared all \(successful) books"
+            alertMessage = String(localized: "Successfully shared all \(successful) books", bundle: .appLanguage)
         } else {
-            alertMessage = "Shared \(successful) of \(allBooks.count) books. \(failed) failed."
+            alertMessage = String(localized: "Shared \(successful) of \(allBooks.count) books. \(failed) failed.", bundle: .appLanguage)
         }
         showingAlert = true
     }
@@ -964,7 +964,7 @@ struct SharingSettingsView: View {
         var successful = 0
         var failed = 0
         for (index, recipe) in recipes.enumerated() {
-            sharingStatus = "Sharing unshared recipes: \(index + 1)/\(recipes.count)"
+            sharingStatus = String(localized: "Sharing unshared recipes: \(index + 1)/\(recipes.count)", bundle: .appLanguage)
             do {
                 _ = try await sharingService.shareRecipe(recipe, modelContext: modelContext)
                 successful += 1
@@ -987,7 +987,7 @@ struct SharingSettingsView: View {
         var successful = 0
         var failures: [String] = []
         for (index, book) in books.enumerated() {
-            sharingStatus = "Sharing unshared books: \(index + 1)/\(books.count)"
+            sharingStatus = String(localized: "Sharing unshared books: \(index + 1)/\(books.count)", bundle: .appLanguage)
             do {
                 _ = try await sharingService.shareRecipeBook(book, modelContext: modelContext)
                 successful += 1
@@ -1014,13 +1014,13 @@ struct SharingSettingsView: View {
             alertMessage = message
             showingAlert = true
         case .partialSuccess(let successful, let failed):
-            alertMessage = "Shared \(successful) recipes. \(failed) failed."
+            alertMessage = String(localized: "Shared \(successful) recipes. \(failed) failed.", bundle: .appLanguage)
             showingAlert = true
         case .failure(let error):
             if let sharingError = error as? SharingError {
                 currentSharingError = sharingError
             } else {
-                alertMessage = "Failed to share recipes: \(error.localizedDescription)"
+                alertMessage = String(localized: "Failed to share recipes: \(error.localizedDescription)", bundle: .appLanguage)
                 showingAlert = true
             }
         }
@@ -1049,22 +1049,22 @@ struct SharingSettingsView: View {
         isSharing = false
 
         if books.isEmpty {
-            alertMessage = "No books to share"
+            alertMessage = String(localized: "No books to share", bundle: .appLanguage)
         } else if failed == 0 {
-            alertMessage = "Successfully shared all \(successful) books"
+            alertMessage = String(localized: "Successfully shared all \(successful) books", bundle: .appLanguage)
         } else {
-            alertMessage = "Shared \(successful) of \(books.count) books. \(failed) failed."
+            alertMessage = String(localized: "Shared \(successful) of \(books.count) books. \(failed) failed.", bundle: .appLanguage)
         }
         showingAlert = true
     }
     
     private func unshareAllRecipes() async {
         isSharing = true
-        sharingStatus = "Preparing to unshare recipes..."
+        sharingStatus = String(localized: "Preparing to unshare recipes...", bundle: .appLanguage)
         
         // Get all active shared recipes for current user
         guard let currentUserID = sharingService.currentUserID else {
-            alertMessage = "Not signed in to iCloud"
+            alertMessage = String(localized: "Not signed in to iCloud", bundle: .appLanguage)
             showingAlert = true
             isSharing = false
             return
@@ -1076,7 +1076,7 @@ struct SharingSettingsView: View {
         
         let total = activeSharedRecipes.count
         guard total > 0 else {
-            alertMessage = "No shared recipes found"
+            alertMessage = String(localized: "No shared recipes found", bundle: .appLanguage)
             showingAlert = true
             isSharing = false
             return
@@ -1097,7 +1097,7 @@ struct SharingSettingsView: View {
         for (batchIndex, batch) in batches.enumerated() {
             // Update progress
             let progress = Int((Double(batchIndex) / Double(batches.count)) * 100)
-            sharingStatus = "Unsharing recipes: \(successful + failed + skipped)/\(total) (\(progress)%)"
+            sharingStatus = String(localized: "Unsharing recipes: \(successful + failed + skipped)/\(total) (\(progress)%)", bundle: .appLanguage)
             
             // Process batch sequentially (CloudKit operations must be sequential)
             for sharedRecipe in batch {
@@ -1127,19 +1127,19 @@ struct SharingSettingsView: View {
         
         // Build result message
         if failed == 0 && skipped == 0 {
-            alertMessage = "Successfully unshared all \(successful) recipes"
+            alertMessage = String(localized: "Successfully unshared all \(successful) recipes", bundle: .appLanguage)
         } else {
             var parts: [String] = []
             if successful > 0 {
-                parts.append("\(successful) unshared")
+                parts.append(String(localized: "\(successful) unshared", bundle: .appLanguage))
             }
             if failed > 0 {
-                parts.append("\(failed) failed")
+                parts.append(String(localized: "\(failed) failed", bundle: .appLanguage))
             }
             if skipped > 0 {
-                parts.append("\(skipped) skipped")
+                parts.append(String(localized: "\(skipped) skipped", bundle: .appLanguage))
             }
-            alertMessage = "Unshare completed: " + parts.joined(separator: ", ")
+            alertMessage = String(localized: "Unshare completed: ", bundle: .appLanguage) + parts.joined(separator: ", ")
         }
         
         AppLog.info("Bulk unshare complete: \(alertMessage)", category: .sharing)
@@ -1148,10 +1148,10 @@ struct SharingSettingsView: View {
     
     private func unshareAllBooks() async {
         isSharing = true
-        sharingStatus = "Preparing to unshare books..."
+        sharingStatus = String(localized: "Preparing to unshare books...", bundle: .appLanguage)
 
         guard let currentUserID = sharingService.currentUserID else {
-            alertMessage = "Not signed in to iCloud"
+            alertMessage = String(localized: "Not signed in to iCloud", bundle: .appLanguage)
             showingAlert = true
             isSharing = false
             return
@@ -1161,7 +1161,7 @@ struct SharingSettingsView: View {
         let total = activeSharedBooks.count
 
         guard total > 0 else {
-            alertMessage = "No shared books found"
+            alertMessage = String(localized: "No shared books found", bundle: .appLanguage)
             showingAlert = true
             isSharing = false
             return
@@ -1171,7 +1171,7 @@ struct SharingSettingsView: View {
         var failed = 0
 
         for (index, sharedBook) in activeSharedBooks.enumerated() {
-            sharingStatus = "Unsharing books: \(index + 1)/\(total)"
+            sharingStatus = String(localized: "Unsharing books: \(index + 1)/\(total)", bundle: .appLanguage)
             guard let cloudRecordID = sharedBook.cloudRecordID else {
                 sharedBook.isActive = false
                 successful += 1
@@ -1201,7 +1201,7 @@ struct SharingSettingsView: View {
         guard !allMeals.isEmpty else { return }
 
         isSharing = true
-        sharingStatus = "Sharing all meals..."
+        sharingStatus = String(localized: "Sharing all meals...", bundle: .appLanguage)
 
         var successful = 0
         var failed = 0
@@ -1219,19 +1219,19 @@ struct SharingSettingsView: View {
         isSharing = false
 
         if failed == 0 {
-            alertMessage = "Successfully shared all \(successful) meals"
+            alertMessage = String(localized: "Successfully shared all \(successful) meals", bundle: .appLanguage)
         } else {
-            alertMessage = "Shared \(successful) of \(allMeals.count) meals. \(failed) failed."
+            alertMessage = String(localized: "Shared \(successful) of \(allMeals.count) meals. \(failed) failed.", bundle: .appLanguage)
         }
         showingAlert = true
     }
 
     private func unshareAllMeals() async {
         isSharing = true
-        sharingStatus = "Preparing to unshare meals..."
+        sharingStatus = String(localized: "Preparing to unshare meals...", bundle: .appLanguage)
 
         guard let currentUserID = sharingService.currentUserID else {
-            alertMessage = "Not signed in to iCloud"
+            alertMessage = String(localized: "Not signed in to iCloud", bundle: .appLanguage)
             showingAlert = true
             isSharing = false
             return
@@ -1241,7 +1241,7 @@ struct SharingSettingsView: View {
         let total = activeSharedMeals.count
 
         guard total > 0 else {
-            alertMessage = "No shared meals found"
+            alertMessage = String(localized: "No shared meals found", bundle: .appLanguage)
             showingAlert = true
             isSharing = false
             return
@@ -1277,21 +1277,21 @@ struct SharingSettingsView: View {
 
     private func cleanupGhostRecipes() async {
         isSharing = true
-        sharingStatus = "Cleaning up ghost recipes..."
+        sharingStatus = String(localized: "Cleaning up ghost recipes...", bundle: .appLanguage)
         
         do {
             let result = try await sharingService.cleanupGhostRecipes(modelContext: modelContext)
             
             if result.ghostsFound == 0 {
-                alertMessage = "✅ No ghost recipes found!\n\nYour CloudKit and local records are perfectly synchronized."
+                alertMessage = String(localized: "✅ No ghost recipes found!\n\nYour CloudKit and local records are perfectly synchronized.", bundle: .appLanguage)
             } else if result.failed == 0 {
-                alertMessage = "✅ Ghost Cleanup Complete!\n\nFound: \(result.ghostsFound) ghost recipes\nDeleted: \(result.deleted)\n\nAll orphaned CloudKit records have been removed."
+                alertMessage = String(localized: "✅ Ghost Cleanup Complete!\n\nFound: \(result.ghostsFound) ghost recipes\nDeleted: \(result.deleted)\n\nAll orphaned CloudKit records have been removed.", bundle: .appLanguage)
             } else {
-                alertMessage = "⚠️ Cleanup Partially Complete\n\nFound: \(result.ghostsFound) ghost recipes\nDeleted: \(result.deleted)\nFailed: \(result.failed)\n\nSome records couldn't be deleted. Try again or check your connection."
+                alertMessage = String(localized: "⚠️ Cleanup Partially Complete\n\nFound: \(result.ghostsFound) ghost recipes\nDeleted: \(result.deleted)\nFailed: \(result.failed)\n\nSome records couldn't be deleted. Try again or check your connection.", bundle: .appLanguage)
             }
             showingAlert = true
         } catch {
-            alertMessage = "❌ Cleanup Failed\n\n\(error.localizedDescription)\n\nPlease check your CloudKit connection and try again."
+            alertMessage = String(localized: "❌ Cleanup Failed\n\n\(error.localizedDescription)\n\nPlease check your CloudKit connection and try again.", bundle: .appLanguage)
             showingAlert = true
         }
         
@@ -1300,14 +1300,14 @@ struct SharingSettingsView: View {
     
     private func syncLocalTracking() async {
         isSharing = true
-        sharingStatus = "Syncing recipe sharing status..."
+        sharingStatus = String(localized: "Syncing recipe sharing status...", bundle: .appLanguage)
         
         do {
             try await sharingService.syncLocalTrackingWithCloudKit(modelContext: modelContext)
-            alertMessage = "✅ Recipe sharing status synced! Check Console logs for details."
+            alertMessage = String(localized: "✅ Recipe sharing status synced! Check Console logs for details.", bundle: .appLanguage)
             showingAlert = true
         } catch {
-            alertMessage = "Failed to sync recipes: \(error.localizedDescription)"
+            alertMessage = String(localized: "Failed to sync recipes: \(error.localizedDescription)", bundle: .appLanguage)
             showingAlert = true
         }
         
@@ -1316,14 +1316,14 @@ struct SharingSettingsView: View {
     
     private func repairRecipeCloudKitIDs() async {
         isSharing = true
-        sharingStatus = "Repairing recipe CloudKit IDs..."
+        sharingStatus = String(localized: "Repairing recipe CloudKit IDs...", bundle: .appLanguage)
         
         do {
             try await sharingService.repairMissingRecipeCloudKitIDs(modelContext: modelContext)
-            alertMessage = "✅ Recipe CloudKit IDs repaired! Check Console logs for details."
+            alertMessage = String(localized: "✅ Recipe CloudKit IDs repaired! Check Console logs for details.", bundle: .appLanguage)
             showingAlert = true
         } catch {
-            alertMessage = "Failed to repair recipe IDs: \(error.localizedDescription)"
+            alertMessage = String(localized: "Failed to repair recipe IDs: \(error.localizedDescription)", bundle: .appLanguage)
             showingAlert = true
         }
         
@@ -1334,21 +1334,21 @@ struct SharingSettingsView: View {
     
     private func cleanupGhostRecipeBooks() async {
         isSharing = true
-        sharingStatus = "Cleaning up ghost recipe books..."
+        sharingStatus = String(localized: "Cleaning up ghost recipe books...", bundle: .appLanguage)
         
         do {
             let result = try await sharingService.cleanupGhostRecipeBooks(modelContext: modelContext)
             
             if result.ghostsFound == 0 {
-                alertMessage = "✅ No ghost recipe books found!\n\nYour CloudKit and local records are perfectly synchronized."
+                alertMessage = String(localized: "✅ No ghost recipe books found!\n\nYour CloudKit and local records are perfectly synchronized.", bundle: .appLanguage)
             } else if result.failed == 0 {
-                alertMessage = "✅ Ghost Cleanup Complete!\n\nFound: \(result.ghostsFound) ghost books\nDeleted: \(result.deleted)\n\nAll orphaned CloudKit records have been removed."
+                alertMessage = String(localized: "✅ Ghost Cleanup Complete!\n\nFound: \(result.ghostsFound) ghost books\nDeleted: \(result.deleted)\n\nAll orphaned CloudKit records have been removed.", bundle: .appLanguage)
             } else {
-                alertMessage = "⚠️ Cleanup Partially Complete\n\nFound: \(result.ghostsFound) ghost books\nDeleted: \(result.deleted)\nFailed: \(result.failed)\n\nSome records couldn't be deleted. Try again or check your connection."
+                alertMessage = String(localized: "⚠️ Cleanup Partially Complete\n\nFound: \(result.ghostsFound) ghost books\nDeleted: \(result.deleted)\nFailed: \(result.failed)\n\nSome records couldn't be deleted. Try again or check your connection.", bundle: .appLanguage)
             }
             showingAlert = true
         } catch {
-            alertMessage = "❌ Cleanup Failed\n\n\(error.localizedDescription)\n\nPlease check your CloudKit connection and try again."
+            alertMessage = String(localized: "❌ Cleanup Failed\n\n\(error.localizedDescription)\n\nPlease check your CloudKit connection and try again.", bundle: .appLanguage)
             showingAlert = true
         }
         
@@ -1357,14 +1357,14 @@ struct SharingSettingsView: View {
     
     private func syncLocalRecipeBookTracking() async {
         isSharing = true
-        sharingStatus = "Syncing recipe book sharing status..."
+        sharingStatus = String(localized: "Syncing recipe book sharing status...", bundle: .appLanguage)
         
         do {
             try await sharingService.syncLocalRecipeBookTrackingWithCloudKit(modelContext: modelContext)
-            alertMessage = "✅ Recipe book sharing status synced! Check Console logs for details."
+            alertMessage = String(localized: "✅ Recipe book sharing status synced! Check Console logs for details.", bundle: .appLanguage)
             showingAlert = true
         } catch {
-            alertMessage = "Failed to sync recipe books: \(error.localizedDescription)"
+            alertMessage = String(localized: "Failed to sync recipe books: \(error.localizedDescription)", bundle: .appLanguage)
             showingAlert = true
         }
         
@@ -1373,14 +1373,14 @@ struct SharingSettingsView: View {
     
     private func repairRecipeBookCloudKitIDs() async {
         isSharing = true
-        sharingStatus = "Repairing recipe book CloudKit IDs..."
+        sharingStatus = String(localized: "Repairing recipe book CloudKit IDs...", bundle: .appLanguage)
         
         do {
             try await sharingService.repairMissingRecipeBookCloudKitIDs(modelContext: modelContext)
-            alertMessage = "✅ Recipe book CloudKit IDs repaired! Check Console logs for details."
+            alertMessage = String(localized: "✅ Recipe book CloudKit IDs repaired! Check Console logs for details.", bundle: .appLanguage)
             showingAlert = true
         } catch {
-            alertMessage = "Failed to repair recipe book IDs: \(error.localizedDescription)"
+            alertMessage = String(localized: "Failed to repair recipe book IDs: \(error.localizedDescription)", bundle: .appLanguage)
             showingAlert = true
         }
         
@@ -1391,14 +1391,14 @@ struct SharingSettingsView: View {
     
     private func syncCommunityBooks() async {
         isSharing = true
-        sharingStatus = "Syncing community books..."
+        sharingStatus = String(localized: "Syncing community books...", bundle: .appLanguage)
         
         do {
             try await sharingService.syncCommunityBooksToLocal(modelContext: modelContext)
-            alertMessage = "✅ Community books synced! Shared books should now appear in the Books view."
+            alertMessage = String(localized: "✅ Community books synced! Shared books should now appear in the Books view.", bundle: .appLanguage)
             showingAlert = true
         } catch {
-            alertMessage = "Failed to sync community books: \(error.localizedDescription)"
+            alertMessage = String(localized: "Failed to sync community books: \(error.localizedDescription)", bundle: .appLanguage)
             showingAlert = true
         }
         
@@ -1407,15 +1407,15 @@ struct SharingSettingsView: View {
     
     private func syncCommunityRecipes() async {
         isSharing = true
-        sharingStatus = "Syncing ALL community recipes..."
+        sharingStatus = String(localized: "Syncing ALL community recipes...", bundle: .appLanguage)
         
         do {
             // Fetch all available community recipes using pagination
             try await sharingService.syncCommunityRecipesForViewing(modelContext: modelContext, limit: Int.max)
-            alertMessage = "✅ Community recipes synced! All shared recipes are now available for viewing and cooking."
+            alertMessage = String(localized: "✅ Community recipes synced! All shared recipes are now available for viewing and cooking.", bundle: .appLanguage)
             showingAlert = true
         } catch {
-            alertMessage = "Failed to sync community recipes: \(error.localizedDescription)"
+            alertMessage = String(localized: "Failed to sync community recipes: \(error.localizedDescription)", bundle: .appLanguage)
             showingAlert = true
         }
         
@@ -1426,17 +1426,17 @@ struct SharingSettingsView: View {
     
     private func diagnoseSharedBooks() async {
         isSharing = true
-        sharingStatus = "Running diagnostics..."
+        sharingStatus = String(localized: "Running diagnostics...", bundle: .appLanguage)
         
         guard let result = await sharingService.diagnoseSharedRecipeBooks(modelContext: modelContext) else {
-            alertMessage = "❌ Diagnostic Failed\n\nCould not access CloudKit. Please check your iCloud connection."
+            alertMessage = String(localized: "❌ Diagnostic Failed\n\nCould not access CloudKit. Please check your iCloud connection.", bundle: .appLanguage)
             showingAlert = true
             isSharing = false
             return
         }
         
         // Build a comprehensive diagnostic message
-        var message = "📊 Recipe Book Diagnostics\n\n"
+        var message = String(localized: "📊 Recipe Book Diagnostics\n\n", bundle: .appLanguage)
         
         message += "☁️ CloudKit:\n"
         message += "  Total: \(result.cloudKitBooks)\n"
@@ -1816,7 +1816,7 @@ struct ManageSharedContentView: View {
                                     } else {
                                         // Recipe has no CloudKit ID - show error
                                         Button {
-                                            alertMessage = "Cannot unshare '\(sharedRecipe.recipeTitle)': No CloudKit record ID found. Try running 'Sync Recipe Sharing Status' first."
+                                            alertMessage = String(localized: "Cannot unshare '\(sharedRecipe.recipeTitle)': No CloudKit record ID found. Try running 'Sync Recipe Sharing Status' first.", bundle: .appLanguage)
                                             showingAlert = true
                                         } label: {
                                             Image(systemName: "exclamationmark.triangle.fill")
@@ -1887,7 +1887,7 @@ struct ManageSharedContentView: View {
                                     } else {
                                         // Book has no CloudKit ID - show error
                                         Button {
-                                            alertMessage = "Cannot unshare '\(book.displayName)': No CloudKit record ID found. Try running 'Sync Recipe Book Sharing Status' first."
+                                            alertMessage = String(localized: "Cannot unshare '\(book.displayName)': No CloudKit record ID found. Try running 'Sync Recipe Book Sharing Status' first.", bundle: .appLanguage)
                                             showingAlert = true
                                         } label: {
                                             Image(systemName: "exclamationmark.triangle.fill")
@@ -1959,7 +1959,7 @@ struct ManageSharedContentView: View {
             case .recipe:
                 AppLog.info("🍽️ Calling unshareRecipe...", category: .sharing)
                 try await sharingService.unshareRecipe(cloudRecordID: cloudRecordID, modelContext: modelContext)
-                alertMessage = "Recipe unshared successfully"
+                alertMessage = String(localized: "Recipe unshared successfully", bundle: .appLanguage)
                 AppLog.info("✅ Recipe unshared successfully", category: .sharing)
             case .book:
                 AppLog.info("📚 Calling unshare book...", category: .sharing)
@@ -1972,7 +1972,7 @@ struct ManageSharedContentView: View {
                     let syncService = BookSyncService(modelContext: modelContext)
                     try await syncService.deleteBookFromCloud(book)
                     
-                    alertMessage = "Recipe book unshared successfully"
+                    alertMessage = String(localized: "Recipe book unshared successfully", bundle: .appLanguage)
                     AppLog.info("✅ Recipe book unshared successfully", category: .sharing)
                 } else {
                     throw BookSyncError.bookNotFound
@@ -1982,7 +1982,7 @@ struct ManageSharedContentView: View {
             showingAlert = true
         } catch {
             AppLog.error("❌ Failed to unshare \(type): \(error)", category: .sharing)
-            alertMessage = "Failed to unshare: \(error.localizedDescription)"
+            alertMessage = String(localized: "Failed to unshare: \(error.localizedDescription)", bundle: .appLanguage)
             itemToUnshare = nil
             showingAlert = true
         }
@@ -2150,7 +2150,7 @@ struct SharedBooksBrowserView: View {
         } catch {
             await MainActor.run {
                 let errorDetails = "\(error.localizedDescription) [\(type(of: error))]"
-                errorMessage = "Failed to load recipe books: \(errorDetails)"
+                errorMessage = String(localized: "Failed to load recipe books: \(errorDetails)", bundle: .appLanguage)
                 AppLog.error("❌ Failed to load shared books: \(error)", category: .sharing)
             }
         }

@@ -186,7 +186,7 @@ struct CloudKitRecipeManagerView: View {
             }
         } catch {
             await MainActor.run {
-                errorMessage = "Failed to load recipes: \(error.localizedDescription)"
+                errorMessage = String(localized: "Failed to load recipes: \(error.localizedDescription)", bundle: .appLanguage)
             }
         }
         
@@ -209,7 +209,7 @@ struct CloudKitRecipeManagerView: View {
                 await loadRecipes()
             } catch {
                 await MainActor.run {
-                    errorMessage = "Failed to delete recipe: \(error.localizedDescription)"
+                    errorMessage = String(localized: "Failed to delete recipe: \(error.localizedDescription)", bundle: .appLanguage)
                 }
             }
             
@@ -230,7 +230,7 @@ struct CloudKitRecipeManagerView: View {
         }
         try? modelContext.save()
         if failures > 0 {
-            errorMessage = "Re-linked \(statuses.count - failures); \(failures) failed."
+            errorMessage = String(localized: "Re-linked \(statuses.count - failures); \(failures) failed.", bundle: .appLanguage)
         }
         await loadRecipes()
         isLoading = false
@@ -249,7 +249,7 @@ struct CloudKitRecipeManagerView: View {
                 await loadRecipes()
             } catch {
                 await MainActor.run {
-                    errorMessage = "Failed to re-track recipe: \(error.localizedDescription)"
+                    errorMessage = String(localized: "Failed to re-track recipe: \(error.localizedDescription)", bundle: .appLanguage)
                 }
             }
             
@@ -267,7 +267,7 @@ struct CloudKitRecipeManagerView: View {
             await loadRecipes()
         } catch {
             await MainActor.run {
-                errorMessage = "Failed to delete orphaned recipes: \(error.localizedDescription)"
+                errorMessage = String(localized: "Failed to delete orphaned recipes: \(error.localizedDescription)", bundle: .appLanguage)
             }
         }
         

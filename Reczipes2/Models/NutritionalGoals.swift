@@ -168,17 +168,17 @@ enum GoalType: String, Codable, CaseIterable, Sendable {
     var description: String {
         switch self {
         case .custom:
-            return "Personalized goals set by you"
+            return String(localized: "Personalized goals set by you", bundle: .appLanguage)
         case .weightLoss:
-            return "Calorie deficit with balanced macros"
+            return String(localized: "Calorie deficit with balanced macros", bundle: .appLanguage)
         case .diabetesManagement:
-            return "Blood sugar control and carb management"
+            return String(localized: "Blood sugar control and carb management", bundle: .appLanguage)
         case .heartHealth:
-            return "Low sodium, healthy fats, high fiber"
+            return String(localized: "Low sodium, healthy fats, high fiber", bundle: .appLanguage)
         case .generalHealth:
-            return "Balanced nutrition for overall wellness"
+            return String(localized: "Balanced nutrition for overall wellness", bundle: .appLanguage)
         case .athleticPerformance:
-            return "Higher protein and calories for training"
+            return String(localized: "Higher protein and calories for training", bundle: .appLanguage)
         }
     }
 }

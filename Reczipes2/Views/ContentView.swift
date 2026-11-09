@@ -606,18 +606,18 @@ struct ContentView: View {
     private var emptyStateTitle: String {
         switch contentFilter {
         case .mine:
-            return "No Recipes Yet"
+            return String(localized: "No Recipes Yet", bundle: .appLanguage)
         case .shared:
-            return "No Shared Recipes"
+            return String(localized: "No Shared Recipes", bundle: .appLanguage)
         }
     }
     
     private var emptyStateDescription: String {
         switch contentFilter {
         case .mine:
-            return "Extract recipes from text or images using the Claude API to get started"
+            return String(localized: "Extract recipes from text or images using the Claude API to get started", bundle: .appLanguage)
         case .shared:
-            return "No recipes have been shared by the community yet. Check back later or create and share your own recipes!"
+            return String(localized: "No recipes have been shared by the community yet. Check back later or create and share your own recipes!", bundle: .appLanguage)
         }
     }
     
@@ -969,7 +969,7 @@ struct ContentView: View {
         if containingBooks.count == 1 {
             return "in \(containingBooks[0].name ?? "Untitled Book")"
         } else if containingBooks.count > 1 {
-            return "in \(containingBooks.count) books"
+            return String(localized: "in \(containingBooks.count) books", bundle: .appLanguage)
         }
         return ""
     }

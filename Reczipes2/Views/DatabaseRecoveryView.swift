@@ -311,7 +311,7 @@ enum RecoveryError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .noDataFound:
-            return "No recipes found in the old database"
+            return String(localized: "No recipes found in the old database", bundle: .appLanguage)
         }
     }
 }

@@ -132,9 +132,9 @@ struct BookMembershipGuard {
 
     static func refusalMessage(recipeTitle: String, bookNames: [String]) -> String {
         guard !bookNames.isEmpty else {
-            return "'\(recipeTitle)' is protected because the list of books could not be read. Try again later."
+            return String(localized: "'\(recipeTitle)' is protected because the list of books could not be read. Try again later.", bundle: .appLanguage)
         }
-        return "'\(recipeTitle)' is in \(listPhrase(bookNames)). Remove it from \(listPhrase(bookNames)) first. Recipes that belong to a book are never deleted."
+        return String(localized: "'\(recipeTitle)' is in \(listPhrase(bookNames)). Remove it from \(listPhrase(bookNames)) first. Recipes that belong to a book are never deleted.", bundle: .appLanguage)
     }
 
     /// "Book A", "Book A and Book B", "Book A, Book B and Book C"
@@ -216,8 +216,8 @@ extension BookMembershipGuard {
         case batchConfirmationMismatch(String)
         var errorDescription: String? {
             switch self {
-            case .confirmationMismatch: return "The typed title does not match the recipe title exactly."
-            case .batchConfirmationMismatch(let expected): return "Type \"\(expected)\" exactly to confirm."
+            case .confirmationMismatch: return String(localized: "The typed title does not match the recipe title exactly.", bundle: .appLanguage)
+            case .batchConfirmationMismatch(let expected): return String(localized: "Type \"\(expected)\" exactly to confirm.", bundle: .appLanguage)
             }
         }
     }

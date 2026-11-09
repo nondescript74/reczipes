@@ -317,7 +317,7 @@ class BackgroundProcessingManager: ObservableObject {
         guard successCount > 0 else { return }
 
         let content = UNMutableNotificationContent()
-        content.title = "Recipe Extraction Complete"
+        content.title = String(localized: "Recipe Extraction Complete", bundle: .appLanguage)
         content.body = "Extracted \(successCount) recipes successfully"
         if failureCount > 0 {
             content.body += " (\(failureCount) failed)"

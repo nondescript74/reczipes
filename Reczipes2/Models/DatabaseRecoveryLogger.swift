@@ -269,13 +269,13 @@ class DatabaseRecoveryLogger {
     
     private func formatTimeAgo(_ seconds: TimeInterval) -> String {
         if seconds < 60 {
-            return "\(Int(seconds))s ago"
+            return String(localized: "\(Int(seconds))s ago", bundle: .appLanguage)
         } else if seconds < 3600 {
-            return "\(Int(seconds / 60))m ago"
+            return String(localized: "\(Int(seconds / 60))m ago", bundle: .appLanguage)
         } else if seconds < 86400 {
-            return "\(Int(seconds / 3600))h ago"
+            return String(localized: "\(Int(seconds / 3600))h ago", bundle: .appLanguage)
         } else {
-            return "\(Int(seconds / 86400))d ago"
+            return String(localized: "\(Int(seconds / 86400))d ago", bundle: .appLanguage)
         }
     }
     

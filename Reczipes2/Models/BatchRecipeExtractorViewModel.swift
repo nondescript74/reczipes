@@ -70,10 +70,10 @@ class BatchRecipeExtractorViewModel: ObservableObject {
         errorLog = []
         
         if remainingCount > 0 {
-            currentStatus = "Starting batch extraction (limited to \(maxBatchSize) recipes, \(remainingCount) will remain)..."
+            currentStatus = String(localized: "Starting batch extraction (limited to \(maxBatchSize) recipes, \(remainingCount) will remain)...", bundle: .appLanguage)
             AppLog.info("Starting batch extraction of \(totalToExtract) links (limited from \(unprocessedLinks.count))", category: .batch)
         } else {
-            currentStatus = "Starting batch extraction..."
+            currentStatus = String(localized: "Starting batch extraction...", bundle: .appLanguage)
             AppLog.info("Starting batch extraction of \(totalToExtract) links", category: .batch)
         }
         
@@ -85,14 +85,14 @@ class BatchRecipeExtractorViewModel: ObservableObject {
     /// Pause the batch extraction
     func pause() {
         isPaused = true
-        currentStatus = "Paused"
+        currentStatus = String(localized: "Paused", bundle: .appLanguage)
         AppLog.info("Batch extraction paused", category: .batch)
     }
     
     /// Resume the batch extraction
     func resume() {
         isPaused = false
-        currentStatus = "Resuming..."
+        currentStatus = String(localized: "Resuming...", bundle: .appLanguage)
         AppLog.info("Batch extraction resumed", category: .batch)
     }
     
@@ -104,7 +104,7 @@ class BatchRecipeExtractorViewModel: ObservableObject {
         isPaused = false
         currentLink = nil
         currentRecipe = nil
-        currentStatus = "Stopped"
+        currentStatus = String(localized: "Stopped", bundle: .appLanguage)
         AppLog.info("Batch extraction stopped", category: .batch)
     }
     
@@ -127,7 +127,7 @@ class BatchRecipeExtractorViewModel: ObservableObject {
         for (index, link) in links.enumerated() {
             // Check if task was cancelled
             guard !Task.isCancelled else {
-                currentStatus = "Cancelled"
+                currentStatus = String(localized: "Cancelled", bundle: .appLanguage)
                 AppLog.info("Batch extraction cancelled", category: .batch)
                 break
             }
@@ -141,7 +141,7 @@ class BatchRecipeExtractorViewModel: ObservableObject {
             
             currentLink = link
             currentProgress = index + 1
-            currentStatus = "Extracting \(index + 1) of \(totalToExtract): \(link.title)"
+            currentStatus = String(localized: "Extracting \(index + 1) of \(totalToExtract): \(link.title)", bundle: .appLanguage)
             
             AppLog.info("Extracting link \(index + 1)/\(totalToExtract): \(link.title)", category: .batch)
             
@@ -150,7 +150,7 @@ class BatchRecipeExtractorViewModel: ObservableObject {
             
             // Wait for the interval before next extraction (except for last one)
             if index < links.count - 1 && !Task.isCancelled {
-                currentStatus = "Waiting \(Int(extractionInterval)) seconds before next extraction..."
+                currentStatus = String(localized: "Waiting \(Int(extractionInterval)) seconds before next extraction...", bundle: .appLanguage)
                 AppLog.info("Waiting \(extractionInterval) seconds before next extraction", category: .batch)
                 
                 // Use a loop to check for pause/cancel during wait
@@ -168,7 +168,7 @@ class BatchRecipeExtractorViewModel: ObservableObject {
                     // Update countdown status
                     let remaining = Int(extractionInterval) - (step / 2)
                     if remaining > 0 {
-                        currentStatus = "Waiting \(remaining) seconds before next extraction..."
+                        currentStatus = String(localized: "Waiting \(remaining) seconds before next extraction...", bundle: .appLanguage)
                     }
                 }
             }
@@ -177,7 +177,7 @@ class BatchRecipeExtractorViewModel: ObservableObject {
         // Extraction complete
         if !Task.isCancelled {
             isExtracting = false
-            currentStatus = "Complete! ✓ \(successCount) succeeded, ✗ \(failureCount) failed"
+            currentStatus = String(localized: "Complete! ✓ \(successCount) succeeded, ✗ \(failureCount) failed", bundle: .appLanguage)
             AppLog.info("Batch extraction complete: \(successCount) succeeded, \(failureCount) failed", category: .batch)
         }
     }
@@ -205,7 +205,7 @@ class BatchRecipeExtractorViewModel: ObservableObject {
                 )
                 
                 // Save recipe to database
-                currentStatus = "Saving recipe..."
+                currentStatus = String(localized: "Saving recipe...", bundle: .appLanguage)
                 try await saveRecipe(recipe, images: downloadedImages, link: link)
                 
                 // Mark as success
@@ -227,7 +227,7 @@ class BatchRecipeExtractorViewModel: ObservableObject {
                 if attempt < maxAttempts {
                     let delay = calculateRetryDelay(attempt: attempt)
                     AppLog.warning("Extraction attempt \(attempt) failed for '\(linkTitle)', retrying in \(delay)s: \(error)", category: .batch)
-                    currentStatus = "Attempt \(attempt) failed, retrying in \(Int(delay))s..."
+                    currentStatus = String(localized: "Attempt \(attempt) failed, retrying in \(Int(delay))s...", bundle: .appLanguage)
                     
                     try? await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
                 } else {
@@ -312,7 +312,7 @@ class BatchRecipeExtractorViewModel: ObservableObject {
         // Download images if available
         var downloadedImages: [PlatformImage] = []
         if !imageURLs.isEmpty {
-            currentStatus = "Downloading \(imageURLs.count) image(s)..."
+            currentStatus = String(localized: "Downloading \(imageURLs.count) image(s)...", bundle: .appLanguage)
             AppLog.info("Downloading \(imageURLs.count) images for: \(String(describing: recipe.title))", category: .batch)
             
             for (_ , imageURL) in imageURLs.enumerated() {

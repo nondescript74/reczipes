@@ -24,7 +24,7 @@ struct RecipeShareButton: View {
                 if sharingService.canSendEmail {
                     sharingService.shareViaEmail(recipe: recipe)
                 } else {
-                    setupHelpTitle = "Email Not Available"
+                    setupHelpTitle = String(localized: "Email Not Available", bundle: .appLanguage)
                     setupHelpMessage = """
                     Email is not configured on this device. To use email sharing:
                     
@@ -56,7 +56,7 @@ struct RecipeShareButton: View {
                 if sharingService.canSendText {
                     sharingService.shareViaText(recipe: recipe)
                 } else {
-                    setupHelpTitle = "Messages Not Available"
+                    setupHelpTitle = String(localized: "Messages Not Available", bundle: .appLanguage)
                     setupHelpMessage = """
                     Text messaging is not available on this device. This could be because:
                     
@@ -297,9 +297,9 @@ struct RecipeShareView: View {
     
     private var shareButtonTitle: String {
         switch selectedSourceType {
-        case .email: return "Share via Email"
-        case .text: return "Share via Text"
-        case .app: return "Share Recipe"
+        case .email: return String(localized: "Share via Email", bundle: .appLanguage)
+        case .text: return String(localized: "Share via Text", bundle: .appLanguage)
+        case .app: return String(localized: "Share Recipe", bundle: .appLanguage)
         }
     }
     
@@ -321,8 +321,8 @@ struct RecipeShareView: View {
     
     private var unavailabilityMessage: String {
         switch selectedSourceType {
-        case .email: return "Email is not configured on this device."
-        case .text: return "Text messaging is not available."
+        case .email: return String(localized: "Email is not configured on this device.", bundle: .appLanguage)
+        case .text: return String(localized: "Text messaging is not available.", bundle: .appLanguage)
         case .app: return ""
         }
     }

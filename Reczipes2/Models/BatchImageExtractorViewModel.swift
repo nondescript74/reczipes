@@ -31,7 +31,7 @@ class BatchImageExtractorViewModel: ObservableObject {
     
     @Published var currentImage: PlatformImage?
     @Published var currentRecipe: RecipeX?
-    @Published var currentStatus = "Ready"
+    @Published var currentStatus = String(localized: "Ready", bundle: .appLanguage)
     
     @Published var remainingAssets: [PHAsset] = []
     @Published var remainingImages: [PlatformImage] = []   // mirrors remainingAssets but for PlatformImage queues
@@ -155,13 +155,13 @@ class BatchImageExtractorViewModel: ObservableObject {
     
     func pause() {
         isPaused = true
-        currentStatus = "Paused"
+        currentStatus = String(localized: "Paused", bundle: .appLanguage)
         AppLog.info("Batch extraction paused", category: .batch)
     }
     
     func resume() {
         isPaused = false
-        currentStatus = "Resuming..."
+        currentStatus = String(localized: "Resuming...", bundle: .appLanguage)
         AppLog.info("Batch extraction resumed", category: .batch)
     }
     
@@ -170,7 +170,7 @@ class BatchImageExtractorViewModel: ObservableObject {
         isExtracting = false
         isPaused = false
         isWaitingForCrop = false
-        currentStatus = "Stopped"
+        currentStatus = String(localized: "Stopped", bundle: .appLanguage)
         AppLog.info("Batch extraction stopped", category: .batch)
     }
     
@@ -205,7 +205,7 @@ class BatchImageExtractorViewModel: ObservableObject {
         allAssets = []
         processedAssets = []
         errorLog = []
-        currentStatus = "Ready"
+        currentStatus = String(localized: "Ready", bundle: .appLanguage)
         isExtracting = false
         isPaused = false
         isWaitingForCrop = false
@@ -241,7 +241,7 @@ class BatchImageExtractorViewModel: ObservableObject {
                 continue
             }
             
-            currentStatus = "Processing image \(index + 1) of \(totalToExtract)..."
+            currentStatus = String(localized: "Processing image \(index + 1) of \(totalToExtract)...", bundle: .appLanguage)
             AppLog.info("Processing image \(index + 1) of \(totalToExtract)", category: .batch)
             
             // Load full resolution image
@@ -286,14 +286,14 @@ class BatchImageExtractorViewModel: ObservableObject {
             
             // Process in batches of 10
             if currentProgress % 10 == 0 && currentProgress < totalToExtract {
-                currentStatus = "Completed \(currentProgress) images. Continuing with next batch..."
+                currentStatus = String(localized: "Completed \(currentProgress) images. Continuing with next batch...", bundle: .appLanguage)
                 AppLog.info("Completed batch of 10, continuing...", category: .batch)
                 try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 second pause
             }
         }
         
         // Extraction complete
-        currentStatus = "Complete! Extracted \(successCount) recipes."
+        currentStatus = String(localized: "Complete! Extracted \(successCount) recipes.", bundle: .appLanguage)
         isExtracting = false
         AppLog.info("Batch extraction complete: \(successCount) success, \(failureCount) failures", category: .batch)
     }
@@ -307,7 +307,7 @@ class BatchImageExtractorViewModel: ObservableObject {
     
     private func extractRecipeFromImage(_ image: PlatformImage, imageIndex: Int) async {
         do {
-            currentStatus = "Extracting recipe from image \(imageIndex + 1)..."
+            currentStatus = String(localized: "Extracting recipe from image \(imageIndex + 1)...", bundle: .appLanguage)
             
             // Reduce image size to 10-20KB before sending (text extraction only)
             guard let imageData = imagePreprocessor.reduceImageSize(image, maxSizeBytes: ImagePreprocessor.extractionMaxBytes, maxDimension: ImagePreprocessor.extractionMaxDimension) else {
@@ -363,7 +363,7 @@ class BatchImageExtractorViewModel: ObservableObject {
                 try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 second
             }
             
-            currentStatus = "Processing image \(index + 1) of \(totalToExtract)..."
+            currentStatus = String(localized: "Processing image \(index + 1) of \(totalToExtract)...", bundle: .appLanguage)
             AppLog.info("Processing PlatformImage \(index + 1) of \(totalToExtract)", category: .batch)
             
             currentImage = image
@@ -393,14 +393,14 @@ class BatchImageExtractorViewModel: ObservableObject {
             
             // Process in batches of 10
             if currentProgress % 10 == 0 && currentProgress < totalToExtract {
-                currentStatus = "Completed \(currentProgress) images. Continuing with next batch..."
+                currentStatus = String(localized: "Completed \(currentProgress) images. Continuing with next batch...", bundle: .appLanguage)
                 AppLog.info("Completed batch of 10, continuing...", category: .batch)
                 try? await Task.sleep(nanoseconds: 500_000_000) // 0.5 second pause
             }
         }
         
         // Extraction complete
-        currentStatus = "Complete! Extracted \(successCount) recipes."
+        currentStatus = String(localized: "Complete! Extracted \(successCount) recipes.", bundle: .appLanguage)
         isExtracting = false
         currentBatch = []
         AppLog.info("Batch extraction from PlatformImages complete: \(successCount) success, \(failureCount) failures", category: .batch)
@@ -528,7 +528,7 @@ class BatchImageExtractorViewModel: ObservableObject {
                 break 
             }
             
-            currentStatus = "Processing image \(index + 1) of \(totalToExtract)..."
+            currentStatus = String(localized: "Processing image \(index + 1) of \(totalToExtract)...", bundle: .appLanguage)
             currentImage = image
             
             // Extract recipe from image
@@ -549,7 +549,7 @@ class BatchImageExtractorViewModel: ObservableObject {
         }
         
         // Extraction complete
-        currentStatus = "Complete! Extracted \(successCount) recipes."
+        currentStatus = String(localized: "Complete! Extracted \(successCount) recipes.", bundle: .appLanguage)
         isExtracting = false
         currentBatch = []
         

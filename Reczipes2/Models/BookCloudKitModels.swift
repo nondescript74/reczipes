@@ -91,11 +91,11 @@ struct CloudKitBookStatus: Identifiable {
     var statusDescription: String {
         if isTracked {
             if localTrackingRecord?.needsCloudSync == true {
-                return "Needs Sync"
+                return String(localized: "Needs Sync", bundle: .appLanguage)
             }
-            return "Synced"
+            return String(localized: "Synced", bundle: .appLanguage)
         }
-        return "Orphaned (not tracked locally)"
+        return String(localized: "Orphaned (not tracked locally)", bundle: .appLanguage)
     }
     
     var recipeCount: Int {
@@ -194,25 +194,25 @@ enum BookSyncError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .bookNotFound:
-            return "The book was not found."
+            return String(localized: "The book was not found.", bundle: .appLanguage)
         case .notAuthenticated:
-            return "You must be signed in to iCloud to sync books."
+            return String(localized: "You must be signed in to iCloud to sync books.", bundle: .appLanguage)
         case .cloudKitUnavailable:
-            return "CloudKit is not available. Check your iCloud settings."
+            return String(localized: "CloudKit is not available. Check your iCloud settings.", bundle: .appLanguage)
         case .uploadFailed(let error):
-            return "Failed to upload book: \(error.localizedDescription)"
+            return String(localized: "Failed to upload book: \(error.localizedDescription)", bundle: .appLanguage)
         case .downloadFailed(let error):
-            return "Failed to download book: \(error.localizedDescription)"
+            return String(localized: "Failed to download book: \(error.localizedDescription)", bundle: .appLanguage)
         case .invalidData:
-            return "The book contains invalid data."
+            return String(localized: "The book contains invalid data.", bundle: .appLanguage)
         case .coverImageUploadFailed(let error):
-            return "Failed to upload cover image: \(error.localizedDescription)"
+            return String(localized: "Failed to upload cover image: \(error.localizedDescription)", bundle: .appLanguage)
         case .contentUploadFailed(let contentType, let error):
-            return "Failed to upload \(contentType): \(error.localizedDescription)"
+            return String(localized: "Failed to upload \(contentType): \(error.localizedDescription)", bundle: .appLanguage)
         case .quotaExceeded:
-            return "iCloud storage quota exceeded. Free up space and try again."
+            return String(localized: "iCloud storage quota exceeded. Free up space and try again.", bundle: .appLanguage)
         case .networkError:
-            return "Network connection error. Check your internet connection."
+            return String(localized: "Network connection error. Check your internet connection.", bundle: .appLanguage)
         }
     }
 }
@@ -321,9 +321,9 @@ enum BookPrivacyLevel: String, Codable, CaseIterable {
     
     var displayName: String {
         switch self {
-        case .public: return "Public"
-        case .friends: return "Friends Only"
-        case .private: return "Private"
+        case .public: return String(localized: "Public", bundle: .appLanguage)
+        case .friends: return String(localized: "Friends Only", bundle: .appLanguage)
+        case .private: return String(localized: "Private", bundle: .appLanguage)
         }
     }
     
@@ -338,11 +338,11 @@ enum BookPrivacyLevel: String, Codable, CaseIterable {
     var description: String {
         switch self {
         case .public:
-            return "Anyone can discover and download this book"
+            return String(localized: "Anyone can discover and download this book", bundle: .appLanguage)
         case .friends:
-            return "Only people you share with can access this book"
+            return String(localized: "Only people you share with can access this book", bundle: .appLanguage)
         case .private:
-            return "Only you can access this book"
+            return String(localized: "Only you can access this book", bundle: .appLanguage)
         }
     }
 }

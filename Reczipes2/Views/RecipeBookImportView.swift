@@ -286,11 +286,11 @@ struct RecipeBookImportView: View {
     private var importModeDescription: String {
         switch importMode {
         case .keepBoth:
-            return "Creates a new book with '(Imported)' appended to the name"
+            return String(localized: "Creates a new book with '(Imported)' appended to the name", bundle: .appLanguage)
         case .replace:
-            return "Deletes the existing book and replaces it with the imported version"
+            return String(localized: "Deletes the existing book and replaces it with the imported version", bundle: .appLanguage)
         case .merge:
-            return "Adds recipes from the import to the existing book"
+            return String(localized: "Adds recipes from the import to the existing book", bundle: .appLanguage)
         }
     }
     
@@ -302,7 +302,7 @@ struct RecipeBookImportView: View {
                successCount > 0 {
                 return successCount == multiBookCount ? "Import Successful" : "Import Partially Successful"
             } else {
-                return "Import Failed"
+                return String(localized: "Import Failed", bundle: .appLanguage)
             }
         } else {
             return importResult != nil ? "Import Successful" : "Import Failed"
@@ -315,7 +315,7 @@ struct RecipeBookImportView: View {
         } else if let result = importResult {
             return "Imported '\(result.book.name ?? "Untitled")'\n\(result.recipesImported) recipes, \(result.imagesImported) images"
         } else {
-            return "No books were imported"
+            return String(localized: "No books were imported", bundle: .appLanguage)
         }
     }
     
@@ -339,7 +339,7 @@ struct RecipeBookImportView: View {
             
             // Start accessing security-scoped resource
             guard url.startAccessingSecurityScopedResource() else {
-                errorMessage = "Unable to access the selected file"
+                errorMessage = String(localized: "Unable to access the selected file", bundle: .appLanguage)
                 showError = true
                 return
             }
@@ -364,7 +364,7 @@ struct RecipeBookImportView: View {
                     await loadPreview(from: tempURL)
                 }
             } catch {
-                errorMessage = "Failed to load file: \(error.localizedDescription)"
+                errorMessage = String(localized: "Failed to load file: \(error.localizedDescription)", bundle: .appLanguage)
                 showError = true
             }
             

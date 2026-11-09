@@ -453,22 +453,22 @@ enum WebExtractionError: LocalizedError {
         case .invalidURL:
             return "Invalid URL. Please enter a valid web address starting with http:// or https://"
         case .networkError:
-            return "Network error. Please check your internet connection."
+            return String(localized: "Network error. Please check your internet connection.")
         case .httpError(let statusCode):
             switch statusCode {
             case 403:
-                return "Access denied. The website may be blocking automated access."
+                return String(localized: "Access denied. The website may be blocking automated access.")
             case 404:
-                return "Page not found. Please check the URL."
+                return String(localized: "Page not found. Please check the URL.")
             case 500...599:
-                return "Server error. The website may be temporarily unavailable."
+                return String(localized: "Server error. The website may be temporarily unavailable.")
             default:
-                return "HTTP error: \(statusCode)"
+                return String(localized: "HTTP error: \(statusCode)")
             }
         case .decodingError:
-            return "Could not decode webpage content."
+            return String(localized: "Could not decode webpage content.")
         case .noRecipeFound:
-            return "No recipe could be found on this webpage."
+            return String(localized: "No recipe could be found on this webpage.")
         }
     }
 }

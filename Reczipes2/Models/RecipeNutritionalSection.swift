@@ -246,14 +246,14 @@ struct RecipeNutritionalSection: View {
     
     private func nutrientDisplayName(_ key: String) -> String {
         switch key.lowercased() {
-        case "calories": return "Calories"
-        case "sodium": return "Sodium"
-        case "saturatedfat": return "Saturated Fat"
-        case "sugar": return "Sugar"
-        case "fiber": return "Fiber"
-        case "protein": return "Protein"
-        case "carbohydrates": return "Carbohydrates"
-        case "totalfat": return "Total Fat"
+        case "calories": return String(localized: "Calories", bundle: .appLanguage)
+        case "sodium": return String(localized: "Sodium", bundle: .appLanguage)
+        case "saturatedfat": return String(localized: "Saturated Fat", bundle: .appLanguage)
+        case "sugar": return String(localized: "Sugar", bundle: .appLanguage)
+        case "fiber": return String(localized: "Fiber", bundle: .appLanguage)
+        case "protein": return String(localized: "Protein", bundle: .appLanguage)
+        case "carbohydrates": return String(localized: "Carbohydrates", bundle: .appLanguage)
+        case "totalfat": return String(localized: "Total Fat", bundle: .appLanguage)
         default: return key.capitalized
         }
     }
@@ -303,13 +303,13 @@ struct RecipeNutritionalSection: View {
     
     private func compatibilityText(for score: Double) -> String {
         if score >= 80 {
-            return "Excellent fit"
+            return String(localized: "Excellent fit", bundle: .appLanguage)
         } else if score >= 60 {
-            return "Good fit"
+            return String(localized: "Good fit", bundle: .appLanguage)
         } else if score >= 40 {
-            return "Moderate fit"
+            return String(localized: "Moderate fit", bundle: .appLanguage)
         } else {
-            return "Poor fit"
+            return String(localized: "Poor fit", bundle: .appLanguage)
         }
     }
 }

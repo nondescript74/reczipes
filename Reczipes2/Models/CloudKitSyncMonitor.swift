@@ -71,7 +71,7 @@ class CloudKitSyncMonitor: ObservableObject {
                 
             case .noAccount:
                 isSyncEnabled = false
-                lastSyncError = "No iCloud account found. Please sign in to iCloud in Settings."
+                lastSyncError = String(localized: "No iCloud account found. Please sign in to iCloud in Settings.", bundle: .appLanguage)
                 if !hasWarnedAboutStatus.contains("noAccount") {
                     AppLog.warning("⚠️ No iCloud account", category: .storage)
                     hasWarnedAboutStatus.insert("noAccount")
@@ -79,7 +79,7 @@ class CloudKitSyncMonitor: ObservableObject {
                 
             case .restricted:
                 isSyncEnabled = false
-                lastSyncError = "iCloud is restricted on this device."
+                lastSyncError = String(localized: "iCloud is restricted on this device.", bundle: .appLanguage)
                 if !hasWarnedAboutStatus.contains("restricted") {
                     AppLog.warning("⚠️ iCloud is restricted", category: .storage)
                     hasWarnedAboutStatus.insert("restricted")
@@ -87,7 +87,7 @@ class CloudKitSyncMonitor: ObservableObject {
                 
             case .couldNotDetermine:
                 isSyncEnabled = false
-                lastSyncError = "Could not determine iCloud status."
+                lastSyncError = String(localized: "Could not determine iCloud status.", bundle: .appLanguage)
                 if !hasWarnedAboutStatus.contains("couldNotDetermine") {
                     AppLog.warning("⚠️ Could not determine iCloud status", category: .storage)
                     hasWarnedAboutStatus.insert("couldNotDetermine")
@@ -95,7 +95,7 @@ class CloudKitSyncMonitor: ObservableObject {
                 
             case .temporarilyUnavailable:
                 isSyncEnabled = false
-                lastSyncError = "iCloud is temporarily unavailable."
+                lastSyncError = String(localized: "iCloud is temporarily unavailable.", bundle: .appLanguage)
                 if !hasWarnedAboutStatus.contains("temporarilyUnavailable") {
                     AppLog.warning("⚠️ iCloud temporarily unavailable", category: .storage)
                     hasWarnedAboutStatus.insert("temporarilyUnavailable")
@@ -103,7 +103,7 @@ class CloudKitSyncMonitor: ObservableObject {
                 
             @unknown default:
                 isSyncEnabled = false
-                lastSyncError = "Unknown iCloud status."
+                lastSyncError = String(localized: "Unknown iCloud status.", bundle: .appLanguage)
                 if !hasWarnedAboutStatus.contains("unknown") {
                     AppLog.warning("⚠️ Unknown iCloud status", category: .storage)
                     hasWarnedAboutStatus.insert("unknown")
@@ -113,14 +113,14 @@ class CloudKitSyncMonitor: ObservableObject {
             // Timeout likely means iCloud is not configured or not responding
             isSyncEnabled = false
             accountStatus = .couldNotDetermine
-            lastSyncError = "iCloud status check timed out. Please ensure iCloud is configured in Settings."
+            lastSyncError = String(localized: "iCloud status check timed out. Please ensure iCloud is configured in Settings.", bundle: .appLanguage)
             if !hasWarnedAboutStatus.contains("timeout") {
                 AppLog.warning("⏱️ iCloud status check timed out - likely not configured", category: .storage)
                 hasWarnedAboutStatus.insert("timeout")
             }
         } catch {
             isSyncEnabled = false
-            lastSyncError = "Error checking iCloud status: \(error.localizedDescription)"
+            lastSyncError = String(localized: "Error checking iCloud status: \(error.localizedDescription)", bundle: .appLanguage)
             // Always log errors since they might be different each time
             AppLog.error("❌ Error checking account status: \(error)", category: .storage)
         }
@@ -175,17 +175,17 @@ class CloudKitSyncMonitor: ObservableObject {
     var statusMessage: String {
         switch accountStatus {
         case .available:
-            return "iCloud sync is active"
+            return String(localized: "iCloud sync is active", bundle: .appLanguage)
         case .noAccount:
-            return "Sign in to iCloud to sync across devices"
+            return String(localized: "Sign in to iCloud to sync across devices", bundle: .appLanguage)
         case .restricted:
-            return "iCloud is restricted on this device"
+            return String(localized: "iCloud is restricted on this device", bundle: .appLanguage)
         case .couldNotDetermine:
-            return "Checking iCloud status..."
+            return String(localized: "Checking iCloud status...", bundle: .appLanguage)
         case .temporarilyUnavailable:
-            return "iCloud is temporarily unavailable"
+            return String(localized: "iCloud is temporarily unavailable", bundle: .appLanguage)
         @unknown default:
-            return "Unknown iCloud status"
+            return String(localized: "Unknown iCloud status", bundle: .appLanguage)
         }
     }
     

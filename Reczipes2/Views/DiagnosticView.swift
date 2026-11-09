@@ -179,11 +179,11 @@ struct DiagnosticView: View {
     private var emptyStateTitle: String {
         switch selectedFilter {
         case .failures:
-            return "No Issues Found"
+            return String(localized: "No Issues Found", bundle: .appLanguage)
         case .all:
-            return "No Diagnostic Events"
+            return String(localized: "No Diagnostic Events", bundle: .appLanguage)
         case .unresolved:
-            return "Everything Resolved"
+            return String(localized: "Everything Resolved", bundle: .appLanguage)
         }
     }
     
@@ -201,11 +201,11 @@ struct DiagnosticView: View {
     private var emptyStateMessage: String {
         switch selectedFilter {
         case .failures:
-            return "Your app is running smoothly with no errors or critical issues."
+            return String(localized: "Your app is running smoothly with no errors or critical issues.", bundle: .appLanguage)
         case .all:
-            return "No diagnostic events have been recorded yet."
+            return String(localized: "No diagnostic events have been recorded yet.", bundle: .appLanguage)
         case .unresolved:
-            return "All diagnostic issues have been resolved."
+            return String(localized: "All diagnostic issues have been resolved.", bundle: .appLanguage)
         }
     }
     

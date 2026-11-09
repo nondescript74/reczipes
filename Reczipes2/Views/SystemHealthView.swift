@@ -120,20 +120,20 @@ struct SystemHealthView: View {
     
     private var overallStatusText: String {
         if diagnosticManager.unresolvedFailures.contains(where: { $0.severity == .critical }) {
-            return "Critical Issues Detected"
+            return String(localized: "Critical Issues Detected", bundle: .appLanguage)
         } else if !diagnosticManager.unresolvedFailures.isEmpty {
-            return "\(diagnosticManager.unresolvedFailures.count) Issues Need Attention"
+            return String(localized: "\(diagnosticManager.unresolvedFailures.count) Issues Need Attention", bundle: .appLanguage)
         } else {
-            return "All Systems Operational"
+            return String(localized: "All Systems Operational", bundle: .appLanguage)
         }
     }
     
     private var storageStatus: String {
         let storageIssues = diagnosticManager.unresolvedFailures.filter { $0.category == .storage }
         if !storageIssues.isEmpty {
-            return "Issues Detected"
+            return String(localized: "Issues Detected", bundle: .appLanguage)
         }
-        return "Operational"
+        return String(localized: "Operational", bundle: .appLanguage)
     }
     
     private var storageColor: Color {
@@ -146,7 +146,7 @@ struct SystemHealthView: View {
             let cloudKitIssues = diagnosticManager.unresolvedFailures.filter { $0.category == .cloudKit }
             return cloudKitIssues.isEmpty ? "Active" : "Issues Detected"
         }
-        return "Disabled"
+        return String(localized: "Disabled", bundle: .appLanguage)
     }
     
     private var cloudKitColor: Color {

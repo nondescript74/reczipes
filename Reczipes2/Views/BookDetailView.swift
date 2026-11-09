@@ -202,7 +202,7 @@ struct BookDetailView: View {
                 case .success(let url):
                     runPackageImport(at: url)
                 case .failure(let error):
-                    packageSummaryText = "Couldn't open the folder: \(error.localizedDescription)"
+                    packageSummaryText = String(localized: "Couldn't open the folder: \(error.localizedDescription)", bundle: .appLanguage)
                 }
             }
             .sheet(isPresented: Binding(
@@ -441,7 +441,7 @@ struct BookDetailView: View {
             packageSummaryText = summary.text
         } catch {
             AppLog.error("Book package import failed: \(error)", category: .recipe)
-            packageSummaryText = "Import failed: \(error.localizedDescription)"
+            packageSummaryText = String(localized: "Import failed: \(error.localizedDescription)", bundle: .appLanguage)
         }
     }
 
@@ -454,10 +454,10 @@ struct BookDetailView: View {
         defer { isUpdatingPublicCopy = false }
         do {
             _ = try await CloudKitSharingService.shared.shareRecipeBook(book, modelContext: modelContext, refreshExisting: true)
-            publicCopyMessage = "Updated the public copy of '\(book.displayName)' with \(bookRecipes.count) recipes."
+            publicCopyMessage = String(localized: "Updated the public copy of '\(book.displayName)' with \(bookRecipes.count) recipes.", bundle: .appLanguage)
         } catch {
             AppLog.error("Failed to update public copy of book '\(book.displayName)': \(error)", category: .sharing)
-            publicCopyMessage = "Couldn't update the public copy: \(error.localizedDescription)"
+            publicCopyMessage = String(localized: "Couldn't update the public copy: \(error.localizedDescription)", bundle: .appLanguage)
         }
     }
 
@@ -481,13 +481,16 @@ struct BookDetailView: View {
             AppLog.info("Removed \(missing.count) missing recipe links from book '\(book.displayName)': \(missing.map(\.uuidString))", category: .recipe)
         } catch {
             AppLog.error("Failed to save after removing missing links from '\(book.displayName)': \(error)", category: .recipe)
-            publicCopyMessage = "Couldn't save the book: \(error.localizedDescription)"
+            publicCopyMessage = String(localized: "Couldn't save the book: \(error.localizedDescription)", bundle: .appLanguage)
             return
         }
         if isPubliclyShared {
             await updatePublicCopy()
         } else {
-            publicCopyMessage = "Removed \(missing.count) missing recipe link\(missing.count == 1 ? "" : "s") from '\(book.displayName)'."
+            let bookName = book.displayName
+            publicCopyMessage = missing.count == 1
+                ? String(localized: "Removed 1 missing recipe link from '\(bookName)'.", bundle: .appLanguage)
+                : String(localized: "Removed \(missing.count) missing recipe links from '\(bookName)'.", bundle: .appLanguage)
         }
     }
 

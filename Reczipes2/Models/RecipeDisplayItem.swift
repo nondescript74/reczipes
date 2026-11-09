@@ -96,11 +96,11 @@ enum RecipeNoteType: String, Codable, CaseIterable {
     
     var displayName: String {
         switch self {
-        case .tip: return "Tip"
-        case .substitution: return "Substitution"
-        case .warning: return "Warning"
-        case .timing: return "Timing"
-        case .general: return "General"
+        case .tip: return String(localized: "Tip", bundle: .appLanguage)
+        case .substitution: return String(localized: "Substitution", bundle: .appLanguage)
+        case .warning: return String(localized: "Warning", bundle: .appLanguage)
+        case .timing: return String(localized: "Timing", bundle: .appLanguage)
+        case .general: return String(localized: "General", bundle: .appLanguage)
         }
     }
 }
@@ -131,11 +131,11 @@ extension RecipeNoteType {
     
     var helpText: String {
         switch self {
-        case .general: return "General information or notes about the recipe"
-        case .tip: return "Helpful tips to improve the recipe or technique"
-        case .substitution: return "Alternative ingredients or methods"
-        case .warning: return "Important warnings or things to watch out for"
-        case .timing: return "Timing-related notes and guidance"
+        case .general: return String(localized: "General information or notes about the recipe", bundle: .appLanguage)
+        case .tip: return String(localized: "Helpful tips to improve the recipe or technique", bundle: .appLanguage)
+        case .substitution: return String(localized: "Alternative ingredients or methods", bundle: .appLanguage)
+        case .warning: return String(localized: "Important warnings or things to watch out for", bundle: .appLanguage)
+        case .timing: return String(localized: "Timing-related notes and guidance", bundle: .appLanguage)
         }
     }
     

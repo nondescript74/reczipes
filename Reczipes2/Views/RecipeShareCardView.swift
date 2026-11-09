@@ -35,9 +35,9 @@ struct RecipeShareCardView: View {
         
         var label: String {
             switch self {
-            case .email: return "Shared via Email"
-            case .text: return "Shared via Text"
-            case .app: return "Shared from Reczipes"
+            case .email: return String(localized: "Shared via Email", bundle: .appLanguage)
+            case .text: return String(localized: "Shared via Text", bundle: .appLanguage)
+            case .app: return String(localized: "Shared from Reczipes", bundle: .appLanguage)
             }
         }
     }

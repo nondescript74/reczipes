@@ -476,7 +476,7 @@ class RecipeSharingService: ObservableObject {
     func shareViaEmail(recipe: RecipeX) {
         #if os(iOS)
         guard canSendEmail else {
-            errorMessage = "Email is not configured on this device. Please set up Mail in Settings."
+            errorMessage = String(localized: "Email is not configured on this device. Please set up Mail in Settings.", bundle: .appLanguage)
             showingError = true
             return
         }
@@ -491,7 +491,7 @@ class RecipeSharingService: ObservableObject {
     func shareViaText(recipe: RecipeX) {
         #if os(iOS)
         guard canSendText else {
-            errorMessage = "Text messaging is not available on this device."
+            errorMessage = String(localized: "Text messaging is not available on this device.", bundle: .appLanguage)
             showingError = true
             return
         }
@@ -571,7 +571,7 @@ struct MailComposerView: UIViewControllerRepresentable {
         
         func mailComposeController(_ controller: MFMailComposeViewController, didFinishWith result: MFMailComposeResult, error: Error?) {
             if let error = error {
-                parent.sharingService.errorMessage = "Failed to send email: \(error.localizedDescription)"
+                parent.sharingService.errorMessage = String(localized: "Failed to send email: \(error.localizedDescription)", bundle: .appLanguage)
                 parent.sharingService.showingError = true
             }
             parent.dismiss()

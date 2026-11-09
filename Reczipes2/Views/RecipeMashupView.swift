@@ -63,11 +63,11 @@ struct RecipeMashupView: View {
                                 Button("Add by URL") {
                                     let url = addSourceURL.trimmingCharacters(in: .whitespacesAndNewlines)
                                     guard !url.isEmpty, url.hasPrefix("http") else {
-                                        addSourceError = "Enter a valid URL starting with http"
+                                        addSourceError = String(localized: "Enter a valid URL starting with http", bundle: .appLanguage)
                                         return
                                     }
                                     if viewModel.sources.contains(where: { $0.url == url }) {
-                                        addSourceError = "This URL is already added."
+                                        addSourceError = String(localized: "This URL is already added.", bundle: .appLanguage)
                                         return
                                     }
                                     viewModel.sources.append(MashupSource(url: url))
