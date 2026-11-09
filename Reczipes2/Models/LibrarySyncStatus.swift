@@ -14,6 +14,7 @@
 
 import Foundation
 import CoreData
+import CloudKit
 import Combine
 
 @MainActor
@@ -38,6 +39,12 @@ final class LibrarySyncStatus: ObservableObject {
     @Published private(set) var privateImportActive = false
     /// The last private-library import error, cleared by the next good import.
     @Published private(set) var privateImportError: String?
+    /// Full detail of that error (domain, code, CloudKit code name, underlying and
+    /// per-record errors, retry-after) and when it happened — shown when the banner
+    /// is tapped and written to the diagnostic log, so "it could be a timeout" can be
+    /// answered from the code instead of a sentence cut off at one line.
+    @Published private(set) var privateImportErrorDetail: String?
+    @Published private(set) var privateImportErrorDate: Date?
     /// Δ-163 publish pass: items published so far / to publish (0 = not running).
     @Published private(set) var publishDone = 0
     @Published private(set) var publishTotal = 0
@@ -118,6 +125,35 @@ final class LibrarySyncStatus: ObservableObject {
         let ended: Bool
         let succeeded: Bool
         let errorText: String?
+        let errorDetail: String?
+    }
+
+    /// Everything an NSError / CKError says about itself, as plain text.
+    nonisolated static func describe(_ error: Error) -> String {
+        let ns = error as NSError
+        var lines: [String] = []
+        lines.append("Message: \(ns.localizedDescription)")
+        lines.append("Domain: \(ns.domain) · code \(ns.code)")
+        if ns.domain == CKError.errorDomain, let code = CKError.Code(rawValue: ns.code) {
+            lines.append("CloudKit: \(String(describing: code))")
+        }
+        if let reason = ns.localizedFailureReason { lines.append("Reason: \(reason)") }
+        if let retry = ns.userInfo[CKErrorRetryAfterKey] as? NSNumber {
+            lines.append("Retry after: \(retry) s")
+        }
+        if let partial = ns.userInfo[CKPartialErrorsByItemIDKey] as? [AnyHashable: Error], !partial.isEmpty {
+            lines.append("Per-record errors: \(partial.count)")
+            for (_, sub) in partial.prefix(5) {
+                let subNS = sub as NSError
+                let name = CKError.Code(rawValue: subNS.code).map { String(describing: $0) } ?? "\(subNS.code)"
+                lines.append("  • \(name): \(subNS.localizedDescription)")
+            }
+        }
+        if let underlying = ns.userInfo[NSUnderlyingErrorKey] as? Error {
+            let u = underlying as NSError
+            lines.append("Underlying: \(u.domain) · code \(u.code) — \(u.localizedDescription)")
+        }
+        return lines.joined(separator: "\n")
     }
 
     private func observePrivateMirroring() {
@@ -133,7 +169,8 @@ final class LibrarySyncStatus: ObservableObject {
                 let info = ImportEvent(id: event.identifier,
                                        ended: event.endDate != nil,
                                        succeeded: event.succeeded,
-                                       errorText: event.error?.localizedDescription)
+                                       errorText: event.error?.localizedDescription,
+                                       errorDetail: event.error.map { LibrarySyncStatus.describe($0) })
                 Task { @MainActor in self?.handle(info) }
             }
             .store(in: &cancellables)
@@ -156,8 +193,13 @@ final class LibrarySyncStatus: ObservableObject {
             inFlightImports.remove(event.id)
             if event.succeeded {
                 privateImportError = nil
+                privateImportErrorDetail = nil
+                privateImportErrorDate = nil
             } else if let text = event.errorText {
                 privateImportError = text
+                privateImportErrorDetail = event.errorDetail
+                privateImportErrorDate = Date()
+                AppLog.warning("☁️ iCloud import failed:\n\(event.errorDetail ?? text)", category: .sync)
             }
             if inFlightImports.isEmpty {
                 showImportTask?.cancel()
