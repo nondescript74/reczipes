@@ -6163,6 +6163,16 @@
         }
       }
     },
+    "Copy details" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Copier les détails"
+          }
+        }
+      }
+    },
     "Copy Diagnostics to Clipboard" : {
       "localizations" : {
         "fr" : {
@@ -8113,6 +8123,16 @@
         }
       }
     },
+    "Email is not configured on this device. Please set up Mail in Settings." : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "La messagerie n’est pas configurée sur cet appareil. Configurez Mail dans Réglages."
+          }
+        }
+      }
+    },
     "Email Not Available" : {
       "localizations" : {
         "fr" : {
@@ -9542,6 +9562,16 @@
         }
       }
     },
+    "Failed to send email: %@" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Échec de l’envoi de l’e-mail : %@"
+          }
+        }
+      }
+    },
     "Failed to share recipes: %@" : {
       "localizations" : {
         "fr" : {
@@ -10944,6 +10974,16 @@
         }
       }
     },
+    "iCloud error" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Erreur iCloud"
+          }
+        }
+      }
+    },
     "iCloud is restricted on this device" : {
       "localizations" : {
         "fr" : {
@@ -11060,6 +11100,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "La synchronisation iCloud est temporairement indisponible. Vos recettes sont enregistrées localement."
+          }
+        }
+      }
+    },
+    "iCloud Sync Problem" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Problème de synchronisation iCloud"
           }
         }
       }
@@ -12698,6 +12748,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Données locales"
+          }
+        }
+      }
+    },
+    "Local Xcode build" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Version locale Xcode"
           }
         }
       }
@@ -19232,6 +19292,16 @@
         }
       }
     },
+    "Share or Save File" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Partager ou enregistrer le fichier"
+          }
+        }
+      }
+    },
     "Share Recipe" : {
       "localizations" : {
         "fr" : {
@@ -20985,6 +21055,16 @@
         }
       }
     },
+    "Text messaging is not available on this device." : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Les messages ne sont pas disponibles sur cet appareil."
+          }
+        }
+      }
+    },
     "Text messaging is not available." : {
       "localizations" : {
         "fr" : {
@@ -21435,6 +21515,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Ceci est une recette de la communauté partagée le %@. Ajoutez-la à votre collection pour la garder définitivement."
+          }
+        }
+      }
+    },
+    "This is about the copy of your own library in your iCloud account. Shared recipes still come from the community library. The message clears by itself after the next successful sync." : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Il s’agit de la copie de votre propre bibliothèque dans votre compte iCloud. Les recettes partagées viennent toujours de la bibliothèque commune. Ce message disparaît de lui-même après la prochaine synchronisation réussie."
           }
         }
       }
@@ -23189,6 +23279,16 @@
         }
       }
     },
+    "View Books" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Voir les livres"
+          }
+        }
+      }
+    },
     "View CloudKit Setup Guide" : {
       "localizations" : {
         "fr" : {
@@ -23535,6 +23635,16 @@
           "stringUnit" : {
             "state" : "translated",
             "value" : "Blé et produits à base de blé"
+          }
+        }
+      }
+    },
+    "When" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Quand"
           }
         }
       }
