@@ -49,7 +49,7 @@ struct RecipeSearchView: View {
             author: authorFilter.isEmpty ? nil : authorFilter
         )
 
-        return searchService.searchRecipes(recipes: source, criteria: criteria)
+        return searchService.searchRecipes(anyRecipes: source, criteria: criteria)
     }
     
     var body: some View {

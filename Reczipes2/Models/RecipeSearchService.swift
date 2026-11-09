@@ -146,7 +146,7 @@ class RecipeSearchService {
     }
 
     /// Owned and community recipes together (RecipeX and CachedSharedRecipe)
-    func search(recipes: [any RecipeDisplayProtocol], criteria: SearchCriteria) -> [SearchResult<any RecipeDisplayProtocol>] {
+    func search(anyRecipes recipes: [any RecipeDisplayProtocol], criteria: SearchCriteria) -> [SearchResult<any RecipeDisplayProtocol>] {
         rank(recipes, criteria: criteria) { $0 }
     }
 
@@ -225,8 +225,8 @@ class RecipeSearchService {
         search(recipes: recipes, criteria: criteria).map { $0.recipe }
     }
 
-    func searchRecipes(recipes: [any RecipeDisplayProtocol], criteria: SearchCriteria) -> [any RecipeDisplayProtocol] {
-        search(recipes: recipes, criteria: criteria).map { $0.recipe }
+    func searchRecipes(anyRecipes recipes: [any RecipeDisplayProtocol], criteria: SearchCriteria) -> [any RecipeDisplayProtocol] {
+        search(anyRecipes: recipes, criteria: criteria).map { $0.recipe }
     }
     
     // MARK: - Private Helper Methods
