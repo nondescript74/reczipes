@@ -26,9 +26,12 @@ struct LaunchScreenView: View {
         VersionHistoryService.shared.currentVersion
     }
     
-    private var buildNumber: String {
-        VersionHistoryService.shared.currentBuildNumber
-    }
+    /// Only an Xcode Cloud build carries the App Store Connect build number (ci_post_clone.sh
+    /// writes CI_BUILD_NUMBER); a build run from Xcode on a Mac keeps the project file's stale
+    /// number, so it is labelled as a local build instead (same rule as Settings → Status).
+    private var isXcodeCloudBuild: Bool { AppBuildInfo.isXcodeCloudBuild }
+
+    private var buildNumber: String { AppBuildInfo.build }
     
     private var appName: String {
         "RecipeExtract"
@@ -207,10 +210,15 @@ struct LaunchScreenView: View {
                             Text(appVersion)
                                 .font(.system(size: 13, weight: .regular, design: .monospaced))
                             Text("•")
-                            Text("Build")
-                                .font(.system(size: 13, weight: .medium, design: .rounded))
-                            Text(buildNumber)
-                                .font(.system(size: 13, weight: .regular, design: .monospaced))
+                            if isXcodeCloudBuild {
+                                Text("Build")
+                                    .font(.system(size: 13, weight: .medium, design: .rounded))
+                                Text(buildNumber)
+                                    .font(.system(size: 13, weight: .regular, design: .monospaced))
+                            } else {
+                                Text("Local Xcode build")
+                                    .font(.system(size: 13, weight: .medium, design: .rounded))
+                            }
                         }
                         .foregroundColor(.secondary)
                         
