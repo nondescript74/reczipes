@@ -72,6 +72,10 @@ struct CloudKitRecipe: Codable, Identifiable {
     /// DiabeticInfo can never make a whole CloudKitRecipe fail to decode. Inside the JSON, so
     /// no CloudKit schema change; older builds ignore it.
     var diabeticInfoJSON: String? = nil
+    /// The recipe in each app language other than English (JSON of [code: RecipeTranslation]),
+    /// written by RecipeLocalizer, so the web shows each reader their language. A string, like
+    /// diabeticInfoJSON. Inside the JSON, so no CloudKit schema change; older builds ignore it.
+    var translationsJSON: String? = nil
 
     /// Keys to encode/decode — excludes imageData so it doesn't break the JSON round-trip.
     enum CodingKeys: String, CodingKey {
@@ -81,6 +85,7 @@ struct CloudKitRecipe: Codable, Identifiable {
         case sharedByUserID, sharedByUserName, sharedDate
         case deletedByOwner, deletedDate, replacedByID
         case diabeticInfoJSON
+        case translationsJSON
         // imageData intentionally omitted
     }
 }

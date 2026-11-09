@@ -411,6 +411,8 @@ extension CloudKitSharingService {
         await task.value
         publishTask = nil
         lastPublishPass = Date()
+        // Then put what was published into every app language (runs on, not awaited).
+        startLocalizationPass(modelContext: modelContext)
     }
 
     private func performPublishPass(modelContext: ModelContext) async {

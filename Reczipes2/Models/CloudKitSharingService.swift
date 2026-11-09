@@ -618,6 +618,7 @@ class CloudKitSharingService: ObservableObject {
             sharedDate: Date()
         )
         cloudRecipe.diabeticInfoJSON = publishableDiabeticInfoJSON(for: recipe, modelContext: modelContext)
+        cloudRecipe.translationsJSON = publishableTranslationsJSON(for: recipe, existingRecord: existingRecordToUpdate)
         
         // Encode to JSON and store in CloudKit
         let encoder = JSONEncoder()
