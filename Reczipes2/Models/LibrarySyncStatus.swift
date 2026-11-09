@@ -64,13 +64,6 @@ final class LibrarySyncStatus: ObservableObject {
     private static let lastCompleteKey = "LibrarySync.lastCompleteCommunityDownload"
     private static let lastTotalKey = "LibrarySync.lastCommunityRecordTotal"
 
-    /// The community cache was emptied (new cache store): forget the last full download
-    /// so the next one runs at launch and shows its progress instead of running quietly.
-    static func forgetCompletedCommunityDownload() {
-        UserDefaults.standard.removeObject(forKey: lastCompleteKey)
-        shared.communityPhase = .notStarted
-    }
-
     private var inFlightImports = Set<UUID>()
     private var cancellables = Set<AnyCancellable>()
     private var showImportTask: Task<Void, Never>?

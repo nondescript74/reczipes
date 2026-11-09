@@ -59,14 +59,6 @@ enum AppBuildInfo {
         isCloudKitDevelopment ? "CloudKitModel-Development.sqlite" : "CloudKitModel.sqlite"
     }
 
-    /// Second local store for the community caches (shared recipes, book previews,
-    /// shared meals). Never mirrored to the user's private iCloud: the caches come from
-    /// the public database and only pushed every shared recipe and photo into each
-    /// person's own iCloud (Δ-223). One per environment, like the main store.
-    static var communityCacheStoreFileName: String {
-        isCloudKitDevelopment ? "CommunityCache-Development.sqlite" : "CommunityCache.sqlite"
-    }
-
     /// "20.0 (214)" for an Xcode Cloud build; a local Xcode build says so instead of showing a stale number.
     static var statusLine: String {
         isXcodeCloudBuild
