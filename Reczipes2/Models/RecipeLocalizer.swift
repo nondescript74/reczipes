@@ -96,6 +96,18 @@ final class RecipeLocalizer {
     // MARK: Claude
 
     func translate(_ source: RecipeTranslationSource, to language: String) async throws -> RecipeTranslation {
+        let text = try await callClaude(RecipeTranslations.prompt(for: source, language: language), maxTokens: 16000)
+        return try RecipeTranslations.parse(text, source: source, language: language, model: Self.model)
+    }
+
+    /// A book's description in `language` (book names are never translated).
+    func translateBookDescription(_ description: String, to language: String) async throws -> BookTranslation {
+        let text = try await callClaude(BookTranslations.prompt(description: description, language: language), maxTokens: 2000)
+        return try BookTranslations.parse(text, description: description, model: Self.model)
+    }
+
+    /// One request to Claude; the reply's text. Errors as ClaudeServiceIssue / RecipeTranslationError.
+    private func callClaude(_ prompt: String, maxTokens: Int) async throws -> String {
         let apiKey = APIKeyHelper.getAPIKey() ?? ""
         guard !apiKey.isEmpty else { throw ClaudeServiceIssue.keyMissing }
         guard let url = URL(string: "https://api.anthropic.com/v1/messages") else { throw ClaudeServiceIssue.unexpected }
@@ -108,8 +120,8 @@ final class RecipeLocalizer {
         request.timeoutInterval = 300
         let body: [String: Any] = [
             "model": Self.model,
-            "max_tokens": 16000,
-            "messages": [["role": "user", "content": RecipeTranslations.prompt(for: source, language: language)]],
+            "max_tokens": maxTokens,
+            "messages": [["role": "user", "content": prompt]],
         ]
         request.httpBody = try JSONSerialization.data(withJSONObject: body)
 
@@ -135,7 +147,7 @@ final class RecipeLocalizer {
         let reply = try JSONDecoder().decode(Reply.self, from: data)
         if reply.stop_reason == "max_tokens" { throw RecipeTranslationError.unreadable }
         guard let text = reply.content.first(where: { $0.type == "text" })?.text else { throw RecipeTranslationError.unreadable }
-        return try RecipeTranslations.parse(text, source: source, language: language, model: Self.model)
+        return text
     }
 }
 
@@ -183,6 +195,23 @@ extension CloudKitSharingService {
 
     private static var localizationTask: Task<Void, Never>?
 
+    // MARK: Book cache (Application Support/RecipeTranslations/book-<id>.json)
+
+    private func bookFileURL(_ id: UUID) -> URL { folder.appendingPathComponent("book-\(id.uuidString).json") }
+
+    func cachedBook(_ id: UUID, language: String, fingerprint: String) -> BookTranslation? {
+        guard let data = try? Data(contentsOf: bookFileURL(id)),
+              let map = try? JSONDecoder().decode([String: BookTranslation].self, from: data),
+              let t = map[language], t.source == fingerprint else { return nil }
+        return t
+    }
+
+    func storeBook(_ translation: BookTranslation, id: UUID, language: String) {
+        var map = ((try? Data(contentsOf: bookFileURL(id))).flatMap { try? JSONDecoder().decode([String: BookTranslation].self, from: $0) }) ?? [:]
+        map[language] = translation
+        if let data = try? JSONEncoder().encode(map) { try? data.write(to: bookFileURL(id), options: .atomic) }
+    }
+
     /// Starts the localization pass unless one is running. Called at the end of every
     /// publish pass; does not wait for it.
     func startLocalizationPass(modelContext: ModelContext) {
@@ -222,6 +251,8 @@ extension CloudKitSharingService {
     private func performLocalizationPass(modelContext: ModelContext) async {
         let languages = RecipeLocalizer.targetLanguages
         let localizer = RecipeLocalizer.shared
+        // Books first: a few dozen short descriptions, so they turn over quickly.
+        await performBookLocalization(modelContext: modelContext, languages: languages)
         guard isCloudKitAvailable, currentUserID != nil,
               let index = await readOwnPublicIndex(.recipe) else { return }
         let deleted = index.deleted
@@ -334,5 +365,96 @@ extension CloudKitSharingService {
         }
         status.publishFinished()
         AppLog.info("🌐 Translations done: \(published) recipe(s) published, \(failed) to retry", category: .sharing)
+    }
+}
+
+
+// MARK: - Books (description only — names stay as entered)
+
+extension CloudKitSharingService {
+
+    /// Translations a book's public copy carries (inside bookData).
+    static func publishedBookTranslations(in record: CKRecord) -> [String: BookTranslation] {
+        guard let json = record["bookData"] as? String, let data = json.data(using: .utf8),
+              let book = try? JSONDecoder().decode(CloudKitRecipeBook.self, from: data) else { return [:] }
+        return book.translations ?? [:]
+    }
+
+    /// The translations to publish with a book: every one matching its current English,
+    /// from this device's cache or already on its public copy. nil when there are none.
+    func publishableBookTranslations(for book: Book, existingRecord: CKRecord?) -> [String: BookTranslation]? {
+        guard let id = book.id, let description = BookTranslations.translatable(book.bookDescription) else { return nil }
+        let fingerprint = BookTranslations.fingerprint(description: description)
+        var map: [String: BookTranslation] = [:]
+        if let existingRecord {
+            for (language, t) in Self.publishedBookTranslations(in: existingRecord) where t.source == fingerprint {
+                map[language] = t
+            }
+        }
+        for language in RecipeLocalizer.targetLanguages {
+            if let t = RecipeLocalizer.shared.cachedBook(id, language: language, fingerprint: fingerprint) {
+                map[language] = t
+            }
+        }
+        return map.isEmpty ? nil : map
+    }
+
+    /// Translates every own public book's description that is missing in a language,
+    /// then refreshes its public copy in place (same lock as the publish pass).
+    /// Nothing is unshared or deleted; a key problem stops the pass.
+    fileprivate func performBookLocalization(modelContext: ModelContext, languages: [String]) async {
+        guard isCloudKitAvailable, currentUserID != nil, !languages.isEmpty,
+              let index = await readOwnPublicIndex(.book) else { return }
+        let localizer = RecipeLocalizer.shared
+        var ready: [(book: Book, recordName: String)] = []
+        var stop = false
+        for book in BookMerger.ownBooks(in: modelContext) {
+            guard !stop, let id = book.id, let description = BookTranslations.translatable(book.bookDescription),
+                  index.deleted[id] == nil, let live = index.live[id],
+                  !OwnerDeletedStore.shared.isPendingTombstone(.book, id) else { continue }
+            let name = book.name ?? ""
+            let fingerprint = BookTranslations.fingerprint(description: description)
+            let record = index.liveRecords[id]?.first { $0.recordID.recordName == live.recordName }
+            let published = record.map(Self.publishedBookTranslations(in:)) ?? [:]
+            let missing = languages.filter { published[$0]?.source != fingerprint }
+            guard !missing.isEmpty else { continue }
+            for language in missing where localizer.cachedBook(id, language: language, fingerprint: fingerprint) == nil {
+                do {
+                    let t = try await localizer.translateBookDescription(description, to: language)
+                    localizer.storeBook(t, id: id, language: language)
+                } catch let issue as ClaudeServiceIssue where [.keyMissing, .keyRejected, .accessDenied, .outOfCredit].contains(issue) {
+                    AppLog.warning("🌐 Book translations stopped: \(issue)", category: .sharing)
+                    stop = true
+                    break
+                } catch {
+                    AppLog.warning("🌐 Book translation failed for '\(name)' [\(language)]: \(error.localizedDescription)", category: .sharing)
+                }
+            }
+            if missing.contains(where: { localizer.cachedBook(id, language: $0, fingerprint: fingerprint) != nil }) {
+                ready.append((book, live.recordName))
+            }
+        }
+        guard !ready.isEmpty else {
+            AppLog.info("🌐 Book translations: nothing to publish", category: .sharing)
+            return
+        }
+        while let running = publishTask { await running.value }
+        let work = Task { @MainActor () -> Int in
+            var ok = 0
+            for item in ready where !item.book.isDeleted {
+                do {
+                    _ = try await self.shareRecipeBook(item.book, modelContext: modelContext, refreshExisting: true,
+                                                       knownRecordName: item.recordName)
+                    ok += 1
+                } catch {
+                    AppLog.warning("🌐 Could not publish book translations for '\(item.book.name ?? "")': \(error.localizedDescription)", category: .sharing)
+                }
+            }
+            return ok
+        }
+        publishTask = Task { @MainActor in _ = await work.value }
+        let ok = await work.value
+        publishTask = nil
+        AppLog.info("🌐 Book translations: \(ok) of \(ready.count) book(s) published", category: .sharing)
     }
 }

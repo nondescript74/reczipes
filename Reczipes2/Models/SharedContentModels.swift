@@ -116,6 +116,10 @@ struct CloudKitRecipeBook: Codable, Identifiable {
     /// Deleted by its owner (Δ-163): kept public and marked, never removed.
     var deletedByOwner: Bool? = nil
     var deletedDate: Date? = nil
+
+    /// Description in other app languages ("fr"), each tied to the English it was made
+    /// from (RecipeLocalizer). The name is never translated. Absent from older builds.
+    var translations: [String: BookTranslation]? = nil
 }
 
 // MARK: - Sharing Result

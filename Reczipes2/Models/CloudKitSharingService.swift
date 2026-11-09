@@ -894,6 +894,7 @@ class CloudKitSharingService: ObservableObject {
             tableOfContents: contents.isEmpty ? nil : contents,
             glossary: glossary.isEmpty ? nil : glossary
         )
+        cloudBook.translations = publishableBookTranslations(for: book, existingRecord: existingRecordToUpdate)
         
         // Encode book data to JSON. bookData + recipePreviews must stay under the
         // ~1 MB record cap: drop contents, then glossary, if bookData is too big.
