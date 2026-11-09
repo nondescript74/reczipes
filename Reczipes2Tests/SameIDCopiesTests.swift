@@ -61,6 +61,27 @@ struct SameIDCopiesTests {
         #expect(plan.differing.first?.persistentModelID == older.persistentModelID)
     }
 
+    @Test("Unattended pass removes identical extras across the library and keeps differing rows")
+    func unattendedPass() throws {
+        let context = try makeContext()
+        let a = UUID(), b = UUID(), c = UUID()
+        let data = try sections(["flour", "sugar"])
+        (0..<2).forEach { _ in context.insert(RecipeX(id: a, title: "Lemon Slush", ingredientSectionsData: data)) }
+        context.insert(RecipeX(id: b, title: "Burtha", ingredientSectionsData: try sections(["eggplant", "oil", "onion"])))
+        context.insert(RecipeX(id: b, title: "Burtha", ingredientSectionsData: try sections(["eggplant", "onion"])))
+        context.insert(RecipeX(id: c, title: "Single", ingredientSectionsData: data))
+        try context.save()
+
+        let result = SameIDCopies.removeIdenticalExtras(in: context, operation: "test")
+        #expect(result == SameIDCopies.Result(removed: 1, differing: 1))
+        let left = try context.fetch(FetchDescriptor<RecipeX>())
+        #expect(left.filter { $0.id == a }.count == 1)
+        #expect(left.filter { $0.id == b }.count == 2)
+        #expect(left.filter { $0.id == c }.count == 1)
+        // Running again finds nothing new
+        #expect(SameIDCopies.removeIdenticalExtras(in: context, operation: "test").removed == 0)
+    }
+
     @Test("Rows without an id are ignored")
     func nilIDIgnored() throws {
         let context = try makeContext()

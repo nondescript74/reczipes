@@ -113,6 +113,24 @@ class CloudKitDuplicateMonitor: ObservableObject {
             }
             .store(in: &cancellables)
 
+        // The rest of the unattended clean-up on the same real signal, once imports go
+        // quiet (it reads every recipe, so it waits for a burst of imports to end).
+        // Before 2026-11-09 the recipe scan and the same-name book merge hung only off the
+        // NSCloudKitMirroringDelegate* names below, which are never posted, so they never
+        // ran on their own — 245 doubled recipes and many doubled books sat until found by hand.
+        NotificationCenter.default.publisher(for: NSPersistentCloudKitContainer.eventChangedNotification)
+            .receive(on: DispatchQueue.main)
+            .filter { notification in
+                guard let event = notification.userInfo?[NSPersistentCloudKitContainer.eventNotificationUserInfoKey]
+                        as? NSPersistentCloudKitContainer.Event else { return false }
+                return event.type == .import && event.endDate != nil
+            }
+            .debounce(for: .seconds(20), scheduler: DispatchQueue.main)
+            .sink { [weak self] _ in
+                Task { @MainActor in self?.runUnattendedCleanup() }
+            }
+            .store(in: &cancellables)
+
         // Notification when CloudKit sync will reset (token expired)
         NotificationCenter.default.publisher(for: NSNotification.Name("NSCloudKitMirroringDelegateWillResetSyncNotificationName"))
             .receive(on: DispatchQueue.main)
@@ -301,6 +319,11 @@ class CloudKitDuplicateMonitor: ObservableObject {
             AppLog.info("🔍 Checking for duplicates after sync (multi-strategy)...", category: .cloudKit)
             DuplicateScanTracker.recordScanRan()
 
+            // Same recipe stored as several rows under ONE id (sync resets, re-imports).
+            // The strategies below group by id, so they cannot see these; remove the
+            // identical extras first.
+            SameIDCopies.removeIdenticalExtras(in: context, operation: "Post-sync auto-clean")
+
             let descriptor = FetchDescriptor<RecipeX>(sortBy: [SortDescriptor(\.title)])
             let allRecipes = try context.fetch(descriptor)
 
@@ -350,6 +373,20 @@ class CloudKitDuplicateMonitor: ObservableObject {
         } catch {
             AppLog.error("❌ Error checking for duplicates: \(error)", category: .cloudKit)
         }
+    }
+
+    // MARK: - Unattended clean-up (after imports, at launch)
+
+    /// Everything that may run without asking, in order: book rows sharing one id,
+    /// recipe rows sharing one id (identical extras only), then same-name books that are
+    /// exact copies or the same book (BookDuplicates.mergesUnattended). Nothing here
+    /// removes a recipe id, so no book loses a recipe and nothing is unshared except the
+    /// public copy of a merged-away book, which is marked replaced by the kept one.
+    func runUnattendedCleanup(in context: ModelContext? = nil) {
+        let context = context ?? ModelContainerManager.shared.container.mainContext
+        mergeDuplicateBooks(in: context)
+        SameIDCopies.removeIdenticalExtras(in: context, operation: "Post-sync auto-clean")
+        BookMerger.mergeExactCopies(in: context)
     }
 
     // MARK: - Book Duplicate Cleanup

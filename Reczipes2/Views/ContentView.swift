@@ -375,6 +375,9 @@ struct ContentView: View {
             // Small delay so the list renders first
             try? await Task.sleep(for: .seconds(2))
             await autoCleanDuplicates()
+            // Same-name books that are exact copies or the same book (name + description)
+            // merge without asking; the rest wait in Database Maintenance → Duplicate Books.
+            BookMerger.mergeExactCopies(in: modelContext)
             // Book pictures: move any inline picture bytes (older builds, or books
             // synced from a device on an older build) into BookPicture records.
             // Idempotent and cheap when nothing is inline.
@@ -386,7 +389,14 @@ struct ContentView: View {
     /// Skips the scan entirely when the recipe count hasn't changed since the last
     /// clean run, avoiding unnecessary DB pressure on every onAppear.
     private func autoCleanDuplicates() async {
-        let allRecipes = savedRecipes  // already @Query'd
+        // Same recipe stored as several rows under ONE id: the id-keyed scan below
+        // cannot see these, and a scan that found nothing records the inflated count
+        // as "clean" and skips until it changes (how 245 extras sat unnoticed,
+        // 2026-11-09). So this runs on every launch, before the throttle.
+        let sameID = SameIDCopies.removeIdenticalExtras(in: modelContext, operation: "Launch auto-clean")
+        if sameID.removed > 0 { refreshRecipeCache() }
+
+        let allRecipes = (try? modelContext.fetch(FetchDescriptor<RecipeX>())) ?? savedRecipes
         guard allRecipes.count > 1 else {
             DuplicateScanTracker.recordCleanScan(recipeCount: allRecipes.count)
             return

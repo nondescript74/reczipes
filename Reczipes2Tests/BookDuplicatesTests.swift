@@ -43,6 +43,24 @@ struct BookDuplicatesTests {
         #expect(g.recipesOnlyInExtras == 1)
     }
 
+    @Test("Same book (name + description) merges without asking when nothing is lost")
+    func sameBook() {
+        func b(_ n: Int, _ recipes: [Int], _ desc: String?, contents: Data? = nil) -> BookCopy {
+            BookCopy(id: id(n), name: "Carol's recipes", recipeIDs: recipes.map(id), dateCreated: nil,
+                     hasOwnContent: contents != nil, bookDescription: desc, contentsData: contents)
+        }
+        let keep = b(1, [1, 2, 3, 4], "Handwritten recipes", contents: Data([1]))
+        // Subset, own (older) contents page: merges, the kept book's page stays
+        #expect(BookDuplicates.mergesUnattended(b(2, [1, 2], "Handwritten  recipes", contents: Data([2])), into: keep))
+        // Adds recipes, no conflicting content: merges (union)
+        #expect(BookDuplicates.mergesUnattended(b(3, [4, 5], "Handwritten recipes"), into: keep))
+        // Adds recipes AND its contents page differs: owner decides
+        #expect(!BookDuplicates.mergesUnattended(b(4, [5], "Handwritten recipes", contents: Data([2])), into: keep))
+        // Different or missing description: a name alone never merges
+        #expect(!BookDuplicates.mergesUnattended(b(5, [1], "Any kind of soup"), into: keep))
+        #expect(!BookDuplicates.mergesUnattended(b(6, [1], nil), into: b(7, [1, 2], nil)))
+    }
+
     @Test("Merged order: kept book first, then new recipes, no repeats")
     func order() {
         let merged = BookDuplicates.mergedRecipeIDs(keep: [id(1), id(2)], extras: [[id(2), id(3)], [id(3), id(4)]])

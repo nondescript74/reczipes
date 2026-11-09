@@ -8,6 +8,13 @@
 //  own. Everything else is shown for the owner to decide (Database Maintenance →
 //  Duplicate Books).
 //
+//  2026-11-09: a copy also merges without asking when it is the SAME BOOK — same name
+//  AND the same non-empty description — and the merge loses nothing: every recipe is
+//  kept (the kept book gets the union), pictures move over (identical ones are not
+//  doubled), and a contents page or glossary of its own is only dropped when all its
+//  recipes are already in the kept book (the kept book's is then the fuller one).
+//  Same name with a different or missing description still waits for the owner.
+//
 
 import Foundation
 
@@ -18,6 +25,9 @@ struct BookCopy: Equatable, Identifiable {
     let dateCreated: Date?
     /// Pictures, glossary or table of contents of its own
     let hasOwnContent: Bool
+    var bookDescription: String? = nil
+    var glossaryData: Data? = nil
+    var contentsData: Data? = nil
 }
 
 struct BookDuplicateGroup: Identifiable {
@@ -28,6 +38,10 @@ struct BookDuplicateGroup: Identifiable {
 
     /// Extras that add nothing to the kept book: merge without asking
     var exactExtras: [BookCopy] { extras.filter { BookDuplicates.isExactCopy($0, of: keep) } }
+
+    /// Extras merged unattended: exact copies, plus copies of the same book (same name
+    /// and description) whose merge loses nothing.
+    var autoMergeExtras: [BookCopy] { extras.filter { BookDuplicates.mergesUnattended($0, into: keep) } }
 
     /// Recipes in this group that are not in the kept book
     var recipesOnlyInExtras: Int {
@@ -58,6 +72,30 @@ enum BookDuplicates {
     static func isExactCopy(_ extra: BookCopy, of keep: BookCopy) -> Bool {
         guard !extra.hasOwnContent else { return false }
         return extra.recipeIDs.isEmpty || Set(extra.recipeIDs) == Set(keep.recipeIDs)
+    }
+
+    /// Description key: same folding as the name; empty when there is none.
+    static func descriptionKey(_ text: String?) -> String { key(text ?? "") }
+
+    /// Same book: same name (grouping already ensures it) and the same non-empty description.
+    static func isSameBook(_ a: BookCopy, _ b: BookCopy) -> Bool {
+        let da = descriptionKey(a.bookDescription)
+        return !da.isEmpty && da == descriptionKey(b.bookDescription)
+    }
+
+    /// Whether `extra` can be merged into `keep` without asking.
+    static func mergesUnattended(_ extra: BookCopy, into keep: BookCopy) -> Bool {
+        if isExactCopy(extra, of: keep) { return true }
+        guard isSameBook(extra, keep) else { return false }
+        let covered = Set(extra.recipeIDs).isSubset(of: Set(keep.recipeIDs))
+        // The merge keeps the kept book's contents page and glossary; the extra's is
+        // only copied over when the kept book has none. Dropping a different one is
+        // fine only when the kept book already holds every recipe the extra has.
+        func conflicts(_ e: Data?, _ k: Data?) -> Bool { e != nil && k != nil && e != k }
+        if !covered && (conflicts(extra.contentsData, keep.contentsData) || conflicts(extra.glossaryData, keep.glossaryData)) {
+            return false
+        }
+        return true
     }
 
     /// Groups of two or more books with the same name key, largest group first.

@@ -639,22 +639,9 @@ struct DuplicateRecipeDetectorView: View {
     }
 
     private func removeSameIDExtras() {
-        var removed = 0
-        var differing = 0
-        for group in sameIDGroups {
-            let plan = SameIDCopies.plan(group)
-            for other in plan.remove {
-                modelContext.delete(other)
-                removed += 1
-            }
-            differing += plan.differing.count
-        }
-        do {
-            try modelContext.save()
-            AppLog.info("Removed \(removed) extra stored copies (same id); kept \(differing) that differ", category: .recipe)
-        } catch {
-            AppLog.error("Failed to save after removing same-id copies: \(error)", category: .recipe)
-        }
+        let result = SameIDCopies.removeIdenticalExtras(in: modelContext, operation: "Duplicate Detector")
+        let removed = result.removed
+        let differing = result.differing
         findDuplicates()
         mergeMessage = (removed == 1
             ? String(localized: "Removed 1 extra stored copy.", bundle: .appLanguage)

@@ -26,7 +26,9 @@ enum BookMerger {
         let ownContent = !pictures.isEmpty || book.imagesData != nil
             || book.glossaryData != nil || book.tableOfContentsData != nil
         return BookCopy(id: id, name: book.name ?? "", recipeIDs: book.recipeIDs ?? [],
-                        dateCreated: book.dateCreated, hasOwnContent: ownContent)
+                        dateCreated: book.dateCreated, hasOwnContent: ownContent,
+                        bookDescription: book.bookDescription,
+                        glossaryData: book.glossaryData, contentsData: book.tableOfContentsData)
     }
 
     static func duplicateGroups(in context: ModelContext) -> [BookDuplicateGroup] {
@@ -55,9 +57,21 @@ enum BookMerger {
             // Pictures: inline ones become records first, then all move to the kept book.
             BookPictureMigration.migrate(book: extra, in: context)
             if let extraID = extra.id {
+                // A picture the kept book already has (same bytes) is not moved twice:
+                // copies of one book carry the same pictures.
+                var keptHashes = Set(((try? context.fetch(FetchDescriptor<BookPicture>(
+                    predicate: #Predicate<BookPicture> { $0.bookID == keepID }))) ?? [])
+                    .compactMap { $0.imageHash ?? BookPictureHash.sha256($0.imageData) })
                 let rows = (try? context.fetch(FetchDescriptor<BookPicture>(
                     predicate: #Predicate<BookPicture> { $0.bookID == extraID }))) ?? []
-                for row in rows { row.bookID = keepID }
+                for row in rows {
+                    if let hash = row.imageHash ?? BookPictureHash.sha256(row.imageData), keptHashes.contains(hash) {
+                        context.delete(row)
+                    } else {
+                        row.bookID = keepID
+                        if let hash = row.imageHash ?? BookPictureHash.sha256(row.imageData) { keptHashes.insert(hash) }
+                    }
+                }
             }
             if keep.imagesData == nil { keep.imagesData = extra.imagesData }
         }
@@ -75,12 +89,13 @@ enum BookMerger {
         return extras.count
     }
 
-    /// Unattended: merge only copies that add nothing (same recipes or none, no own content).
+    /// Unattended: merge copies that add nothing, and copies of the same book (same name
+    /// and description) whose merge loses nothing (BookDuplicates.mergesUnattended).
     @discardableResult
     static func mergeExactCopies(in context: ModelContext) -> Int {
         var merged = 0
         for group in duplicateGroups(in: context) {
-            let exact = group.exactExtras.map(\.id)
+            let exact = group.autoMergeExtras.map(\.id)
             guard !exact.isEmpty else { continue }
             merged += merge(keepID: group.keep.id, extraIDs: exact, in: context)
         }
