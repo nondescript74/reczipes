@@ -91,6 +91,77 @@ function normNote(n) {
   return { type: NOTE_TYPES.has(n.type) ? n.type : 'general', text: n.text.trim() };
 }
 
+// CloudKitRecipe.translationsJSON (RecipeLocalizer in the app): { code: RecipeTranslation }.
+// Each translation is laid over the English by position (the app refuses one that doesn't
+// line up), then run through the same filters as the English, so the two stay aligned
+// item for item. A translation whose shape differs from this recipe is dropped.
+const LANG_CODE = /^[a-z]{2,3}(-[A-Za-z]{2,4})?$/;
+
+function overlayTranslation(data, tr) {
+  if (!tr || typeof tr !== 'object' || !str(tr.title)) return null;
+  const rawIng = Array.isArray(data.ingredientSections) ? data.ingredientSections : [];
+  const rawSteps = Array.isArray(data.instructionSections) ? data.instructionSections : [];
+  const rawNotes = Array.isArray(data.notes) ? data.notes : [];
+  const trIng = Array.isArray(tr.ingredientSections) ? tr.ingredientSections : [];
+  const trSteps = Array.isArray(tr.instructionSections) ? tr.instructionSections : [];
+  const trNotes = Array.isArray(tr.notes) ? tr.notes : [];
+  const len = (a) => (Array.isArray(a) ? a.length : 0);
+  if (trIng.length !== rawIng.length || trSteps.length !== rawSteps.length || trNotes.length !== rawNotes.length) return null;
+  if (rawIng.some((s, i) => len(s?.ingredients) !== len(trIng[i]?.ingredients))) return null;
+  if (rawSteps.some((s, i) => len(s?.steps) !== len(trSteps[i]?.steps))) return null;
+  return {
+    title: tr.title,
+    headerNotes: tr.headerNotes ?? null,
+    yield: tr.yield ?? null,
+    ingredientSections: rawIng.map((s, si) => s && typeof s === 'object' ? {
+      ...s,
+      title: trIng[si]?.title ?? null,
+      transitionNote: trIng[si]?.transitionNote ?? null,
+      // Translated amounts are already in the language's own units (metric for French).
+      ingredients: s.ingredients.map((i, ii) => {
+        const l = trIng[si].ingredients[ii];
+        return i && typeof i === 'object' && l && typeof l === 'object'
+          ? { quantity: l.quantity, unit: l.unit, name: str(i.name) ? (str(l.name) ?? i.name) : null, preparation: l.preparation }
+          : i;
+      }),
+    } : s),
+    instructionSections: rawSteps.map((s, si) => s && typeof s === 'object' ? {
+      ...s,
+      title: trSteps[si]?.title ?? null,
+      steps: s.steps.map((st, k) => st && typeof st === 'object' && str(st.text) ? { ...st, text: str(trSteps[si].steps[k]) ?? st.text } : st),
+    } : s),
+    notes: rawNotes.map((n, k) => n && typeof n === 'object' && str(n.text) && str(trNotes[k]) ? { ...n, text: trNotes[k] } : n),
+    metric: tr.metric === true,
+  };
+}
+
+export function decodeTranslations(data) {
+  const raw = typeof data?.translationsJSON === 'string' ? data.translationsJSON : null;
+  if (!raw) return null;
+  let map;
+  try { map = JSON.parse(raw); } catch { return null; }
+  if (!map || typeof map !== 'object' || Array.isArray(map)) return null;
+  const out = {};
+  for (const [code, tr] of Object.entries(map)) {
+    if (!LANG_CODE.test(code)) continue;
+    const o = overlayTranslation(data, tr);
+    if (!o) continue;
+    const ingredientSections = o.ingredientSections.map(normIngredientSection).filter(Boolean);
+    const instructionSections = o.instructionSections.map(normInstructionSection).filter(Boolean);
+    const notes = o.notes.map(normNote).filter(Boolean);
+    out[code] = {
+      title: str(o.title),
+      headerNotes: str(o.headerNotes),
+      yield: str(o.yield),
+      ingredientSections,
+      instructionSections,
+      notes,
+      metric: o.metric,
+    };
+  }
+  return Object.keys(out).length ? out : null;
+}
+
 // A SharedRecipe record -> recipe object, or null if the record is unusable.
 export function decodeSharedRecipe(record) {
   if (!record || record.serverErrorCode) return null;
@@ -123,6 +194,7 @@ export function decodeSharedRecipe(record) {
     sharedDate,
     imageURL: assetURL(record, 'mainImage'),
     diabeticInfo: normDiabeticInfo(data.diabeticInfoJSON),
+    translations: decodeTranslations(data),
     ...ownerDeletedFields(data),
   };
 }
@@ -292,8 +364,14 @@ export function summarize(recipe) {
     sharedDate: recipe.sharedDate,
     imageURL: recipe.imageURL,
     ingredientCount: ingredientNames.length,
-    // Lower-cased haystack for client-side search by title or ingredient.
-    search: [recipe.title, recipe.headerNotes ?? '', ...ingredientNames].join(' \u0001 ').toLowerCase(),
+    // Card text in each translated language (the full text comes with the recipe).
+    translations: recipe.translations
+      ? Object.fromEntries(Object.entries(recipe.translations).map(([code, tr]) => [code, { title: tr.title, yield: tr.yield, headerNotes: tr.headerNotes }]))
+      : null,
+    // Lower-cased haystack for client-side search by title or ingredient, in every language.
+    search: [recipe.title, recipe.headerNotes ?? '', ...ingredientNames,
+      ...Object.values(recipe.translations ?? {}).flatMap((tr) => [tr.title ?? '', ...tr.ingredientSections.flatMap((s) => s.ingredients.map((i) => i.name))]),
+    ].join(' \u0001 ').toLowerCase(),
   };
 }
 

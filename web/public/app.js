@@ -3,6 +3,7 @@
 // placed into the page with textContent (via h()), never as HTML.
 
 import { t, tn, lang, language, setLang, LANGUAGES } from './i18n.js';
+import { toMetric, unitWord } from './units.js';
 
 const main = document.getElementById('main');
 const banner = document.getElementById('banner');
@@ -24,6 +25,29 @@ function h(tag, attrs = {}, ...children) {
 }
 
 let backTo = { href: '#/', label: t('All recipes') };
+
+// Recipe text in the reader's language: the app publishes each recipe in every app
+// language (translations), already lined up with the English. Missing → English.
+const trOf = (r) => r?.translations?.[lang()] ?? null;
+const localSummary = (r) => {
+  const tr = trOf(r);
+  return tr ? { ...r, title: tr.title ?? r.title, yield: tr.yield ?? r.yield, headerNotes: tr.headerNotes ?? r.headerNotes } : r;
+};
+function localRecipe(r) {
+  const tr = trOf(r);
+  if (!tr) return r;
+  return {
+    ...r,
+    title: tr.title ?? r.title,
+    headerNotes: tr.headerNotes ?? r.headerNotes,
+    yield: tr.yield ?? r.yield,
+    ingredientSections: tr.ingredientSections,
+    instructionSections: tr.instructionSections,
+    notes: tr.notes,
+    translated: true,
+  };
+}
+const localRecipes = (list) => list.map(localSummary);
 const cache = new Map();
 
 // The site sits behind Cloudflare Access. When the sign-in lapses, an API call is redirected to the
@@ -141,7 +165,7 @@ async function showRecipes(query = '') {
   document.title = `${t('Recipes')} · Reczipes`;
   let recipes;
   try {
-    recipes = await getJSON('/api/recipes');
+    recipes = localRecipes(await getJSON('/api/recipes'));
   } catch (e) {
     return render(errorView(e));
   }
@@ -172,11 +196,25 @@ async function showRecipes(query = '') {
 }
 
 // ---------- Recipe detail ----------
+// Metric: the app's own metric amount when it gave one, else a plain conversion of
+// cups, ounces and pounds (spoons are metric already). Unit words in the reader's language.
+function metricOf(i) {
+  if (i.metricQuantity) return { quantity: i.metricQuantity, unit: i.metricUnit };
+  return toMetric(i.quantity, i.unit, lang());
+}
 function qtyText(i, metric) {
-  const useMetric = metric && i.metricQuantity;
-  const q = useMetric ? i.metricQuantity : i.quantity;
-  const u = useMetric ? i.metricUnit : i.unit;
+  const m = metric ? metricOf(i) : null;
+  const q = m ? m.quantity : i.quantity;
+  const u = m ? m.unit : unitWord(i.unit, lang());
   return [q, u].filter(Boolean).join(' ');
+}
+// Readers in any language but English start in metric; each language remembers its own choice.
+const metricKey = () => `reczipes.metric.${lang()}`;
+function metricPreferred() {
+  const saved = store(metricKey());
+  if (saved != null) return saved === '1';
+  if (lang() === 'en') return store('reczipes.metric') === '1'; // the choice made before languages
+  return true;
 }
 
 const NOTE_LABEL = { tip: 'Tip', substitution: 'Substitution', warning: 'Warning', timing: 'Timing', general: 'Note' }; // keys for t()
@@ -207,14 +245,15 @@ async function showRecipe(id) {
   setTab('recipes');
   let r;
   try {
-    r = await getJSON(`/api/recipes/${encodeURIComponent(id)}`);
+    r = localRecipe(await getJSON(`/api/recipes/${encodeURIComponent(id)}`));
   } catch (e) {
     return render(h('a', { class: 'back', href: backTo.href }, `← ${backTo.label}`), errorView(e));
   }
   document.title = `${r.title} · Reczipes`;
 
-  const hasMetric = r.ingredientSections.some((s) => s.ingredients.some((i) => i.metricQuantity));
-  let metric = hasMetric && store('reczipes.metric') === '1';
+  // A translated recipe already gives amounts in the reader's units: no switch.
+  const hasMetric = !r.translated && r.ingredientSections.some((s) => s.ingredients.some((i) => metricOf(i)));
+  let metric = hasMetric && metricPreferred();
   // Ticked-off ingredients survive a redraw (e.g. switching to metric).
   const doneIng = new Set();
   const toggleIng = (e) => {
@@ -246,7 +285,7 @@ async function showRecipe(id) {
   const metricBtn = hasMetric
     ? h('button', { class: 'btn', type: 'button', 'aria-pressed': String(metric), onclick: () => {
         metric = !metric;
-        store('reczipes.metric', metric ? '1' : '0');
+        store(metricKey(), metric ? '1' : '0');
         metricBtn.setAttribute('aria-pressed', String(metric));
         drawIngredients();
       } }, t('Metric'))
@@ -259,7 +298,8 @@ async function showRecipe(id) {
 
   render(
     h('a', { class: 'back', href: backTo.href }, `← ${backTo.label}`),
-    h('article', {},
+    // Untranslated recipe text is English whatever the page language (screen readers, spelling).
+    h('article', { lang: r.translated || lang() === 'en' ? null : 'en' },
       h('header', { class: `recipe-hero${r.imageURL ? ' has-img' : ''}` },
         r.imageURL ? h('img', { src: r.imageURL, alt: '' }) : null,
         h('div', {},
@@ -269,7 +309,7 @@ async function showRecipe(id) {
       h('div', { class: 'toolbar' },
         metricBtn, wakeBtn,
         h('button', { class: 'btn', type: 'button', onclick: () => window.print() }, t('Print'))),
-      health ? h('div', { class: 'health-area' }, fodmapPanel(health.fodmap), diabetesPanel(health)) : null,
+      health ? h('div', { class: 'health-area' }, fodmapPanel(health.fodmap, r), diabetesPanel(health)) : null,
       h('div', { class: 'recipe-body' },
         ingPanel,
         h('section', { class: 'panel', 'aria-labelledby': 'steps-h' },
@@ -321,7 +361,15 @@ function fodmapFlag(key) {
   }, t('⇄ FODMAP substitute'));
 }
 
-function fodmapPanel(f) {
+// The flagged ingredient as the recipe page shows it (translated recipes line up by key).
+function flaggedIngredient(g, r) {
+  if (!r?.translated) return { ing: g.ingredient, section: g.sectionTitle };
+  const [si, ii] = String(g.key).split('.').map(Number);
+  const s = r.ingredientSections[si];
+  return { ing: s?.ingredients[ii] ?? g.ingredient, section: s ? s.title : g.sectionTitle };
+}
+
+function fodmapPanel(f, r) {
   if (!f?.hasSubstitutions) return null; // the app shows this section only when there is something to swap
   const n = f.substitutions.length;
   return rememberedDetails('reczipes.panel.fodmap', 'health health--fodmap', true,
@@ -329,12 +377,12 @@ function fodmapPanel(f) {
     f.isSafeWithoutSubstitutions
       ? h('p', { class: 'callout callout--ok' }, t('✓ This recipe is already low FODMAP!'))
       : h('p', { class: 'callout callout--warn' }, tn(n, '{n} ingredient can be substituted', '{n} ingredients can be substituted')),
-    f.substitutions.map((g) => h('details', { class: 'sub-card', id: `fodmap-${g.key}` },
+    f.substitutions.map((g) => ({ g, ...flaggedIngredient(g, r) })).map(({ g, ing, section }) => h('details', { class: 'sub-card', id: `fodmap-${g.key}` },
       h('summary', {},
         h('span', { class: 'sub-card__warn', 'aria-hidden': 'true' }, '⚠'),
         h('span', { class: 'sub-card__ing' },
-          h('b', {}, [g.ingredient.quantity, g.ingredient.unit, g.ingredient.name].filter(Boolean).join(' ')),
-          g.sectionTitle ? h('span', { class: 'muted' }, ` · ${g.sectionTitle}`) : null,
+          h('b', {}, [ing.quantity, ing.unit, ing.name].filter(Boolean).join(' ')),
+          section ? h('span', { class: 'muted' }, ` · ${section}`) : null,
           h('span', { class: 'sub-card__cats' }, g.substitution.fodmapCategories.map((c) => `${FODMAP_ICON[c] ?? ''} ${t(c)}`).join('   ')))),
       h('div', { class: 'sub-card__body' },
         h('p', { class: 'muted' }, g.substitution.explanation),
@@ -544,7 +592,7 @@ async function showBook(id, view = 'recipes') {
   setTab('books');
   let book, recipes;
   try {
-    [book, recipes] = await Promise.all([getJSON(`/api/books/${encodeURIComponent(id)}`), getJSON('/api/recipes')]);
+    [book, recipes] = await Promise.all([getJSON(`/api/books/${encodeURIComponent(id)}`), getJSON('/api/recipes').then(localRecipes)]);
   } catch (e) {
     return render(h('a', { class: 'back', href: '#/books' }, t('← All books')), errorView(e));
   }
