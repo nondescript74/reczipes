@@ -95,9 +95,9 @@ enum BookMerger {
     static func mergeExactCopies(in context: ModelContext) -> Int {
         var merged = 0
         for group in duplicateGroups(in: context) {
-            let exact = group.autoMergeExtras.map(\.id)
-            guard !exact.isEmpty else { continue }
-            merged += merge(keepID: group.keep.id, extraIDs: exact, in: context)
+            for step in BookDuplicates.unattendedMerges(group) {
+                merged += merge(keepID: step.keep, extraIDs: step.extras, in: context)
+            }
         }
         if merged > 0 { AppLog.info("📚 Merged \(merged) exact copies of books", category: .storage) }
         return merged

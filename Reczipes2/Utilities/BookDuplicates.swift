@@ -13,7 +13,9 @@
 //  kept (the kept book gets the union), pictures move over (identical ones are not
 //  doubled), and a contents page or glossary of its own is only dropped when all its
 //  recipes are already in the kept book (the kept book's is then the fuller one).
-//  Same name with a different or missing description still waits for the owner.
+//  Same name with a different description still waits for the owner; with no
+//  description on either, the copy merges only when all its recipes are already in the
+//  kept one. Copies are matched within their description (unattendedMerges).
 //
 
 import Foundation
@@ -86,8 +88,14 @@ enum BookDuplicates {
     /// Whether `extra` can be merged into `keep` without asking.
     static func mergesUnattended(_ extra: BookCopy, into keep: BookCopy) -> Bool {
         if isExactCopy(extra, of: keep) { return true }
-        guard isSameBook(extra, keep) else { return false }
         let covered = Set(extra.recipeIDs).isSubset(of: Set(keep.recipeIDs))
+        // No description on either: the same book only when every recipe of the extra
+        // is already in the kept one (a name alone never merges; a name plus a recipe
+        // list that is wholly contained does). Then nothing at all is added or lost.
+        if descriptionKey(extra.bookDescription).isEmpty && descriptionKey(keep.bookDescription).isEmpty {
+            return covered && !extra.recipeIDs.isEmpty
+        }
+        guard isSameBook(extra, keep) else { return false }
         // The merge keeps the kept book's contents page and glossary; the extra's is
         // only copied over when the kept book has none. Dropping a different one is
         // fine only when the kept book already holds every recipe the extra has.
@@ -96,6 +104,30 @@ enum BookDuplicates {
             return false
         }
         return true
+    }
+
+    /// Unattended merges for one name group: (kept id, extra ids) pairs. Copies are
+    /// first matched to the book that shares their description (two "Soups — Any kind
+    /// of soup" copies merge with each other, not into a different "Soups"), then exact
+    /// copies of the group's kept book.
+    static func unattendedMerges(_ group: BookDuplicateGroup) -> [(keep: UUID, extras: [UUID])] {
+        let all = [group.keep] + group.extras
+        var merged = Set<UUID>()
+        var plan: [(keep: UUID, extras: [UUID])] = []
+        let byDescription = Dictionary(grouping: all) { descriptionKey($0.bookDescription) }
+        for (_, copies) in byDescription where copies.count > 1 {
+            guard let keep = preferredKeep(copies) else { continue }
+            let extras = copies.filter { $0.id != keep.id && mergesUnattended($0, into: keep) }.map(\.id)
+            if !extras.isEmpty { plan.append((keep.id, extras)); merged.formUnion(extras) }
+        }
+        let exact = group.extras.filter { !merged.contains($0.id) && isExactCopy($0, of: group.keep) }.map(\.id)
+        if !exact.isEmpty {
+            if let i = plan.firstIndex(where: { $0.keep == group.keep.id }) { plan[i].extras += exact }
+            else { plan.append((group.keep.id, exact)) }
+        }
+        // A kept book that is itself merged away elsewhere would be lost: drop such entries.
+        let mergedAway = Set(plan.flatMap(\.extras))
+        return plan.filter { !mergedAway.contains($0.keep) }
     }
 
     /// Groups of two or more books with the same name key, largest group first.

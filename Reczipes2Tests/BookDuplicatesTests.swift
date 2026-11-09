@@ -56,9 +56,26 @@ struct BookDuplicatesTests {
         #expect(BookDuplicates.mergesUnattended(b(3, [4, 5], "Handwritten recipes"), into: keep))
         // Adds recipes AND its contents page differs: owner decides
         #expect(!BookDuplicates.mergesUnattended(b(4, [5], "Handwritten recipes", contents: Data([2])), into: keep))
-        // Different or missing description: a name alone never merges
+        // Different description: a name alone never merges
         #expect(!BookDuplicates.mergesUnattended(b(5, [1], "Any kind of soup"), into: keep))
-        #expect(!BookDuplicates.mergesUnattended(b(6, [1], nil), into: b(7, [1, 2], nil)))
+        // No description on either: only when wholly contained
+        #expect(BookDuplicates.mergesUnattended(b(6, [1], nil), into: b(7, [1, 2], nil)))
+        #expect(!BookDuplicates.mergesUnattended(b(8, [1, 3], nil), into: b(9, [1, 2], nil)))
+    }
+
+    @Test("Copies merge with the book that shares their description")
+    func withinDescription() {
+        func s(_ n: Int, _ recipes: [Int], _ desc: String) -> BookCopy {
+            BookCopy(id: id(n), name: "Soups", recipeIDs: recipes.map(id), dateCreated: nil,
+                     hasOwnContent: true, bookDescription: desc)
+        }
+        let books = [s(1, [1, 2, 3, 4, 5, 6, 7, 8], "Soups from a variety of sources"),
+                     s(2, [20], "Any kind of soup"), s(3, [], "Any kind of soup")]
+        let group = BookDuplicates.groups(books)[0]
+        let plan = BookDuplicates.unattendedMerges(group)
+        #expect(plan.count == 1)
+        #expect(plan.first?.keep == id(2))
+        #expect(plan.first?.extras == [id(3)])
     }
 
     @Test("Merged order: kept book first, then new recipes, no repeats")
