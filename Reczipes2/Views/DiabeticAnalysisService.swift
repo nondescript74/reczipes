@@ -422,7 +422,7 @@ actor DiabeticAnalysisService {
         let apiKey = await getAPIKey()
         
         guard !apiKey.isEmpty else {
-            throw DiabeticAnalysisError.missingAPIKey
+            throw ClaudeServiceIssue.keyMissing
         }
         
         guard let url = URL(string: baseURL) else {
@@ -456,7 +456,9 @@ actor DiabeticAnalysisService {
         }
         
         guard httpResponse.statusCode == 200 else {
-            throw DiabeticAnalysisError.apiError(statusCode: httpResponse.statusCode)
+            let body = String(data: data, encoding: .utf8)
+            AppLog.error("Diabetic analysis: Claude returned HTTP \(httpResponse.statusCode): \(body?.prefix(300) ?? "")", category: .recipe)
+            throw ClaudeServiceIssue.from(statusCode: httpResponse.statusCode, body: body)
         }
         
         // Parse Claude response (matching ClaudeAPIClient pattern)
@@ -472,7 +474,7 @@ actor DiabeticAnalysisService {
         let claudeResponse = try JSONDecoder().decode(ClaudeResponse.self, from: data)
         if claudeResponse.stop_reason == "max_tokens" {
             // The analysis JSON is incomplete; decoding it would fail with an unreadable error.
-            throw DiabeticAnalysisError.responseTruncated
+            throw ClaudeServiceIssue.tooLong
         }
         
         guard let textContent = claudeResponse.content.first(where: { $0.type == "text" }),
@@ -798,33 +800,21 @@ final class DiabeticInfoCache: Sendable {
 // MARK: - Errors
 
 enum DiabeticAnalysisError: LocalizedError {
+    // Key, status-code, timeout and cut-off failures are ClaudeServiceIssue (plain words + a fix).
     case invalidRecipe
     case invalidRequest
     case invalidResponse
     case invalidJSON
     case noContentInResponse
-    case apiError(statusCode: Int)
-    case missingAPIKey
-    case responseTruncated
     
     var errorDescription: String? {
         switch self {
         case .invalidRecipe:
-            return "Recipe data is invalid or incomplete"
-        case .invalidRequest:
-            return "Failed to create analysis request"
-        case .invalidResponse:
-            return "Received invalid response from analysis service"
+            return String(localized: "This recipe is missing the details needed for an analysis.", comment: "Diabetic analysis error")
+        case .invalidRequest, .invalidResponse, .noContentInResponse:
+            return String(localized: "Claude's answer couldn't be used. Try again.", comment: "Diabetic analysis error")
         case .invalidJSON:
-            return "Could not parse analysis results"
-        case .noContentInResponse:
-            return "No analysis content in response"
-        case .apiError(let code):
-            return "Analysis service error (code \(code))"
-        case .missingAPIKey:
-            return "API key not configured"
-        case .responseTruncated:
-            return "The analysis was too long to finish. Please try again."
+            return String(localized: "Claude's answer couldn't be read. Try again.", comment: "Diabetic analysis error")
         }
     }
 }

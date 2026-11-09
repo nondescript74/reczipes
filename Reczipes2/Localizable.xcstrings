@@ -1,0 +1,5785 @@
+{
+  "sourceLanguage" : "en",
+  "strings" : {
+    "" : {
+
+    },
+    "--" : {
+
+    },
+    "— %@" : {
+
+    },
+    ":" : {
+
+    },
+    "... and %lld more" : {
+
+    },
+    "... and %lld more error(s)" : {
+
+    },
+    "... and %lld more steps" : {
+
+    },
+    "... and %lld more warning(s)" : {
+
+    },
+    "...and %lld more" : {
+
+    },
+    "· ingredients %lld%% alike" : {
+
+    },
+    "'%@' has been added to your recipes." : {
+
+    },
+    "\"%@\" and %lld image%@ have been added to your recipe collection." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "\"%1$@\" and %2$lld image%3$@ have been added to your recipe collection."
+          }
+        }
+      }
+    },
+    "\"%@\" has been added to your recipe collection." : {
+
+    },
+    "(%@ %@)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "(%1$@ %2$@)"
+          }
+        }
+      }
+    },
+    "(%@)" : {
+
+    },
+    "(%lld recipes)" : {
+
+    },
+    "(%lld selected)" : {
+
+    },
+    "(%lld total)" : {
+
+    },
+    "(%lld)" : {
+
+    },
+    "(filtered)" : {
+
+    },
+    "#" : {
+
+    },
+    "%.1f" : {
+
+    },
+    "%@" : {
+
+    },
+    "%@ — %lld copies" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ — %2$lld copies"
+          }
+        }
+      }
+    },
+    "%@ (%lld)%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$@ (%2$lld)%3$@"
+          }
+        }
+      }
+    },
+    "%@." : {
+
+    },
+    "%lld" : {
+
+    },
+    "%lld %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld %2$@"
+          }
+        }
+      }
+    },
+    "%lld %@ • %lld linked" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld %2$@ • %3$lld linked"
+          }
+        }
+      }
+    },
+    "%lld allergen%@ detected" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld allergen%2$@ detected"
+          }
+        }
+      }
+    },
+    "%lld book%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld book%2$@"
+          }
+        }
+      }
+    },
+    "%lld changes" : {
+
+    },
+    "%lld characters" : {
+
+    },
+    "%lld Community %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld Community %2$@"
+          }
+        }
+      }
+    },
+    "%lld concern%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld concern%2$@"
+          }
+        }
+      }
+    },
+    "%lld copies" : {
+
+    },
+    "%lld copies found" : {
+
+    },
+    "%lld duplicate(s)" : {
+
+    },
+    "%lld entries" : {
+
+    },
+    "%lld Error(s)" : {
+
+    },
+    "%lld failed" : {
+
+    },
+    "%lld image(s)" : {
+
+    },
+    "%lld image%@ ready for extraction" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld image%2$@ ready for extraction"
+          }
+        }
+      }
+    },
+    "%lld image%@ selected" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld image%2$@ selected"
+          }
+        }
+      }
+    },
+    "%lld ingredient(s)" : {
+
+    },
+    "%lld ingredient%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld ingredient%2$@"
+          }
+        }
+      }
+    },
+    "%lld ingredient%@ — click to edit" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld ingredient%2$@ — click to edit"
+          }
+        }
+      }
+    },
+    "%lld ingredient%@ can be substituted" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld ingredient%2$@ can be substituted"
+          }
+        }
+      }
+    },
+    "%lld ingredients" : {
+
+    },
+    "%lld ingredients · %lld steps%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld ingredients · %2$lld steps%3$@"
+          }
+        }
+      }
+    },
+    "%lld link(s)" : {
+
+    },
+    "%lld link%@ ready to extract" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld link%2$@ ready to extract"
+          }
+        }
+      }
+    },
+    "%lld meals available" : {
+
+    },
+    "%lld notes" : {
+
+    },
+    "%lld of %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld of %2$lld"
+          }
+        }
+      }
+    },
+    "%lld orphaned recipe books" : {
+
+    },
+    "%lld orphaned recipes" : {
+
+    },
+    "%lld photo(s) available in library" : {
+
+    },
+    "%lld photo(s) selected" : {
+
+    },
+    "%lld recipe book%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld recipe book%2$@"
+          }
+        }
+      }
+    },
+    "%lld Recipe Books" : {
+
+    },
+    "%lld recipe(s) in your collection" : {
+
+    },
+    "%lld recipe%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld recipe%2$@"
+          }
+        }
+      }
+    },
+    "%lld recipe%@ will be permanently deleted from all your devices." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld recipe%2$@ will be permanently deleted from all your devices."
+          }
+        }
+      }
+    },
+    "%lld recipes" : {
+
+    },
+    "%lld Recipes" : {
+
+    },
+    "%lld recipes aren't in any book. Untick anything you don't want filed, then tap Apply. Recipes are only added to books — nothing is removed." : {
+
+    },
+    "%lld recipes%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld recipes%2$@"
+          }
+        }
+      }
+    },
+    "%lld section(s)" : {
+
+    },
+    "%lld section%@ selected" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld section%2$@ selected"
+          }
+        }
+      }
+    },
+    "%lld sensitivities" : {
+
+    },
+    "%lld servings" : {
+
+    },
+    "%lld step(s)" : {
+
+    },
+    "%lld step%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld step%2$@"
+          }
+        }
+      }
+    },
+    "%lld steps" : {
+
+    },
+    "%lld succeeded" : {
+
+    },
+    "%lld terms" : {
+
+    },
+    "%lld tip%@ to save" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld tip%2$@ to save"
+          }
+        }
+      }
+    },
+    "%lld total in CloudKit" : {
+
+    },
+    "%lld tracked recipe books" : {
+
+    },
+    "%lld tracked recipes" : {
+
+    },
+    "%lld user profile%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld user profile%2$@"
+          }
+        }
+      }
+    },
+    "%lld Warning(s)" : {
+
+    },
+    "%lld." : {
+
+    },
+    "%lld. %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld. %2$@"
+          }
+        }
+      }
+    },
+    "%lld/%lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "%1$lld/%2$lld"
+          }
+        }
+      }
+    },
+    "%lld%%" : {
+
+    },
+    "%lld%% complete" : {
+
+    },
+    "•" : {
+
+    },
+    "• %@" : {
+
+    },
+    "• %lld image(s) found" : {
+
+    },
+    "• %lld ingredient section(s)" : {
+
+    },
+    "• %lld instruction section(s)" : {
+
+    },
+    "• Check that iCloud Drive is enabled" : {
+
+    },
+    "• CloudKit container not set up in developer portal" : {
+
+    },
+    "• Copy with %lld recipes: adds %lld recipes" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "• Copy with %1$lld recipes: adds %2$lld recipes"
+          }
+        }
+      }
+    },
+    "• Copy with %lld recipes: adds nothing" : {
+
+    },
+    "• Delete from local storage and iCloud" : {
+
+    },
+    "• iCloud Drive disabled" : {
+
+    },
+    "• If using TestFlight, make sure you're on the latest build" : {
+
+    },
+    "• Include the finished dish from multiple angles" : {
+
+    },
+    "• Is not a substitute for blood glucose monitoring or medical guidance" : {
+
+    },
+    "• Keep backgrounds clean and simple" : {
+
+    },
+    "• Keep Both: Imports all recipes, even duplicates" : {
+
+    },
+    "• Make sure you're signed into iCloud" : {
+
+    },
+    "• Mark their public copies deleted" : {
+
+    },
+    "• May contain errors or inaccuracies from AI analysis" : {
+
+    },
+    "• Network connectivity issues" : {
+
+    },
+    "• Not signed into iCloud" : {
+
+    },
+    "• Overwrite: Replaces existing recipes with imported ones" : {
+
+    },
+    "• Restart the app and try again" : {
+
+    },
+    "• Should not replace advice from your healthcare provider, registered dietitian, or certified diabetes educator" : {
+
+    },
+    "• Show key steps or techniques" : {
+
+    },
+    "• Skip Existing: Only imports new recipes" : {
+
+    },
+    "• Skip recipes that are in a book (remove them from the book first)" : {
+
+    },
+    "• Use natural lighting when possible" : {
+
+    },
+    "• Uses estimates that may not reflect your individual metabolic response" : {
+
+    },
+    "+ %lld more" : {
+
+    },
+    "+ %lld more ingredients" : {
+
+    },
+    "+ %lld more option%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "+ %1$lld more option%2$@"
+          }
+        }
+      }
+    },
+    "+ %lld more section(s)" : {
+
+    },
+    "+ %lld more steps" : {
+
+    },
+    "+ %lld more..." : {
+
+    },
+    "+%lld" : {
+
+    },
+    "~%@" : {
+
+    },
+    "~%@ remaining" : {
+
+    },
+    "★" : {
+
+    },
+    "⚠️ Important" : {
+
+    },
+    "⚠️ No CloudKit ID" : {
+
+    },
+    "⚠️ This operation will:" : {
+
+    },
+    "⚠️ This will delete duplicate CloudKit records and rebuild your local tracking. Only use this if you're seeing incorrect recipe counts." : {
+
+    },
+    "⚠️ This will try to migrate any file-based images to the database. Make sure you have a backup!" : {
+
+    },
+    "⚠️ Your key looks very short. Double-check you copied the entire key." : {
+
+    },
+    "✅ Available" : {
+
+    },
+    "✅ Yes" : {
+
+    },
+    "✓ %lld ingredient section%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "✓ %1$lld ingredient section%2$@"
+          }
+        }
+      }
+    },
+    "✓ %lld instruction section%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "✓ %1$lld instruction section%2$@"
+          }
+        }
+      }
+    },
+    "❌ No" : {
+
+    },
+    "❌ None Found" : {
+
+    },
+    "❌ Not Available" : {
+
+    },
+    "❌ NOT FOUND" : {
+
+    },
+    "🍽️ Reczipes" : {
+
+    },
+    "🎉 Everything is set up!" : {
+
+    },
+    "💡 Troubleshooting Tips" : {
+
+    },
+    "🗑️ Remove recipes from CloudKit that don't belong to any user (orphaned records). Use this if you see recipes from unknown users." : {
+
+    },
+    "1." : {
+
+    },
+    "1. Diagnostic Check" : {
+
+    },
+    "2." : {
+
+    },
+    "2. Cleanup & Resync" : {
+
+    },
+    "3." : {
+
+    },
+    "3. Remove Orphans" : {
+
+    },
+    "4." : {
+
+    },
+    "5m" : {
+
+    },
+    "30m" : {
+
+    },
+    "A book with this name already exists" : {
+
+    },
+    "A JSON list of {term, local_name, definition, book_page}." : {
+
+    },
+    "A shared title alone never counts as a duplicate. \"Likely\" and \"Possible\" groups are for review only: compare the ingredients, then remove one copy or use \"Keep This\". Copies that are in a book are never removed — remove them from the book first." : {
+
+    },
+    "A user identity is needed to share content." : {
+
+    },
+    "A. Please provide:" : {
+
+    },
+    "About" : {
+
+    },
+    "About Books" : {
+
+    },
+    "About Database Recovery" : {
+
+    },
+    "About Diabetic-Friendly Analysis" : {
+
+    },
+    "About FODMAP" : {
+
+    },
+    "About FODMAP Data" : {
+
+    },
+    "About Public Sharing & License" : {
+
+    },
+    "About Sync" : {
+
+    },
+    "About This Recipe" : {
+
+    },
+    "Accepted On" : {
+
+    },
+    "Actions" : {
+
+    },
+    "Active Profile" : {
+
+    },
+    "Active Profile: %@ - Diabetes: %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Active Profile: %1$@ - Diabetes: %2$@"
+          }
+        }
+      }
+    },
+    "Active Profile: %@ - No diabetes status set" : {
+
+    },
+    "Active Profile: %@ - No nutritional goals set" : {
+
+    },
+    "Active Profile: %@ - Nutritional goals configured" : {
+
+    },
+    "Active Profile: %@ (%lld sensitivities)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Active Profile: %1$@ (%2$lld sensitivities)"
+          }
+        }
+      }
+    },
+    "Add" : {
+
+    },
+    "Add (%lld)" : {
+
+    },
+    "Add %lld" : {
+
+    },
+    "Add a brief description or introduction to your recipe" : {
+
+    },
+    "Add a new recipe to your collection" : {
+
+    },
+    "Add a note that appears after this ingredient section, like 'Set aside while preparing the next step'" : {
+
+    },
+    "Add a Tip" : {
+
+    },
+    "Add additional photos to complement your recipe" : {
+
+    },
+    "Add all %lld matching" : {
+
+    },
+    "Add all %lld recipe%@ added that day" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Add all %1$lld recipe%2$@ added that day"
+          }
+        }
+      }
+    },
+    "Add Another Recipe URL" : {
+
+    },
+    "Add as" : {
+
+    },
+    "Add by Date" : {
+
+    },
+    "Add by URL" : {
+
+    },
+    "Add by Web URL" : {
+
+    },
+    "Add Course" : {
+
+    },
+    "Add courses like Main, Side, or Salad — then link each to a recipe or search the web for ideas." : {
+
+    },
+    "Add Cover Image" : {
+
+    },
+    "Add covers and pictures in Edit Book." : {
+
+    },
+    "Add credit to your Anthropic account, then try again." : {
+      "comment" : "Error message: out of credit"
+    },
+    "Add food allergens or intolerances to track." : {
+
+    },
+    "Add header notes here..." : {
+
+    },
+    "Add Ingredient" : {
+
+    },
+    "Add More" : {
+
+    },
+    "Add Note" : {
+
+    },
+    "Add or remove recipes from this book" : {
+
+    },
+    "Add Photo" : {
+
+    },
+    "Add Photos" : {
+
+    },
+    "Add Pictures" : {
+
+    },
+    "Add Recipe" : {
+
+    },
+    "Add Recipes" : {
+
+    },
+    "Add recipes to \"%@\" to get started" : {
+
+    },
+    "Add Section" : {
+
+    },
+    "Add Sensitivity" : {
+
+    },
+    "Add Step" : {
+
+    },
+    "Add step-by-step photos or additional views of the finished dish" : {
+
+    },
+    "Add these by hand from a book's Manage Recipes." : {
+
+    },
+    "Add this recipe to your collection?" : {
+
+    },
+    "Add Tip" : {
+
+    },
+    "Add tips, substitutions, warnings, or other helpful information" : {
+
+    },
+    "Add to Book" : {
+
+    },
+    "Add to My Recipes" : {
+
+    },
+    "Add to My Recipes?" : {
+
+    },
+    "Add to Reminders" : {
+
+    },
+    "Add to Shopping List" : {
+
+    },
+    "Add your Claude API key once and this will work everywhere in the app." : {
+      "comment" : "Error message: no Claude key"
+    },
+    "Added on" : {
+
+    },
+    "Added: %@" : {
+
+    },
+    "Additional Images" : {
+
+    },
+    "Additional Information" : {
+
+    },
+    "Additional Minerals" : {
+
+    },
+    "Additional notes" : {
+
+    },
+    "Adds every recipe you added on the chosen day that isn't already in a book (or this book, with the switch on) — handy after a batch extraction." : {
+
+    },
+    "Adjust Servings" : {
+
+    },
+    "Advanced" : {
+
+    },
+    "Advanced Diagnostics" : {
+
+    },
+    "Advanced Tools" : {
+
+    },
+    "After cleanup, your counts should be accurate with no duplicates." : {
+
+    },
+    "After Cleanup:" : {
+
+    },
+    "AI searches medical sources published 2023-2025 for current guidelines" : {
+
+    },
+    "AI-Enhanced Analysis" : {
+
+    },
+    "All" : {
+
+    },
+    "All %lld are in current book “%@” (%lld recipes)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "All %1$lld are in current book “%2$@” (%3$lld recipes)"
+          }
+        }
+      }
+    },
+    "All Assignments" : {
+
+    },
+    "All caching is local to your device only" : {
+
+    },
+    "All community recipes:" : {
+
+    },
+    "All copies of “%@” become one book. No recipe is deleted." : {
+
+    },
+    "All Cuisines" : {
+
+    },
+    "All Database Files" : {
+
+    },
+    "All Good!" : {
+
+    },
+    "All images processed!" : {
+
+    },
+    "All links have been processed!" : {
+
+    },
+    "All Recipes (Bundled + SwiftData)" : {
+
+    },
+    "All recipes you publicly share are automatically licensed under **Creative Commons BY 4.0** (attribution required). You may choose to share or keep your content private at any time." : {
+
+    },
+    "All tests here avoid metered detail endpoints, so they are safe for low-quota plans." : {
+
+    },
+    "All Version History Entries (%lld)" : {
+
+    },
+    "All your recipes are already in this book" : {
+
+    },
+    "Allergen Analysis" : {
+
+    },
+    "Allergen Profiles" : {
+
+    },
+    "Allow access to your photo library to assign images to recipes" : {
+
+    },
+    "Alphabetical" : {
+
+    },
+    "Always consult with your healthcare provider or registered dietitian for personalized dietary guidance. Individual responses to foods vary based on overall health, medications, activity level, and metabolism." : {
+
+    },
+    "American Diabetes Association" : {
+
+    },
+    "Amount" : {
+
+    },
+    "Analysis" : {
+
+    },
+    "Analysis based on %@ - %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Analysis based on %1$@ - %2$@"
+          }
+        }
+      }
+    },
+    "Analysis is cached locally for 30 days to improve performance" : {
+
+    },
+    "Analyze Database" : {
+
+    },
+    "Analyze for Diabetic-Friendly Info" : {
+
+    },
+    "Analyzing FODMAP..." : {
+
+    },
+    "Analyzing nutrition..." : {
+
+    },
+    "Analyzing recipe..." : {
+
+    },
+    "Analyzing recipes..." : {
+
+    },
+    "Analyzing..." : {
+
+    },
+    "Anthropic's service is overloaded or having trouble. Your recipe is fine. Try again in a few minutes." : {
+      "comment" : "Error message: service busy"
+    },
+    "API Key Manager" : {
+
+    },
+    "API Key Required" : {
+
+    },
+    "API Key Setup" : {
+
+    },
+    "API key validated and saved successfully!" : {
+
+    },
+    "API Keys" : {
+
+    },
+    "Applies contrast enhancement and sharpening for better text recognition" : {
+
+    },
+    "Apply (%lld)" : {
+
+    },
+    "Apply Corrections" : {
+
+    },
+    "Are you sure you want to delete %lld empty recipe%@? This action cannot be undone." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Are you sure you want to delete %1$lld empty recipe%2$@? This action cannot be undone."
+          }
+        }
+      }
+    },
+    "Are you sure you want to delete this image? This action cannot be undone." : {
+
+    },
+    "Attempt Auto-Repair" : {
+
+    },
+    "Attempting repairs..." : {
+
+    },
+    "Author" : {
+
+    },
+    "Auto Fix" : {
+
+    },
+    "Auto-expand guidance" : {
+
+    },
+    "Auto-expand substitutions" : {
+
+    },
+    "Auto-Extract on Image Selection" : {
+
+    },
+    "Auto-File" : {
+
+    },
+    "Auto-File Recipes" : {
+
+    },
+    "Auto-File Unassigned Recipes…" : {
+
+    },
+    "Auto-Share New Meals" : {
+
+    },
+    "Auto-Share New Recipe Books" : {
+
+    },
+    "Auto-Share New Recipes" : {
+
+    },
+    "Auto-Sync" : {
+
+    },
+    "Auto-Sync Community Content" : {
+
+    },
+    "Automated Recipe Extraction" : {
+
+    },
+    "Automatically checks for new community recipes and books every %@. Longer intervals reduce database load and improve app performance." : {
+
+    },
+    "Available Recipes (%lld)" : {
+
+    },
+    "Avg. per Recipe" : {
+
+    },
+    "B. Common fixes:" : {
+
+    },
+    "Back to Library" : {
+
+    },
+    "Balanced logs errors only; use Info or Full to see sharing and sync progress." : {
+
+    },
+    "Based on %@" : {
+
+    },
+    "Based on %lld verified source%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Based on %1$lld verified source%2$@"
+          }
+        }
+      }
+    },
+    "Based on American Diabetes Association guidelines" : {
+
+    },
+    "Based on American Heart Association guidelines" : {
+
+    },
+    "Basic Info" : {
+
+    },
+    "Basic Information" : {
+
+    },
+    "Batch Extract" : {
+
+    },
+    "Batch Extract All Unprocessed" : {
+
+    },
+    "Batch Extract Images" : {
+
+    },
+    "Batch Extract Recipes" : {
+
+    },
+    "Batch Extract URLs" : {
+
+    },
+    "Batch Extraction" : {
+
+    },
+    "Batch Extraction Complete" : {
+
+    },
+    "Batch extraction is still running. You can let it continue in the background, or stop it now." : {
+
+    },
+    "Batch Extraction Progress" : {
+
+    },
+    "Batch Image Extract" : {
+
+    },
+    "Be the first to share a recipe with the community!" : {
+
+    },
+    "Before" : {
+
+    },
+    "Behavior" : {
+
+    },
+    "Big 9 Allergens" : {
+
+    },
+    "Blend this recipe with another to create a mashup" : {
+
+    },
+    "Blood Sugar Management" : {
+
+    },
+    "Book Details" : {
+
+    },
+    "Book Information" : {
+
+    },
+    "Book Name" : {
+
+    },
+    "Book Package" : {
+
+    },
+    "Book Recipes" : {
+
+    },
+    "Books" : {
+
+    },
+    "Books (%lld)" : {
+
+    },
+    "Books from others" : {
+
+    },
+    "Browse Community Books" : {
+
+    },
+    "Browse Community Library" : {
+
+    },
+    "Browse Community Recipes" : {
+
+    },
+    "Browse Help Topics" : {
+
+    },
+    "Browse recipes and books shared by the community, or manage your own CloudKit content including orphaned items." : {
+
+    },
+    "Build" : {
+
+    },
+    "Bundle ID" : {
+
+    },
+    "Bundle Info (from Info.plist)" : {
+
+    },
+    "By %@" : {
+
+    },
+    "By default, URL extraction uses Recipe API first, then falls back to Claude if needed. You can override provider above." : {
+
+    },
+    "C. If diagnostics show ready but still failing:" : {
+
+    },
+    "Camera" : {
+
+    },
+    "Can Access" : {
+
+    },
+    "Can't tell — left unfiled (%lld)" : {
+
+    },
+    "Cancel" : {
+
+    },
+    "Cancel Extraction?" : {
+
+    },
+    "Cannot Replace Recipe in Recipe Book" : {
+
+    },
+    "Cannot Replace Shared Recipe" : {
+
+    },
+    "Caption" : {
+
+    },
+    "Carbohydrate Breakdown" : {
+
+    },
+    "Category" : {
+
+    },
+    "Category (Optional)" : {
+
+    },
+    "CDC - Diabetes" : {
+
+    },
+    "cdc.gov" : {
+
+    },
+    "CFBundleShortVersionString" : {
+
+    },
+    "CFBundleVersion" : {
+
+    },
+    "Change Cover Image" : {
+
+    },
+    "Change or assign photos" : {
+
+    },
+    "Change Selection" : {
+
+    },
+    "Changes (%lld):" : {
+
+    },
+    "CHECK — SAME RECIPE?" : {
+
+    },
+    "Checked automatically every few minutes while the app is open." : {
+
+    },
+    "Checking CloudKit status..." : {
+
+    },
+    "Checking for recoverable data..." : {
+
+    },
+    "Checking recipe database..." : {
+
+    },
+    "Checking Sharing Records…" : {
+
+    },
+    "Checking status..." : {
+
+    },
+    "Checking..." : {
+
+    },
+    "Choose a recipe from the list to view its details" : {
+
+    },
+    "Choose File" : {
+
+    },
+    "Choose Goal Type" : {
+
+    },
+    "Choose how to extract your recipe" : {
+
+    },
+    "Choose how to handle this:" : {
+
+    },
+    "Choose Image" : {
+
+    },
+    "Choose multiple recipe images from Photos or Files to extract recipes in batch" : {
+
+    },
+    "Choose Photo" : {
+
+    },
+    "Choose Recipe" : {
+
+    },
+    "Choose the image that best represents this recipe, or skip to save without an image." : {
+
+    },
+    "Choose where to select your recipe images from" : {
+
+    },
+    "Choose whether to include images in the export. Files with images will be larger but more complete." : {
+
+    },
+    "Claude API Key" : {
+
+    },
+    "Claude is busy right now" : {
+      "comment" : "Error title: Anthropic overloaded or server error"
+    },
+    "Claude isn't set up yet" : {
+      "comment" : "Error title: no Claude API key saved"
+    },
+    "Claude needs a short break" : {
+      "comment" : "Error title: too many requests (HTTP 429)"
+    },
+    "Claude Status" : {
+
+    },
+    "Claude took too long to answer" : {
+      "comment" : "Error title: request timed out"
+    },
+    "Claude's answer couldn't be read. Try again." : {
+      "comment" : "Diabetic analysis error"
+    },
+    "Claude's answer couldn't be used. Try again." : {
+      "comment" : "Diabetic analysis error"
+    },
+    "Claude's reply was cut off before it finished. Trying again usually works." : {
+      "comment" : "Error message: reply truncated"
+    },
+    "Clean recipes:" : {
+
+    },
+    "Clean Up & Resync" : {
+
+    },
+    "Clean Up Ghost Recipe Books" : {
+
+    },
+    "Clean Up Ghost Recipes" : {
+
+    },
+    "Clean Up Orphaned Assignments" : {
+
+    },
+    "Clean Up Sharing Data" : {
+
+    },
+    "Cleanup Complete!" : {
+
+    },
+    "Cleanup Tools" : {
+
+    },
+    "Clear" : {
+
+    },
+    "Clear All" : {
+
+    },
+    "Clear All Filters" : {
+
+    },
+    "Clear All Links" : {
+
+    },
+    "Clear All Links?" : {
+
+    },
+    "Clear Diagnostic Log?" : {
+
+    },
+    "Clear Log" : {
+
+    },
+    "Clear Log File" : {
+
+    },
+    "Clear Recovery History" : {
+
+    },
+    "Clear Recovery History?" : {
+
+    },
+    "Clear Resolved" : {
+
+    },
+    "Clear search" : {
+
+    },
+    "Clear Search" : {
+
+    },
+    "Close" : {
+
+    },
+    "CloudKit Container" : {
+
+    },
+    "CloudKit container access is needed for community sharing." : {
+
+    },
+    "CloudKit Container Validator" : {
+
+    },
+    "CloudKit Diagnostics" : {
+
+    },
+    "CloudKit Enabled" : {
+
+    },
+    "CloudKit is restricted on this device." : {
+
+    },
+    "CloudKit Not Active" : {
+
+    },
+    "CloudKit Status" : {
+
+    },
+    "Color Theme" : {
+
+    },
+    "Combine the Best Parts" : {
+
+    },
+    "Combined Recipe" : {
+
+    },
+    "Common high FODMAP foods and their low FODMAP alternatives" : {
+
+    },
+    "Common High FODMAP Foods:" : {
+
+    },
+    "Common sources:" : {
+
+    },
+    "Community & CloudKit Management" : {
+
+    },
+    "Community Recipes" : {
+
+    },
+    "Community Sharing Help" : {
+
+    },
+    "Community Sharing Maintenance" : {
+
+    },
+    "Community Sharing Setup" : {
+
+    },
+    "Compare Original vs Processed" : {
+
+    },
+    "Compare Recipes" : {
+
+    },
+    "Compare Side-by-Side" : {
+
+    },
+    "Comparison Mode" : {
+
+    },
+    "Compatibility Score" : {
+
+    },
+    "Confidence: %lld%%" : {
+
+    },
+    "Configured" : {
+
+    },
+    "Confirm" : {
+
+    },
+    "Connect to the internet and try again." : {
+      "comment" : "Error message: offline"
+    },
+    "Connected to the shared library" : {
+
+    },
+    "Connection Status" : {
+
+    },
+    "Consider reinstalling the app if issues persist" : {
+
+    },
+    "Container Access" : {
+
+    },
+    "Container access failed → Check entitlements in Xcode" : {
+
+    },
+    "Container access works → Entitlements are correct!" : {
+
+    },
+    "Container Configuration" : {
+
+    },
+    "Container Details" : {
+
+    },
+    "Container ID" : {
+
+    },
+    "Container Identifiers" : {
+
+    },
+    "Container Identifiers:" : {
+
+    },
+    "Container Validation" : {
+
+    },
+    "Content Filter" : {
+
+    },
+    "Content Type" : {
+
+    },
+    "Continue" : {
+
+    },
+    "Continue in Background" : {
+
+    },
+    "Continue Reading" : {
+
+    },
+    "Cooking" : {
+
+    },
+    "Cooking Mode" : {
+
+    },
+    "Cooking Mode Tips" : {
+
+    },
+    "Cooking Time" : {
+
+    },
+    "Copy Configuration" : {
+
+    },
+    "Copy Diagnostics to Clipboard" : {
+
+    },
+    "Copy Full Report" : {
+
+    },
+    "Copy Status to Clipboard" : {
+
+    },
+    "Copy URL" : {
+
+    },
+    "Corrected:" : {
+
+    },
+    "Could not load container information" : {
+
+    },
+    "Could not read database" : {
+
+    },
+    "Could not retrieve ingredients from source." : {
+
+    },
+    "Could not retrieve instructions from source." : {
+
+    },
+    "Counts" : {
+
+    },
+    "Course (e.g., Main, Side, Salad)" : {
+
+    },
+    "Courses" : {
+
+    },
+    "Cover" : {
+
+    },
+    "Cover Image" : {
+
+    },
+    "Covers" : {
+
+    },
+    "Covers & Pictures (%lld)" : {
+
+    },
+    "Create" : {
+
+    },
+    "Create a meal to plan multiple recipes together — like a main, a side, and a salad." : {
+
+    },
+    "Create a profile first to set nutritional goals" : {
+
+    },
+    "Create a profile to track your food sensitivities and get recipe safety scores." : {
+
+    },
+    "Create Book" : {
+
+    },
+    "Create First Book" : {
+
+    },
+    "Create Meal" : {
+
+    },
+    "Create New Book" : {
+
+    },
+    "Create Recipe" : {
+
+    },
+    "Create User Identity" : {
+
+    },
+    "Created: %@" : {
+
+    },
+    "Creates a backup file containing %lld RecipeX recipes with their images and CloudKit data." : {
+
+    },
+    "Creates a backup of %lld Books with CloudKit sync data." : {
+
+    },
+    "Crop" : {
+
+    },
+    "Crop & Use" : {
+
+    },
+    "Crop Before Extraction?" : {
+
+    },
+    "Crop Each Image" : {
+
+    },
+    "Crop each image before extraction" : {
+
+    },
+    "Cropping Options" : {
+
+    },
+    "Cuisine (Optional)" : {
+
+    },
+    "CURRENT" : {
+
+    },
+    "Current (%lld)" : {
+
+    },
+    "Current Database" : {
+
+    },
+    "Current Library" : {
+
+    },
+    "Current Recipe" : {
+
+    },
+    "Current Status" : {
+
+    },
+    "Current Version" : {
+
+    },
+    "Current Version Entry Match" : {
+
+    },
+    "Currently Extracting:" : {
+
+    },
+    "Daily Targets" : {
+
+    },
+    "Database Diagnostics" : {
+
+    },
+    "Database Investigation" : {
+
+    },
+    "Database is clean" : {
+
+    },
+    "Database Maintenance" : {
+
+    },
+    "Database Recovery" : {
+
+    },
+    "Database Report" : {
+
+    },
+    "Database Size:" : {
+
+    },
+    "Database Statistics" : {
+
+    },
+    "Date Added" : {
+
+    },
+    "Day" : {
+
+    },
+    "Debug Info" : {
+
+    },
+    "Debug Shared Recipes" : {
+
+    },
+    "Decline" : {
+
+    },
+    "Decline License Agreement" : {
+
+    },
+    "Delete" : {
+
+    },
+    "Delete %lld Recipe%@…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Delete %1$lld Recipe%2$@…"
+          }
+        }
+      }
+    },
+    "Delete a Book Recipe (Admin)…" : {
+
+    },
+    "Delete All" : {
+
+    },
+    "Delete All Duplicates" : {
+
+    },
+    "Delete All Empty Recipes" : {
+
+    },
+    "Delete All Orphaned (%lld)" : {
+
+    },
+    "Delete All Orphaned Recipe Books?" : {
+
+    },
+    "Delete All Orphaned Recipes?" : {
+
+    },
+    "Delete Book Recipe" : {
+
+    },
+    "Delete Duplicates?" : {
+
+    },
+    "Delete Empty Recipes" : {
+
+    },
+    "Delete Image" : {
+
+    },
+    "Delete Orphans Not on This Device (%lld)" : {
+
+    },
+    "Delete Recipe" : {
+
+    },
+    "Delete Recipes" : {
+
+    },
+    "Delete Recipes Added on a Day" : {
+
+    },
+    "Delete Recipes Added on a Day (Admin)…" : {
+
+    },
+    "Delete Section" : {
+
+    },
+    "Deleted by its owner; kept on this device" : {
+
+    },
+    "Deleted by their owners (kept here)" : {
+
+    },
+    "Deletion Progress" : {
+
+    },
+    "Describe what needs to be done in this step. Be clear and detailed." : {
+
+    },
+    "Description (Optional)" : {
+
+    },
+    "Details" : {
+
+    },
+    "Detected Allergens (%lld)" : {
+
+    },
+    "Detected Build" : {
+
+    },
+    "Detected by Keyword Matching" : {
+
+    },
+    "Detected Version" : {
+
+    },
+    "Detected:" : {
+
+    },
+    "Developer Tools" : {
+
+    },
+    "Development" : {
+
+    },
+    "Device will stay awake" : {
+
+    },
+    "Device will stay awake during extraction" : {
+
+    },
+    "Diabetes Status" : {
+
+    },
+    "diabetes.org" : {
+
+    },
+    "Diabetic-Friendly" : {
+
+    },
+    "Diabetic-Friendly Analysis" : {
+
+    },
+    "Diabetic-friendly analysis is enabled. Recipes can show glycemic load, carb counts, and substitution suggestions." : {
+
+    },
+    "Diabetic-Friendly Features" : {
+
+    },
+    "Diagnose Shared Books" : {
+
+    },
+    "Diagnosis" : {
+
+    },
+    "Diagnostic Log" : {
+
+    },
+    "Diagnostic Log: %@" : {
+
+    },
+    "Diagnostic logs will appear here as you use the app" : {
+
+    },
+    "Diagnostic Report" : {
+
+    },
+    "Diagnostics" : {
+
+    },
+    "Diagnostics (%lld issues)" : {
+
+    },
+    "Diagnostics Actions" : {
+
+    },
+    "Diagnostics Report" : {
+
+    },
+    "Discard Changes" : {
+
+    },
+    "Dish Type" : {
+
+    },
+    "Dismiss" : {
+
+    },
+    "Display Name" : {
+
+    },
+    "Display Options" : {
+
+    },
+    "Done" : {
+
+    },
+    "Downloading Images..." : {
+
+    },
+    "Drag corners to crop" : {
+
+    },
+    "Duplicate Books" : {
+
+    },
+    "Duplicate Detected" : {
+
+    },
+    "Duplicate Detector" : {
+
+    },
+    "Duplicate Groups (%lld)" : {
+
+    },
+    "Duplicate Groups:" : {
+
+    },
+    "Duplicate links will be skipped automatically" : {
+
+    },
+    "Duplicate Recipe Detector" : {
+
+    },
+    "Duplicate Recipes" : {
+
+    },
+    "duplicates" : {
+
+    },
+    "Duplicates" : {
+
+    },
+    "Duplicates Detected" : {
+
+    },
+    "Duplicates Found!" : {
+
+    },
+    "Duration:" : {
+
+    },
+    "e.g., 'All-purpose flour', 'Eggs', 'Olive oil'" : {
+
+    },
+    "e.g., 'For the Dough', 'Sauce Ingredients', or leave blank" : {
+
+    },
+    "e.g., 'Preparing the Dough', 'Baking Instructions', or leave blank" : {
+
+    },
+    "e.g., Serves 4, Makes 12 cookies" : {
+
+    },
+    "Edit" : {
+
+    },
+    "Edit Book" : {
+
+    },
+    "Edit Ingredient" : {
+
+    },
+    "Edit Meal" : {
+
+    },
+    "Edit Note" : {
+
+    },
+    "Edit Recipe" : {
+
+    },
+    "Edit Section" : {
+
+    },
+    "Edit Step" : {
+
+    },
+    "Edit this recipe" : {
+
+    },
+    "Edit your recipe by tapping on any section below. Each part of your recipe can be edited in its own dedicated view." : {
+
+    },
+    "Elapsed" : {
+
+    },
+    "Elapsed Time" : {
+
+    },
+    "Email" : {
+
+    },
+    "Empty Book" : {
+
+    },
+    "Empty Recipe Cleanup" : {
+
+    },
+    "Empty Recipes Found (%lld)" : {
+
+    },
+    "Empty; current book “%@” has %lld recipes" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Empty; current book “%1$@” has %2$lld recipes"
+          }
+        }
+      }
+    },
+    "Enable cooking time filter" : {
+
+    },
+    "Enable Diabetic-Friendly Analysis" : {
+
+    },
+    "Enable FODMAP Features" : {
+
+    },
+    "Enable Image Preprocessing" : {
+
+    },
+    "Enable to automatically sync community recipes and books in the background. You can still browse and manually sync when disabled." : {
+
+    },
+    "Enhance Image for OCR" : {
+
+    },
+    "Enhance Your Recipe" : {
+
+    },
+    "Enhanced Analysis" : {
+
+    },
+    "Enjoy!" : {
+
+    },
+    "Enter a valid API key to enable network recipe features." : {
+
+    },
+    "Enter API Key" : {
+
+    },
+    "Enter Claude Key" : {
+      "comment" : "Button: opens the Claude API key screen"
+    },
+    "Enter new API key" : {
+
+    },
+    "Enter Recipe URL" : {
+
+    },
+    "Enter recipe-api.com key" : {
+
+    },
+    "Enter the amount and unit (e.g., '2' 'cups', '1' 'tablespoon')" : {
+
+    },
+    "Enter Your API Key" : {
+
+    },
+    "Entitlements" : {
+
+    },
+    "Environment:" : {
+
+    },
+    "Error" : {
+
+    },
+    "Error: %@" : {
+
+    },
+    "Errors (%lld)" : {
+
+    },
+    "Essential Details" : {
+
+    },
+    "Every recipe is already in a book. Turn on \"Include recipes already in other books\" to see them." : {
+
+    },
+    "Every recipe, book and meal in Reczipes is shared with everyone who uses the app, automatically — new ones, and edits too. There is nothing to turn on or off." : {
+
+    },
+    "Every recipe, book and meal is shared with everyone who uses Reczipes, automatically." : {
+
+    },
+    "Everything is shared with everyone" : {
+
+    },
+    "Example duplicates:" : {
+
+    },
+    "Execute Cleanup" : {
+
+    },
+    "Execute Full Cleanup" : {
+
+    },
+    "Existing" : {
+
+    },
+    "Existing Recipe" : {
+
+    },
+    "Existing users: Your sharing should continue to work normally." : {
+
+    },
+    "Exit App" : {
+
+    },
+    "Expected Results" : {
+
+    },
+    "Export" : {
+
+    },
+    "Export a single book to share with others or backup separately." : {
+
+    },
+    "Export All Books" : {
+
+    },
+    "Export All Meals to JSON" : {
+
+    },
+    "Export Book" : {
+
+    },
+    "Export Diagnostic Logs" : {
+
+    },
+    "Export Failed" : {
+
+    },
+    "Export for Analysis" : {
+
+    },
+    "Export Individual Books" : {
+
+    },
+    "Export ingredient list to Apple Reminders" : {
+
+    },
+    "Export Investigation Report" : {
+
+    },
+    "Export Problem Recipe for Analysis" : {
+
+    },
+    "Export ready" : {
+
+    },
+    "Export Recipe Book" : {
+
+    },
+    "Export Recipes" : {
+
+    },
+    "Export Report" : {
+
+    },
+    "Export Successful" : {
+
+    },
+    "Export with Images" : {
+
+    },
+    "Export without Images" : {
+
+    },
+    "Exporting All Books..." : {
+
+    },
+    "Exporting Recipe Book..." : {
+
+    },
+    "Exporting..." : {
+
+    },
+    "Extra Copies:" : {
+
+    },
+    "EXTRA COPY" : {
+
+    },
+    "Extra Stored Copies:" : {
+
+    },
+    "Extract" : {
+
+    },
+    "Extract All" : {
+
+    },
+    "Extract All (Legacy)" : {
+
+    },
+    "Extract Another" : {
+
+    },
+    "Extract from a recipe website" : {
+
+    },
+    "Extract from Image" : {
+
+    },
+    "Extract from saved links" : {
+
+    },
+    "Extract multiple recipes from Photos library" : {
+
+    },
+    "Extract Recipe" : {
+
+    },
+    "Extract Recipe from URL" : {
+
+    },
+    "Extract recipes first before assigning images" : {
+
+    },
+    "Extracted" : {
+
+    },
+    "Extracted %lld recipe%@ successfully%@." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Extracted %1$lld recipe%2$@ successfully%3$@."
+          }
+        }
+      }
+    },
+    "Extracted Successfully" : {
+
+    },
+    "Extracted:" : {
+
+    },
+    "Extracted: %@" : {
+
+    },
+    "Extracting From:" : {
+
+    },
+    "Extracting recipe data..." : {
+
+    },
+    "Extracting Recipes" : {
+
+    },
+    "Extracting..." : {
+
+    },
+    "Extraction Errors" : {
+
+    },
+    "Extraction in Progress" : {
+
+    },
+    "Extraction Provider" : {
+
+    },
+    "Extraction will continue if you close this screen" : {
+
+    },
+    "Failed" : {
+
+    },
+    "Failed to import: %@" : {
+
+    },
+    "Failed to load" : {
+
+    },
+    "Failed to Load" : {
+
+    },
+    "Failed to validate API key" : {
+
+    },
+    "Feature is completely opt-in" : {
+
+    },
+    "Fetch Dinner Sample (/api/v1/dinner)" : {
+
+    },
+    "Fetching from source..." : {
+
+    },
+    "File System Details" : {
+
+    },
+    "File Validated Successfully" : {
+
+    },
+    "Files (iCloud Drive)" : {
+
+    },
+    "Files Deleted:" : {
+
+    },
+    "Filter" : {
+
+    },
+    "Filter by author..." : {
+
+    },
+    "Filter Recipes" : {
+
+    },
+    "Find a Recipe" : {
+
+    },
+    "Find a setting or tool (e.g. duplicates, backup, API key)" : {
+
+    },
+    "Find Duplicate Books" : {
+
+    },
+    "Find Duplicates" : {
+
+    },
+    "Find Old Public Book Copies" : {
+
+    },
+    "Find recipes that can be prepared within a specific time" : {
+
+    },
+    "Find: %@" : {
+
+    },
+    "First, we'll validate the file for errors" : {
+
+    },
+    "Fix" : {
+
+    },
+    "FODMAP" : {
+
+    },
+    "FODMAP Analysis" : {
+
+    },
+    "FODMAP analysis is based on research from Monash University, the creators of the Low FODMAP Diet. For the most accurate and up-to-date information, consult a registered dietitian and visit the official Monash FODMAP app." : {
+
+    },
+    "FODMAP Categories" : {
+
+    },
+    "FODMAP Cheat Sheet" : {
+
+    },
+    "FODMAP Friendly Options" : {
+
+    },
+    "FODMAP Guide" : {
+
+    },
+    "FODMAP Level" : {
+
+    },
+    "FODMAP Quick Reference" : {
+
+    },
+    "FODMAP Sensitivity" : {
+
+    },
+    "FODMAP Settings" : {
+
+    },
+    "FODMAP stands for Fermentable Oligosaccharides, Disaccharides, Monosaccharides And Polyols" : {
+
+    },
+    "FODMAP Substitute" : {
+
+    },
+    "FODMAP substitute available" : {
+
+    },
+    "FODMAP Substitutions" : {
+
+    },
+    "FODMAPs are types of carbohydrates that can trigger digestive symptoms in sensitive individuals:" : {
+
+    },
+    "Food Sensitivities" : {
+
+    },
+    "For Sync to Work:" : {
+
+    },
+    "Force Sync Check" : {
+
+    },
+    "Found %lld duplicate recipes. Would you like to clean them up?" : {
+
+    },
+    "Found in:" : {
+
+    },
+    "Found in: %@" : {
+
+    },
+    "Found Issues" : {
+
+    },
+    "from %@" : {
+
+    },
+    "From %@" : {
+
+    },
+    "From Files" : {
+
+    },
+    "From Files (iCloud Drive)" : {
+
+    },
+    "From Files/iCloud Drive" : {
+
+    },
+    "From Photos" : {
+
+    },
+    "From Photos Library" : {
+
+    },
+    "From your library (%lld)" : {
+
+    },
+    "From: %@" : {
+
+    },
+    "Full Cleanup" : {
+
+    },
+    "Full Report" : {
+
+    },
+    "Full String" : {
+
+    },
+    "General" : {
+
+    },
+    "Generates a JSON file containing all %lld meal%@ in your library, including each course's recipe link. The file can be re-imported here to restore your meals." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Generates a JSON file containing all %1$lld meal%2$@ in your library, including each course's recipe link. The file can be re-imported here to restore your meals."
+          }
+        }
+      }
+    },
+    "Get AI-powered suggestions to improve content placement." : {
+
+    },
+    "Get Claude API Key" : {
+
+    },
+    "Get Recipe API Key" : {
+
+    },
+    "Get Started" : {
+
+    },
+    "Getting Started" : {
+
+    },
+    "Give your recipe a memorable name" : {
+
+    },
+    "Glossary" : {
+
+    },
+    "Glossary (Optional)" : {
+
+    },
+    "Glycemic Impact" : {
+
+    },
+    "Glycemic load indicators help assess blood sugar impact. High GI highlights warn about ingredients that may cause rapid glucose spikes. Auto-expand shows all guidance details by default." : {
+
+    },
+    "Goal Template" : {
+
+    },
+    "Grant Access" : {
+
+    },
+    "Has Image" : {
+
+    },
+    "Has Ingredients" : {
+
+    },
+    "Header Notes" : {
+
+    },
+    "Header notes (optional)" : {
+
+    },
+    "Health Alerts" : {
+
+    },
+    "Health Considerations" : {
+
+    },
+    "Healthier Alternatives" : {
+
+    },
+    "Heart Health Limits" : {
+
+    },
+    "Help" : {
+
+    },
+    "Helpful Tips" : {
+
+    },
+    "Hidden" : {
+
+    },
+    "Hidden Allergens (AI-Detected)" : {
+
+    },
+    "Hide" : {
+
+    },
+    "Hide Details" : {
+
+    },
+    "High FODMAP Ingredients Detected" : {
+
+    },
+    "Highlight high GI ingredients" : {
+
+    },
+    "How does it work?" : {
+
+    },
+    "How iCloud Sync Works" : {
+
+    },
+    "How It Works" : {
+
+    },
+    "How many servings or portions does this recipe make?" : {
+
+    },
+    "How should this ingredient be prepared? (e.g., 'diced', 'beaten', 'at room temperature')" : {
+
+    },
+    "How Sync Works" : {
+
+    },
+    "How to Make It" : {
+
+    },
+    "How to Set Up" : {
+
+    },
+    "https://example.com/recipe" : {
+
+    },
+    "I Accept" : {
+
+    },
+    "I accept responsibility for content I use or share" : {
+
+    },
+    "I have read and agree to the terms" : {
+
+    },
+    "I've Signed In - Recheck" : {
+
+    },
+    "iCloud" : {
+
+    },
+    "iCloud Account" : {
+
+    },
+    "iCloud Account Status" : {
+
+    },
+    "iCloud Sync" : {
+
+    },
+    "iCloud Sync: Always On" : {
+
+    },
+    "ID: %@..." : {
+
+    },
+    "Idle" : {
+
+    },
+    "If someone deletes something they shared, it stays on the devices that already have it, marked **User Deleted**. You can remove it from your device yourself." : {
+
+    },
+    "If you experience issues:" : {
+
+    },
+    "If you're new to community sharing, the app will guide you through a quick setup the first time you try to share. This ensures CloudKit is properly configured on your device." : {
+
+    },
+    "Image" : {
+
+    },
+    "Image %lld" : {
+
+    },
+    "Image Comparison" : {
+
+    },
+    "Image Debug" : {
+
+    },
+    "Image Name:" : {
+
+    },
+    "Image Viewer" : {
+
+    },
+    "Images" : {
+
+    },
+    "Images Selected" : {
+
+    },
+    "Images will be processed as-is up to 10 at a time" : {
+
+    },
+    "Images: %lld/%lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Images: %1$lld/%2$lld"
+          }
+        }
+      }
+    },
+    "Import" : {
+
+    },
+    "Import / Export" : {
+
+    },
+    "Import a .bookbackup file. The books and all their data will be added to your library." : {
+
+    },
+    "Import a recipe book from a .recipebook file shared from another device" : {
+
+    },
+    "Import Book" : {
+
+    },
+    "Import Book Package…" : {
+
+    },
+    "Import Bundled Meal Plans" : {
+
+    },
+    "Import Complete" : {
+
+    },
+    "Import Failed" : {
+
+    },
+    "Import From File" : {
+
+    },
+    "Import from JSON" : {
+
+    },
+    "Import from JSON File" : {
+
+    },
+    "Import from Other Location" : {
+
+    },
+    "Import Glossary JSON…" : {
+
+    },
+    "Import Links" : {
+
+    },
+    "Import links from 'links_from_notes.json' in your app bundle" : {
+
+    },
+    "Import Links from JSON" : {
+
+    },
+    "Import links from JSON to batch extract later" : {
+
+    },
+    "Import Mode" : {
+
+    },
+    "Import Modes:" : {
+
+    },
+    "Import Recipe" : {
+
+    },
+    "Import Recipe Book" : {
+
+    },
+    "Import Recipe Links" : {
+
+    },
+    "Import recipe links from your JSON file to get started" : {
+
+    },
+    "Import recipe links from your JSON file, then extract them all at once." : {
+
+    },
+    "Import recipes from a backup file (.reczipes)." : {
+
+    },
+    "Import Successful" : {
+
+    },
+    "Import Successful!" : {
+
+    },
+    "Import the recipe's notes along with ingredients and instructions" : {
+
+    },
+    "Import to My Recipes" : {
+
+    },
+    "Imported **%@** with %lld recipes." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Imported **%1$@** with %2$lld recipes."
+          }
+        }
+      }
+    },
+    "Importing Book Package…" : {
+
+    },
+    "Importing book..." : {
+
+    },
+    "Importing Recipe Book..." : {
+
+    },
+    "Importing..." : {
+
+    },
+    "Imports the meal-plan list that ships with the app. Meals whose names already exist in your library are skipped." : {
+
+    },
+    "Improvements Suggested" : {
+
+    },
+    "in %@" : {
+
+    },
+    "in %lld books" : {
+
+    },
+    "In %lld recipe book%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "In %1$lld recipe book%2$@"
+          }
+        }
+      }
+    },
+    "IN A BOOK — PROTECTED" : {
+
+    },
+    "In Recipe Books" : {
+
+    },
+    "In This Book (%lld)" : {
+
+    },
+    "Include Notes" : {
+
+    },
+    "Include recipes already in other books" : {
+
+    },
+    "Information" : {
+
+    },
+    "Information & Guidelines" : {
+
+    },
+    "Informational Only" : {
+
+    },
+    "Ingredient" : {
+
+    },
+    "Ingredient Name" : {
+
+    },
+    "Ingredients" : {
+
+    },
+    "Ingredients:" : {
+
+    },
+    "Initialize Database" : {
+
+    },
+    "Inline indicators show a warning next to high FODMAP ingredients. Auto-expand shows all substitution details by default." : {
+
+    },
+    "Inspect raw recipe data for debugging" : {
+
+    },
+    "Inspect Recipe Data" : {
+
+    },
+    "Instead of %@:" : {
+
+    },
+    "Instructions" : {
+
+    },
+    "Instructions:" : {
+
+    },
+    "Interior" : {
+
+    },
+    "Intolerances" : {
+
+    },
+    "Investigating Database Files..." : {
+
+    },
+    "Investigation Failed" : {
+
+    },
+    "Investigation Summary" : {
+
+    },
+    "Issues" : {
+
+    },
+    "Issues detected in database" : {
+
+    },
+    "Issues Found:" : {
+
+    },
+    "It is in these books" : {
+
+    },
+    "It's stored securely in the Keychain." : {
+
+    },
+    "Its owner deleted this %@. It stays on this device until you remove it." : {
+
+    },
+    "Keep" : {
+
+    },
+    "KEEP" : {
+
+    },
+    "Keep Awake" : {
+
+    },
+    "Keep Both" : {
+
+    },
+    "Keep Editing" : {
+
+    },
+    "Keep Existing Only" : {
+
+    },
+    "Keep oldest" : {
+
+    },
+    "Keep This" : {
+
+    },
+    "Keep This Copy?" : {
+
+    },
+    "KEEP THIS ONE ✓" : {
+
+    },
+    "Keeps '%@' (%@) and removes the other %@. Every book that lists a removed copy already lists the kept one, so each book still has this recipe, once. Website copies of removed copies are taken down and shared books are refreshed. Can't be undone." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Keeps '%1$@' (%2$@) and removes the other %3$@. Every book that lists a removed copy already lists the kept one, so each book still has this recipe, once. Website copies of removed copies are taken down and shared books are refreshed. Can't be undone."
+          }
+        }
+      }
+    },
+    "Keeps '%@' and removes the other copies in this group that are in no book. Copies that are in a book are never removed. Website copies of removed copies are taken down." : {
+
+    },
+    "Key Length:" : {
+
+    },
+    "Key will be saved directly without contacting recipe-api.com." : {
+
+    },
+    "Keys are validated with the matching provider before saving to Keychain." : {
+
+    },
+    "Kind" : {
+
+    },
+    "Last Attempt" : {
+
+    },
+    "Last checked" : {
+
+    },
+    "Last checked: %@" : {
+
+    },
+    "Last Sync Reset" : {
+
+    },
+    "Last synced: %@ ago" : {
+
+    },
+    "Last updated: %@" : {
+
+    },
+    "Last updated: %@ ago" : {
+
+    },
+    "Latest Result" : {
+
+    },
+    "Learn More at Monash University" : {
+
+    },
+    "Legacy Recipe" : {
+
+    },
+    "Legal" : {
+
+    },
+    "Level" : {
+
+    },
+    "Library" : {
+
+    },
+    "License Agreement" : {
+
+    },
+    "Lists every recipe added on one day (optionally before a time). Untick any you want to keep. Recipes in books are removed from their books first, then everything ticked is permanently deleted. Use this only to discard a bad batch extraction." : {
+
+    },
+    "Loading community recipe books..." : {
+
+    },
+    "Loading community recipes..." : {
+
+    },
+    "Loading container info..." : {
+
+    },
+    "Loading Images from Files" : {
+
+    },
+    "Loading log file..." : {
+
+    },
+    "Loading log..." : {
+
+    },
+    "Loading photos..." : {
+
+    },
+    "Loading recipe..." : {
+
+    },
+    "Loading recipes..." : {
+
+    },
+    "Loading your sharing information..." : {
+
+    },
+    "Loading..." : {
+
+    },
+    "Local Data" : {
+
+    },
+    "Log File" : {
+
+    },
+    "Log file size: %@" : {
+
+    },
+    "Logging Categories (%lld of %lld)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Logging Categories (%1$lld of %2$lld)"
+          }
+        }
+      }
+    },
+    "Logging Level" : {
+
+    },
+    "Logging Settings" : {
+
+    },
+    "Low FODMAP Alternatives" : {
+
+    },
+    "Macronutrients" : {
+
+    },
+    "MAIN" : {
+
+    },
+    "Main Image" : {
+
+    },
+    "Main image + %lld more" : {
+
+    },
+    "Main recipe image" : {
+
+    },
+    "Make the most of your cooking experience" : {
+
+    },
+    "Manage Claude API Key" : {
+
+    },
+    "Manage CloudKit Recipe Books" : {
+
+    },
+    "Manage CloudKit Recipes" : {
+
+    },
+    "Manage Links" : {
+
+    },
+    "Manage Public Shares" : {
+
+    },
+    "Manage Recipes" : {
+
+    },
+    "Manage Recipes…" : {
+
+    },
+    "Marked Not the Same" : {
+
+    },
+    "Match Details" : {
+
+    },
+    "Match Found!" : {
+
+    },
+    "Matched keywords: %@" : {
+
+    },
+    "Maximum 50 recipes per batch" : {
+
+    },
+    "Maximum: %lld minutes" : {
+
+    },
+    "Mayo Clinic - Diabetes" : {
+
+    },
+    "mayoclinic.org" : {
+
+    },
+    "Meal" : {
+
+    },
+    "Meal Name" : {
+
+    },
+    "Meals" : {
+
+    },
+    "Meals (%lld)" : {
+
+    },
+    "Meals from others" : {
+
+    },
+    "Medical Disclaimer" : {
+
+    },
+    "Merge" : {
+
+    },
+    "Merge %lld Copies" : {
+
+    },
+    "Merge Books" : {
+
+    },
+    "Merge Copies in the Same Book?" : {
+
+    },
+    "Merge Copies in the Same Book…" : {
+
+    },
+    "Merge Exact Copies" : {
+
+    },
+    "Merge Exact Copies?" : {
+
+    },
+    "Merge Into Kept Book" : {
+
+    },
+    "Merge Recipes" : {
+
+    },
+    "Merging…" : {
+
+    },
+    "Metadata" : {
+
+    },
+    "Metric Amount" : {
+
+    },
+    "Metric Conversion (Optional)" : {
+
+    },
+    "Metric Unit" : {
+
+    },
+    "Mine tab" : {
+
+    },
+    "Misplaced Content" : {
+
+    },
+    "Modified: %@" : {
+
+    },
+    "Monash FODMAP Research" : {
+
+    },
+    "Monash University Guidance" : {
+
+    },
+    "Monitoring sync activity..." : {
+
+    },
+    "More" : {
+
+    },
+    "More Options..." : {
+
+    },
+    "My CloudKit Recipe Books" : {
+
+    },
+    "My CloudKit Recipes" : {
+
+    },
+    "My Meals" : {
+
+    },
+    "My Public Shares" : {
+
+    },
+    "My Shared Content" : {
+
+    },
+    "Name" : {
+
+    },
+    "New" : {
+
+    },
+    "New Book" : {
+
+    },
+    "New Meal" : {
+
+    },
+    "New Profile" : {
+
+    },
+    "New Recipe" : {
+
+    },
+    "New to Cooking Mode?" : {
+
+    },
+    "Next" : {
+
+    },
+    "Next %lld images will be processed" : {
+
+    },
+    "Next sync in %llds" : {
+
+    },
+    "No\nImage" : {
+
+    },
+    "No additional images" : {
+
+    },
+    "No Allergen Profiles" : {
+
+    },
+    "No allergens detected" : {
+
+    },
+    "No allergens detected based on your profile" : {
+
+    },
+    "No allergens detected by keyword matching" : {
+
+    },
+    "No answer arrived in time. Check your connection and try again." : {
+      "comment" : "Error message: timed out"
+    },
+    "No API key configured" : {
+
+    },
+    "No assignments found!" : {
+
+    },
+    "No backups found" : {
+
+    },
+    "No Books Found" : {
+
+    },
+    "No books to export" : {
+
+    },
+    "No Community Recipe Books" : {
+
+    },
+    "No courses yet. Tap Edit to add some." : {
+
+    },
+    "No Data" : {
+
+    },
+    "No database recovery needed. Your recipes are in the correct location." : {
+
+    },
+    "No Diabetes" : {
+
+    },
+    "No diagnostics available" : {
+
+    },
+    "No Duplicates Found" : {
+
+    },
+    "No Duplicates!" : {
+
+    },
+    "No glossary" : {
+
+    },
+    "No Goals" : {
+
+    },
+    "No Image" : {
+
+    },
+    "No images available" : {
+
+    },
+    "No ingredients available" : {
+
+    },
+    "No ingredients found" : {
+
+    },
+    "No Ingredients Yet" : {
+
+    },
+    "No instructions available" : {
+
+    },
+    "No instructions found" : {
+
+    },
+    "No Instructions Yet" : {
+
+    },
+    "No Links" : {
+
+    },
+    "No links match your search or filter" : {
+
+    },
+    "No logs yet" : {
+
+    },
+    "No main image · %lld additional" : {
+
+    },
+    "No Match Found!" : {
+
+    },
+    "No Matching Meals" : {
+
+    },
+    "No matching recipes" : {
+
+    },
+    "No meals to export yet. Add or import some meals first." : {
+
+    },
+    "No Meals Yet" : {
+
+    },
+    "No More Recipes" : {
+
+    },
+    "No Notes Yet" : {
+
+    },
+    "No notes yet. Add cooking tips, substitutions, or important reminders." : {
+
+    },
+    "No old copies: every public book of yours is a book in this library." : {
+
+    },
+    "No personal health data or diabetic status stored" : {
+
+    },
+    "No Photos Found" : {
+
+    },
+    "No Pictures" : {
+
+    },
+    "No Profile" : {
+
+    },
+    "No profile selected - tap to choose" : {
+
+    },
+    "No recipe" : {
+
+    },
+    "No recipe books have been shared by the community yet. Be the first to share!" : {
+
+    },
+    "No Recipe Books in CloudKit" : {
+
+    },
+    "No Recipes" : {
+
+    },
+    "No Recipes Available" : {
+
+    },
+    "No recipes available or all added" : {
+
+    },
+    "No Recipes Found" : {
+
+    },
+    "No recipes match '%@'" : {
+
+    },
+    "No Recipes Yet" : {
+
+    },
+    "No Saved Links" : {
+
+    },
+    "No scan performed yet" : {
+
+    },
+    "No settings match \"%@\"" : {
+
+    },
+    "No Shared Content" : {
+
+    },
+    "No Shared Recipes" : {
+
+    },
+    "No single current book holds all its recipes" : {
+
+    },
+    "No tracking of which recipes you analyze" : {
+
+    },
+    "No two of your books share a name." : {
+
+    },
+    "No Version History" : {
+
+    },
+    "None" : {
+
+    },
+    "Not Analyzed" : {
+
+    },
+    "Not Available" : {
+
+    },
+    "Not downloaded yet" : {
+
+    },
+    "Not in the shared library" : {
+
+    },
+    "Not Now" : {
+      "comment" : "Button: dismisses an error"
+    },
+    "Not set" : {
+
+    },
+    "Not Set" : {
+
+    },
+    "Not the Same Recipe — Keep All" : {
+
+    },
+    "Not yet linked to a recipe" : {
+
+    },
+    "Note" : {
+
+    },
+    "Note Content" : {
+
+    },
+    "Note text" : {
+
+    },
+    "Note Type" : {
+
+    },
+    "Notes" : {
+
+    },
+    "Notes (Optional)" : {
+
+    },
+    "Notes & Tips" : {
+
+    },
+    "Nothing in your library matches \"%@\"." : {
+
+    },
+    "Nutritional Fit" : {
+
+    },
+    "Nutritional Goals" : {
+
+    },
+    "Nutritional Goals View" : {
+
+    },
+    "Nutritional Information" : {
+
+    },
+    "Nutritional values are estimated" : {
+
+    },
+    "Nutritional values are estimated based on ingredients" : {
+
+    },
+    "of %lld" : {
+
+    },
+    "OK" : {
+
+    },
+    "Old copy: %lld recipes, shared %@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Old copy: %1$lld recipes, shared %2$@"
+          }
+        }
+      }
+    },
+    "Old Database" : {
+
+    },
+    "Old Public Book Copies" : {
+
+    },
+    "One recipe across several pages, from files (in file-name order)" : {
+
+    },
+    "Only recipes added before a time" : {
+
+    },
+    "Only the same recipe stored more than once under one ID. Keeps the most complete copy and removes only identical extras; copies whose content differs are kept for you to review." : {
+
+    },
+    "Open Anthropic API Keys" : {
+      "comment" : "Link to the Anthropic console key page"
+    },
+    "Open Anthropic Billing" : {
+      "comment" : "Button: opens the Anthropic billing page"
+    },
+    "Open CloudKit Dashboard" : {
+
+    },
+    "Open iCloud Settings" : {
+
+    },
+    "Open in Browser" : {
+
+    },
+    "Open Screen Time Settings" : {
+
+    },
+    "Open Settings" : {
+
+    },
+    "Open Setup & Diagnostics" : {
+
+    },
+    "Open step-by-step cooking mode for this recipe" : {
+
+    },
+    "Opens a Google search for \"%@ recipe\". Long-press a link in Safari to copy the URL, then come back here and paste it below to extract the recipe." : {
+
+    },
+    "Optional - Steps will be numbered automatically if left blank" : {
+
+    },
+    "Optional notes (drinks, occasion, etc.)" : {
+
+    },
+    "Original" : {
+
+    },
+    "Original Order" : {
+
+    },
+    "Original:" : {
+
+    },
+    "Original: %@" : {
+
+    },
+    "Orphaned Assignments" : {
+
+    },
+    "Orphaned Assignments:" : {
+
+    },
+    "Orphaned Recipe Books" : {
+
+    },
+    "Orphaned Recipes" : {
+
+    },
+    "Other" : {
+
+    },
+    "Overall Assessment" : {
+
+    },
+    "Overall Progress" : {
+
+    },
+    "Overall Safety" : {
+
+    },
+    "Overwrite" : {
+
+    },
+    "Page %lld" : {
+
+    },
+    "Page Files" : {
+
+    },
+    "Pages" : {
+
+    },
+    "Paste" : {
+
+    },
+    "Paste a current key from your Anthropic account below, then tap Update API Key." : {
+      "comment" : "Shown on the API key screen when an error sent the user here"
+    },
+    "Paste a recipe URL above, then tap Send to open it in the Extract tab. The Extract tab will pre-fill the URL ready for one-tap extraction." : {
+
+    },
+    "Pause" : {
+
+    },
+    "Pending" : {
+
+    },
+    "Percentage of Daily Goals" : {
+
+    },
+    "Photo Library Access" : {
+
+    },
+    "Photo Library Access Denied" : {
+
+    },
+    "Photos Library" : {
+
+    },
+    "Pick a meal-plan JSON file from Files or iCloud Drive. Use the bundled file as a template for the expected format." : {
+
+    },
+    "Pick from My Recipes" : {
+
+    },
+    "Pick Recipe" : {
+
+    },
+    "Pick sections to use:" : {
+
+    },
+    "Pictures" : {
+
+    },
+    "Please configure your Claude API key in Settings" : {
+
+    },
+    "Please configure your Claude API key in Settings to use batch extraction" : {
+
+    },
+    "Please enable photo library access in Settings to assign images to recipes" : {
+
+    },
+    "Please read the following terms carefully before using Reczipes." : {
+
+    },
+    "Please restart the app to see your recovered recipes." : {
+
+    },
+    "Please sign in to iCloud to use community sharing features." : {
+
+    },
+    "Please wait" : {
+
+    },
+    "Please wait while we import your recipes and images." : {
+
+    },
+    "Please wait while we reconnect to iCloud..." : {
+
+    },
+    "Portion Guidance" : {
+
+    },
+    "Portion size matters - may be acceptable in small amounts" : {
+
+    },
+    "Possible Data Location Found!" : {
+
+    },
+    "Possible Duplicate" : {
+
+    },
+    "Possible reasons:" : {
+
+    },
+    "Powered by Claude AI" : {
+
+    },
+    "Preparation" : {
+
+    },
+    "Preparation (optional)" : {
+
+    },
+    "Preparation instructions" : {
+
+    },
+    "Preparing image..." : {
+
+    },
+    "Preset" : {
+
+    },
+    "Print Debug Info to Console" : {
+
+    },
+    "Privacy Protection" : {
+
+    },
+    "Processed (Enhanced)" : {
+
+    },
+    "Processing image..." : {
+
+    },
+    "Processing pictures..." : {
+
+    },
+    "Processing recipe..." : {
+
+    },
+    "Processing: %@" : {
+
+    },
+    "Production" : {
+
+    },
+    "Profile Info" : {
+
+    },
+    "Profile Name" : {
+
+    },
+    "Progress" : {
+
+    },
+    "Proposed Corrections" : {
+
+    },
+    "Provide metric measurements for international users" : {
+
+    },
+    "Public copies of books that are no longer in your library (left by a merge). They never update, so the website shows them stale beside the current book. Retiring marks them deleted by you: nothing is removed, and people who already have them keep them, marked User Deleted." : {
+
+    },
+    "Public Copy" : {
+
+    },
+    "Public Sharing Preferences" : {
+
+    },
+    "Public Sharing: Your Choice" : {
+
+    },
+    "Publicly Shared" : {
+
+    },
+    "Published: %@" : {
+
+    },
+    "Qty" : {
+
+    },
+    "Quantity" : {
+
+    },
+    "Quick Actions" : {
+
+    },
+    "Quick Import" : {
+
+    },
+    "Quick Preview" : {
+
+    },
+    "Quick Start" : {
+
+    },
+    "Quick Sync Check" : {
+
+    },
+    "Quota-Safe Tests" : {
+
+    },
+    "rapi_..." : {
+
+    },
+    "Raw JSON" : {
+
+    },
+    "Re-check Status" : {
+
+    },
+    "Re-link %lld to My Library" : {
+
+    },
+    "Re-Track This Recipe" : {
+
+    },
+    "Re-Track This Recipe Book" : {
+
+    },
+    "Ready to sync to other devices" : {
+
+    },
+    "Recent Recovery Failures" : {
+
+    },
+    "Recently Extracted" : {
+
+    },
+    "Recheck Status" : {
+
+    },
+    "Recipe" : {
+
+    },
+    "Recipe %lld of %lld" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Recipe %1$lld of %2$lld"
+          }
+        }
+      }
+    },
+    "Recipe API" : {
+
+    },
+    "Recipe API Key" : {
+
+    },
+    "Recipe API Setup & Test" : {
+
+    },
+    "Recipe API Status" : {
+
+    },
+    "Recipe auto-saved before enhancement" : {
+
+    },
+    "Recipe Book Import" : {
+
+    },
+    "Recipe Books" : {
+
+    },
+    "Recipe Card Preview" : {
+
+    },
+    "Recipe Count" : {
+
+    },
+    "Recipe Data Diagnostic Tool" : {
+
+    },
+    "Recipe Data Diagnostics checks for recipes with missing ingredients or instructions. Delete Empty Recipes removes recipes with no content. Database Maintenance provides comprehensive cleanup tools." : {
+
+    },
+    "Recipe Data Inspector" : {
+
+    },
+    "Recipe Details" : {
+
+    },
+    "Recipe Diagnostics" : {
+
+    },
+    "Recipe Extracted" : {
+
+    },
+    "Recipe Extracted Successfully!" : {
+
+    },
+    "Recipe Extractor" : {
+
+    },
+    "Recipe ID:" : {
+
+    },
+    "Recipe IDs:" : {
+
+    },
+    "Recipe image:" : {
+
+    },
+    "Recipe Images" : {
+
+    },
+    "Recipe Imported" : {
+
+    },
+    "Recipe ingredients and instructions are sent to Claude AI for analysis" : {
+
+    },
+    "Recipe Is in a Book" : {
+
+    },
+    "Recipe Looks Good!" : {
+
+    },
+    "Recipe Mashup" : {
+
+    },
+    "Recipe Modification Tips" : {
+
+    },
+    "Recipe Name" : {
+
+    },
+    "Recipe Saved!" : {
+
+    },
+    "Recipe Title" : {
+
+    },
+    "Recipes" : {
+
+    },
+    "Recipes (%lld of %lld ticked)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Recipes (%1$lld of %2$lld ticked)"
+          }
+        }
+      }
+    },
+    "Recipes (%lld)" : {
+
+    },
+    "Recipes Found!" : {
+
+    },
+    "Recipes from others" : {
+
+    },
+    "Recipes in a book are protected everywhere else. This removes one from its books and deletes it after you type its title." : {
+
+    },
+    "Recipes in Books (%lld)" : {
+
+    },
+    "Recipes in This Book (%lld)" : {
+
+    },
+    "Recipes on this device" : {
+
+    },
+    "Recipes that belong to a book are never deleted anywhere else in the app. Use this only when you are sure. You will have to type the recipe's title to confirm." : {
+
+    },
+    "Recipes to Import" : {
+
+    },
+    "Recipes will be extracted automatically with a 5-second interval between each extraction" : {
+
+    },
+    "RecipeX (CloudKit)" : {
+
+    },
+    "Recommendation" : {
+
+    },
+    "Recommendations:" : {
+
+    },
+    "Recommended Resources" : {
+
+    },
+    "Reconnect to iCloud" : {
+
+    },
+    "Recover My Recipes" : {
+
+    },
+    "Recovering..." : {
+
+    },
+    "Recovery Complete" : {
+
+    },
+    "Recovery Complete!" : {
+
+    },
+    "Recovery History" : {
+
+    },
+    "Reczipes" : {
+
+    },
+    "Reczipes asked for a Claude model your account can't use. Updating the app should fix this." : {
+      "comment" : "Error message: model not found"
+    },
+    "Reference" : {
+
+    },
+    "Reference (optional)" : {
+
+    },
+    "Reference: %@" : {
+
+    },
+    "Refresh" : {
+
+    },
+    "Refresh Account Status" : {
+
+    },
+    "Refresh Count" : {
+
+    },
+    "Refresh from CloudKit" : {
+
+    },
+    "Refresh Info" : {
+
+    },
+    "Refresh Status" : {
+
+    },
+    "Refreshing..." : {
+
+    },
+    "Related Topics" : {
+
+    },
+    "Remaining" : {
+
+    },
+    "Remaining Queue (%lld)" : {
+
+    },
+    "Remove" : {
+
+    },
+    "Remove (%lld)" : {
+
+    },
+    "Remove %lld Extra Copies" : {
+
+    },
+    "Remove %lld Link%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Remove %1$lld Link%2$@"
+          }
+        }
+      }
+    },
+    "Remove %lld Missing Recipe Link%@…" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Remove %1$lld Missing Recipe Link%2$@…"
+          }
+        }
+      }
+    },
+    "Remove %lld recipe%@?" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Remove %1$lld recipe%2$@?"
+          }
+        }
+      }
+    },
+    "Remove Claude API Key" : {
+
+    },
+    "Remove Copy" : {
+
+    },
+    "Remove Duplicates" : {
+
+    },
+    "Remove Extra Stored Copies (%lld)" : {
+
+    },
+    "Remove Extra Stored Copies?" : {
+
+    },
+    "Remove from Books and Delete" : {
+
+    },
+    "Remove from This Device" : {
+
+    },
+    "Remove Glossary" : {
+
+    },
+    "Remove Missing Recipe Links?" : {
+
+    },
+    "Remove Orphaned Recipes" : {
+
+    },
+    "Remove Orphans" : {
+
+    },
+    "Remove Recipe API Key" : {
+
+    },
+    "Remove the Others" : {
+
+    },
+    "Remove This Copy?" : {
+
+    },
+    "Removed:" : {
+
+    },
+    "Removes %lld extra copies that match exactly (same content or same web link), keeping one of each. Copies that are in a book are never removed. Each removed copy's website copy is taken down. Groups matched by title or ingredients are NOT touched — review those one at a time. This cannot be undone." : {
+
+    },
+    "Removes this copy of '%@'. It is in no book. Its website copy is taken down. Can't be undone." : {
+
+    },
+    "Removing duplicates..." : {
+
+    },
+    "Repair" : {
+
+    },
+    "Repair Options" : {
+
+    },
+    "Repair Recipe Book CloudKit IDs" : {
+
+    },
+    "Repair Recipe CloudKit IDs" : {
+
+    },
+    "Repair Sharing Records" : {
+
+    },
+    "Repair Sharing Records?" : {
+
+    },
+    "Replace Existing" : {
+
+    },
+    "Replace existing book if duplicate" : {
+
+    },
+    "Replace Glossary from JSON…" : {
+
+    },
+    "Replace Unavailable" : {
+
+    },
+    "Replace with New" : {
+
+    },
+    "Request Access" : {
+
+    },
+    "Requirements" : {
+
+    },
+    "Rerun Analysis" : {
+
+    },
+    "Reset" : {
+
+    },
+    "Reset Logging Settings" : {
+
+    },
+    "Reset to Defaults" : {
+
+    },
+    "Reset Version Tracking" : {
+
+    },
+    "Resources" : {
+
+    },
+    "Restart App" : {
+
+    },
+    "Restart App Now" : {
+
+    },
+    "Results include source URLs for transparency and verification" : {
+
+    },
+    "Resume" : {
+
+    },
+    "Resume Analysis?" : {
+
+    },
+    "Resume Extraction?" : {
+
+    },
+    "Resume Task?" : {
+
+    },
+    "Retire %lld" : {
+
+    },
+    "Retire %lld Old Copies" : {
+
+    },
+    "Retire Old Copies" : {
+
+    },
+    "Retry" : {
+
+    },
+    "Returns %lld items" : {
+
+    },
+    "Run Again" : {
+
+    },
+    "Run Debug shared recipes fetch to verify they're working as expected." : {
+
+    },
+    "Run Diagnostic" : {
+
+    },
+    "Run Full Diagnostics" : {
+
+    },
+    "Run Health Check" : {
+
+    },
+    "Run Public Health Check (/health)" : {
+
+    },
+    "Run this to check your CloudKit public database status without making any changes." : {
+
+    },
+    "Run Validation" : {
+
+    },
+    "Running diagnostics..." : {
+
+    },
+    "Safe" : {
+
+    },
+    "Safe Only" : {
+
+    },
+    "Safety Score" : {
+
+    },
+    "Same ID, so books and the website already treat each as one recipe. Only identical extras are removed." : {
+
+    },
+    "Same Recipe Stored Twice (%lld)" : {
+
+    },
+    "Save" : {
+
+    },
+    "Save & Validate API Key" : {
+
+    },
+    "Save & Validate Key" : {
+
+    },
+    "Save Logs to File" : {
+
+    },
+    "Save some recipes first to add them to books" : {
+
+    },
+    "Save Tips" : {
+
+    },
+    "Save to Collection" : {
+
+    },
+    "Save to File" : {
+
+    },
+    "Save Without Validation" : {
+
+    },
+    "Saved" : {
+
+    },
+    "Saved Links (%lld unprocessed)" : {
+
+    },
+    "Saved Recipe Links" : {
+
+    },
+    "Saving..." : {
+
+    },
+    "Scan All Recipes" : {
+
+    },
+    "Scan for Duplicates" : {
+
+    },
+    "Scan for Empty Recipes" : {
+
+    },
+    "Scan Results" : {
+
+    },
+    "Scanning all possible database locations" : {
+
+    },
+    "Scanning database files..." : {
+
+    },
+    "Scanning for duplicates..." : {
+
+    },
+    "Scanning recipes..." : {
+
+    },
+    "Schema" : {
+
+    },
+    "Scroll to read the entire agreement" : {
+
+    },
+    "Search book recipes" : {
+
+    },
+    "Search books" : {
+
+    },
+    "Search books or authors" : {
+
+    },
+    "Search diagnostics" : {
+
+    },
+    "Search glossary" : {
+
+    },
+    "Search help topics" : {
+
+    },
+    "Search links" : {
+
+    },
+    "Search meals" : {
+
+    },
+    "Search recipe books" : {
+
+    },
+    "Search recipes" : {
+
+    },
+    "Search Recipes" : {
+
+    },
+    "Search recipes by author or source (e.g., name in reference field)" : {
+
+    },
+    "Search recipes or authors" : {
+
+    },
+    "Search recipes..." : {
+
+    },
+    "Search the Web" : {
+
+    },
+    "Search the Web Instead" : {
+
+    },
+    "Search title or source URL" : {
+
+    },
+    "Search Web" : {
+
+    },
+    "Search your recipe collection" : {
+
+    },
+    "Section Title" : {
+
+    },
+    "Section title (optional)" : {
+
+    },
+    "Section Title (optional)" : {
+
+    },
+    "Section Title (Optional)" : {
+
+    },
+    "Select a Recipe" : {
+
+    },
+    "Select a Recipe Image" : {
+
+    },
+    "Select All" : {
+
+    },
+    "Select Allergen" : {
+
+    },
+    "Select Books" : {
+
+    },
+    "Select from Files (iCloud Drive)" : {
+
+    },
+    "Select from Files app and iCloud Drive" : {
+
+    },
+    "Select from Photos" : {
+
+    },
+    "Select from your device's photos" : {
+
+    },
+    "Select Image Source" : {
+
+    },
+    "Select Images" : {
+
+    },
+    "Select Images to Extract" : {
+
+    },
+    "Select Intolerance" : {
+
+    },
+    "Select one or more dish types to filter recipes" : {
+
+    },
+    "Select Photos" : {
+
+    },
+    "Select Recipe Images (%lld available)" : {
+
+    },
+    "Select Recipes" : {
+
+    },
+    "Select Sections" : {
+
+    },
+    "Select Source" : {
+
+    },
+    "Select which FODMAP categories affect you" : {
+
+    },
+    "Selected Image" : {
+
+    },
+    "Selected Images" : {
+
+    },
+    "Send a URL to Extract" : {
+
+    },
+    "Send to Extract Tab" : {
+
+    },
+    "Serving: %@" : {
+
+    },
+    "servings" : {
+
+    },
+    "Servings" : {
+
+    },
+    "Servings: %lld" : {
+
+    },
+    "Set Active" : {
+
+    },
+    "Set as active to use for recipe filtering" : {
+
+    },
+    "Set diabetes status to receive personalized recipe recommendations based on blood sugar management needs." : {
+
+    },
+    "Set goals" : {
+
+    },
+    "Set Nutritional Goals" : {
+
+    },
+    "Set Up API Key" : {
+
+    },
+    "Set Up Goals" : {
+
+    },
+    "Settings" : {
+
+    },
+    "Setup" : {
+
+    },
+    "Setup & Diagnostics" : {
+
+    },
+    "Setup Checklist" : {
+
+    },
+    "Several covers are allowed; the first cover is the book's main cover. Pictures are stored at up to 1600 px, one iCloud record each." : {
+
+    },
+    "Severity" : {
+
+    },
+    "Severity Level" : {
+
+    },
+    "Share" : {
+
+    },
+    "Share All Unshared Books (%lld)" : {
+
+    },
+    "Share All Unshared Recipes (%lld)" : {
+
+    },
+    "Share Content" : {
+
+    },
+    "Share Log File" : {
+
+    },
+    "Share Recipe" : {
+
+    },
+    "Share Specific Books" : {
+
+    },
+    "Share Specific Recipes" : {
+
+    },
+    "Share Type" : {
+
+    },
+    "Share via Email" : {
+
+    },
+    "Share via Text" : {
+
+    },
+    "Share your cooking tips, tricks, or modifications for this recipe." : {
+
+    },
+    "Share Your Recipes" : {
+
+    },
+    "Shared" : {
+
+    },
+    "Shared %@" : {
+
+    },
+    "Shared by" : {
+
+    },
+    "Shared by %@" : {
+
+    },
+    "Shared by others" : {
+
+    },
+    "Shared content is licensed under **Creative Commons BY 4.0** (attribution required)." : {
+
+    },
+    "Shared on" : {
+
+    },
+    "Shared Recipe Books" : {
+
+    },
+    "Shared Recipes" : {
+
+    },
+    "Shared tab" : {
+
+    },
+    "Shared with others" : {
+
+    },
+    "Shared: %@" : {
+
+    },
+    "Sharing" : {
+
+    },
+    "Sharing Cleanup" : {
+
+    },
+    "Sharing Error" : {
+
+    },
+    "Sharing Failed" : {
+
+    },
+    "Sharing License" : {
+
+    },
+    "Sharing needs iCloud. Your own library syncs across your devices either way." : {
+
+    },
+    "Sharing now" : {
+
+    },
+    "Sharing Records" : {
+
+    },
+    "Sharing Status" : {
+
+    },
+    "Show" : {
+
+    },
+    "Show All Books" : {
+
+    },
+    "Show as Possible Duplicate Again" : {
+
+    },
+    "Show Full Details" : {
+
+    },
+    "Show Full Diagnostics" : {
+
+    },
+    "Show glycemic load indicators" : {
+
+    },
+    "Show groups marked not the same (%lld)" : {
+
+    },
+    "Show inline FODMAP indicators" : {
+
+    },
+    "Show My Books" : {
+
+    },
+    "Show My Name" : {
+
+    },
+    "Show My Name Publicly" : {
+
+    },
+    "Show My Recipes" : {
+
+    },
+    "Show only safe recipes" : {
+
+    },
+    "Showing every recipe not in this book." : {
+
+    },
+    "Showing only recipes that aren't in any book yet (exact copies of filed recipes are hidden too)." : {
+
+    },
+    "Shows real-time sync activity. Keep this screen open to monitor sync progress." : {
+
+    },
+    "Side by Side" : {
+
+    },
+    "Sign in to iCloud to share and receive the library" : {
+
+    },
+    "Signed in as %@" : {
+
+    },
+    "Size: %@" : {
+
+    },
+    "sk-ant-... or rapi_..." : {
+
+    },
+    "Skip" : {
+
+    },
+    "Skip & Save As Is" : {
+
+    },
+    "Skip Cropping (Faster)" : {
+
+    },
+    "Skip for Now" : {
+
+    },
+    "Skip validation (not recommended)" : {
+
+    },
+    "Something went wrong with Claude" : {
+      "comment" : "Error title: unrecognised Claude failure"
+    },
+    "Sort" : {
+
+    },
+    "Sort By" : {
+
+    },
+    "Source" : {
+
+    },
+    "Source, book, website, or author" : {
+
+    },
+    "Start Batch Extraction" : {
+
+    },
+    "Start Cooking" : {
+
+    },
+    "Start Extraction" : {
+
+    },
+    "Start Sharing" : {
+
+    },
+    "Start with Cropping" : {
+
+    },
+    "Statistics" : {
+
+    },
+    "Status" : {
+
+    },
+    "Status:" : {
+
+    },
+    "Stay Awake" : {
+
+    },
+    "Step %lld" : {
+
+    },
+    "Step instructions" : {
+
+    },
+    "Step Number" : {
+
+    },
+    "Step text" : {
+
+    },
+    "Steps" : {
+
+    },
+    "Steps:" : {
+
+    },
+    "Stop" : {
+
+    },
+    "Stop and Close" : {
+
+    },
+    "Stop Extraction" : {
+
+    },
+    "Stop Extraction?" : {
+
+    },
+    "Storage" : {
+
+    },
+    "Storage Location" : {
+
+    },
+    "stored %lld×" : {
+
+    },
+    "Substitute Options" : {
+
+    },
+    "Substitute with:" : {
+
+    },
+    "Substitution" : {
+
+    },
+    "Substitution Guide" : {
+
+    },
+    "Substitutions: %@" : {
+
+    },
+    "Success" : {
+
+    },
+    "Success!" : {
+
+    },
+    "Successfully recovered:" : {
+
+    },
+    "Suggested Actions" : {
+
+    },
+    "Suggested Substitutions" : {
+
+    },
+    "Suggestions" : {
+
+    },
+    "Supported key formats: 'sk-ant-...' (Anthropic) or 'rapi_...' (recipe-api.com)" : {
+
+    },
+    "Sync Activity Log" : {
+
+    },
+    "Sync Community Books" : {
+
+    },
+    "Sync Community Recipes" : {
+
+    },
+    "Sync Interval" : {
+
+    },
+    "Sync Monitor" : {
+
+    },
+    "Sync Now" : {
+
+    },
+    "Sync Recipe Book Sharing Status" : {
+
+    },
+    "Sync Recipe Sharing Status" : {
+
+    },
+    "Sync Status" : {
+
+    },
+    "Syncing" : {
+
+    },
+    "Syncing..." : {
+
+    },
+    "System Health" : {
+
+    },
+    "System Status" : {
+
+    },
+    "Tab" : {
+
+    },
+    "Tap 'Scan for Duplicates' to check for duplicate recipes" : {
+
+    },
+    "Tap any image to zoom" : {
+
+    },
+    "Tap recipe title below to view full details →" : {
+
+    },
+    "Tap the + button to add photos" : {
+
+    },
+    "Tap the + button to add your first ingredient section" : {
+
+    },
+    "Tap the + button to add your first instruction section" : {
+
+    },
+    "Tap the ✕ button or swipe to stop sharing a recipe book." : {
+
+    },
+    "Tap the ✕ button or swipe to stop sharing a recipe." : {
+
+    },
+    "Tap the section buttons on each card to choose which parts you want. Each section can only come from one source." : {
+
+    },
+    "Tap to choose from your recipes" : {
+
+    },
+    "Tap to expand and zoom" : {
+
+    },
+    "Tap to link this recipe to the course" : {
+
+    },
+    "Tap to open in Safari" : {
+
+    },
+    "Tap to prevent sleep" : {
+
+    },
+    "Tap to view" : {
+
+    },
+    "Target Container Listed" : {
+
+    },
+    "Technical Details" : {
+
+    },
+    "Testing API key..." : {
+
+    },
+    "Text" : {
+
+    },
+    "The %lld selected old public copies will be marked deleted by you and leave the website. Your current books are not touched." : {
+
+    },
+    "The answer was too long to finish" : {
+      "comment" : "Error title: Claude's reply was cut off"
+    },
+    "The book owner may need to re-share it with the latest version." : {
+
+    },
+    "The current version/build from Info.plist doesn't match any entry in VersionHistory.swift" : {
+
+    },
+    "The diabetic analysis couldn't be completed. Try again; if it keeps happening, the Diagnostic Log in Settings has the details." : {
+      "comment" : "Alert: diabetic analysis failed for an unrecognised reason"
+    },
+    "The first image will be used as the main thumbnail" : {
+
+    },
+    "The Four FODMAP Categories" : {
+
+    },
+    "The key saved in Reczipes is no longer accepted. It may have been removed or replaced. Paste a current key from your Anthropic account." : {
+      "comment" : "Error message: key refused"
+    },
+    "The low FODMAP diet is primarily used to manage symptoms of Irritable Bowel Syndrome (IBS) including bloating, gas, abdominal pain, diarrhea, and constipation. It should be followed under the guidance of a registered dietitian." : {
+
+    },
+    "The main image is set during recipe extraction and cannot be changed here." : {
+
+    },
+    "The public database needs to be initialized for community sharing." : {
+
+    },
+    "The real test is whether we can access CloudKit (see Container Access above)." : {
+
+    },
+    "These guidelines are based on recommendations from the American Heart Association, American Diabetes Association, and CDC. Always consult with your healthcare provider for personalized nutritional advice." : {
+
+    },
+    "These items are shared publicly with the community under Creative Commons BY 4.0 license. They're separate from your private iCloud sync and you can stop sharing them at any time." : {
+
+    },
+    "These recipe books exist in CloudKit but aren't tracked locally. They may be from a previous device or installation." : {
+
+    },
+    "These recipes are stored more than once under the same ID. One copy of each is kept; extras are removed only when their content is identical. Books and website copies are unaffected (they refer to the ID, which stays)." : {
+
+    },
+    "These recipes exist in CloudKit but aren't tracked locally. They may be from a previous device or installation." : {
+
+    },
+    "These recipes match \"%@\". Tap one to link it, or search the web below for more ideas." : {
+
+    },
+    "They will first be removed from" : {
+
+    },
+    "This analysis is for informational purposes only and is not medical, dietary, or nutritional advice. The information provided:" : {
+
+    },
+    "This analysis is not medical advice. Consult your healthcare provider." : {
+
+    },
+    "This app uses guidelines from Monash University, the leading FODMAP research institution." : {
+
+    },
+    "This book doesn't have any recipe previews yet." : {
+
+    },
+    "This book doesn't have any recipes yet" : {
+
+    },
+    "This Claude model isn't available" : {
+      "comment" : "Error title: model not found (HTTP 404)"
+    },
+    "This combined recipe is temporary and will not be saved." : {
+
+    },
+    "This database contains no recipes" : {
+
+    },
+    "This feature provides evidence-based analysis to help manage blood sugar levels through informed food choices:" : {
+
+    },
+    "This is a community recipe shared on %@. Add it to your collection to save it permanently." : {
+
+    },
+    "This is your active profile" : {
+
+    },
+    "This key can't use Claude" : {
+      "comment" : "Error title: API key lacks permission (HTTP 403)"
+    },
+    "This may be due to parental controls or Screen Time restrictions." : {
+
+    },
+    "This may take a moment..." : {
+
+    },
+    "This name will be shown when you publicly share recipes and books" : {
+
+    },
+    "This recipe is already low FODMAP!" : {
+
+    },
+    "This recipe is missing the details needed for an analysis." : {
+      "comment" : "Diabetic analysis error"
+    },
+    "This recipe matches %lld existing recipe%@ in your collection (same URL, title, or content). You can keep both, review duplicates, or undo the save." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "This recipe matches %1$lld existing recipe%2$@ in your collection (same URL, title, or content). You can keep both, review duplicates, or undo the save."
+          }
+        }
+      }
+    },
+    "This tool checks why CloudKit sync might not be working with container:" : {
+
+    },
+    "This tool finds and removes recipes that have neither ingredients nor instructions. These are typically failed extractions or incomplete imports." : {
+
+    },
+    "This tool scans all recipes to find any with missing ingredients, instructions, or notes data." : {
+
+    },
+    "This usually happens automatically, but we can try to fix it." : {
+
+    },
+    "This will copy your old database to the current location" : {
+
+    },
+    "This will create a permanent copy of this recipe in your collection." : {
+
+    },
+    "This will delete %lld duplicate(s) of '%@', keeping the oldest version." : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "This will delete %1$lld duplicate(s) of '%2$@', keeping the oldest version."
+          }
+        }
+      }
+    },
+    "This will delete all %lld saved links. Extracted recipes will not be affected." : {
+
+    },
+    "This will delete all duplicate recipes and orphaned assignments. This action cannot be undone. Are you sure?" : {
+
+    },
+    "This will delete duplicate CloudKit records and rebuild your local sharing data. This operation cannot be undone.\n\nOnly proceed if you're experiencing incorrect recipe counts." : {
+
+    },
+    "This will delete the record of past database recovery attempts. This cannot be undone." : {
+
+    },
+    "This will import all recipes and images from this recipe book." : {
+
+    },
+    "This will permanently delete %lld orphaned recipe books from CloudKit. This cannot be undone." : {
+
+    },
+    "This will permanently delete %lld public records whose recipe is neither in this library nor in any book. They will leave the website. This cannot be undone." : {
+
+    },
+    "This will permanently delete all diagnostic log entries. This action cannot be undone." : {
+
+    },
+    "This will permanently delete all recipes in CloudKit that don't have a valid owner (sharedByUserID). This operation cannot be undone.\n\nOnly proceed if you're seeing recipes from unknown users." : {
+
+    },
+    "This will remove all %lld books from public sharing. They will remain in your personal library. This action cannot be undone." : {
+
+    },
+    "This will remove all %lld meals from public sharing. They will remain in your personal library." : {
+
+    },
+    "This will remove all %lld recipes from public sharing. They will remain in your personal library. This action cannot be undone." : {
+
+    },
+    "This will remove the item from the community." : {
+
+    },
+    "This will remove the selected recipes from this book. The recipes will not be deleted from your collection." : {
+
+    },
+    "This will remove this %@ from the community. You can share it again later." : {
+
+    },
+    "This will reset all logging settings to their default values." : {
+
+    },
+    "This will stop the batch extraction. Progress will be saved, but unprocessed links will remain." : {
+
+    },
+    "Time:" : {
+
+    },
+    "Timing" : {
+
+    },
+    "Tip" : {
+
+    },
+    "Tip: tap a course to link it to a recipe in your library, or use Search Web to find ideas on Google." : {
+
+    },
+    "Tip: The main image is set during extraction. You can add additional images here." : {
+
+    },
+    "Tips" : {
+
+    },
+    "Tips & Tricks" : {
+
+    },
+    "Tips for Best Sync Performance" : {
+
+    },
+    "Tips for Great Recipe Photos" : {
+
+    },
+    "Tips:" : {
+
+    },
+    "Title" : {
+
+    },
+    "To Extract" : {
+
+    },
+    "To extract recipes from images, you need to configure your Claude API key." : {
+
+    },
+    "To fix this:" : {
+
+    },
+    "To view these recipes, you'll need to import them individually from Browse Community Recipes." : {
+
+    },
+    "To: %@" : {
+
+    },
+    "Too many requests in a short time. Wait a minute and try again." : {
+      "comment" : "Error message: rate limited"
+    },
+    "Total Assignments: %lld" : {
+
+    },
+    "Total Books" : {
+
+    },
+    "Total Databases Found" : {
+
+    },
+    "Total Image Assignments" : {
+
+    },
+    "Total Recipes" : {
+
+    },
+    "Total Recipes in Books" : {
+
+    },
+    "Total Recipes:" : {
+
+    },
+    "Track how recipes fit your daily targets for calories, sodium, fat, sugar, and more." : {
+
+    },
+    "Tracked Recipe Books" : {
+
+    },
+    "Tracked Recipes" : {
+
+    },
+    "Transition Note" : {
+
+    },
+    "Transition note (optional)" : {
+
+    },
+    "Transition note (Optional)" : {
+
+    },
+    "Transition Note (optional)" : {
+
+    },
+    "Try a different search term" : {
+
+    },
+    "Try a different search term." : {
+
+    },
+    "Try adjusting your search criteria" : {
+
+    },
+    "Try Again" : {
+      "comment" : "Button: retries the failed request"
+    },
+    "Try again. If it keeps happening, the Diagnostic Log in Settings has the details." : {
+      "comment" : "Error message: unknown failure"
+    },
+    "Try to Fix" : {
+
+    },
+    "Type" : {
+
+    },
+    "Type \"%@\" exactly." : {
+
+    },
+    "Type \"%@\" exactly. The recipe will be removed from every book above and permanently deleted from all your devices." : {
+
+    },
+    "Type %@" : {
+
+    },
+    "Type the recipe title" : {
+
+    },
+    "Unable to fetch what's new" : {
+
+    },
+    "Unable to Load Recipe" : {
+
+    },
+    "Unable to load recipe books. Pull to refresh." : {
+
+    },
+    "Unable to scan database files" : {
+
+    },
+    "Undo Save" : {
+
+    },
+    "Unique Recipes:" : {
+
+    },
+    "Unit" : {
+
+    },
+    "Unsaved Changes" : {
+
+    },
+    "Unshare" : {
+
+    },
+    "Unshare %lld Books" : {
+
+    },
+    "Unshare %lld Meals" : {
+
+    },
+    "Unshare %lld Recipes" : {
+
+    },
+    "Unshare All Books" : {
+
+    },
+    "Unshare All Books (%lld)" : {
+
+    },
+    "Unshare All Meals" : {
+
+    },
+    "Unshare All Recipes" : {
+
+    },
+    "Unshare All Recipes (%lld)" : {
+
+    },
+    "Unshare Content" : {
+
+    },
+    "Untitled Recipe" : {
+
+    },
+    "Update All Public Books (%lld)" : {
+
+    },
+    "Update API Key" : {
+
+    },
+    "Update Public Copy" : {
+
+    },
+    "Updating iCloud Connection" : {
+
+    },
+    "Updating Public Copy…" : {
+
+    },
+    "Use 'Share Specific' buttons to manually share content. Advanced tools help resolve issues with shared content." : {
+
+    },
+    "Use these tools to fix issues with shared recipes showing incorrect counts or duplicate entries." : {
+
+    },
+    "User Content Import/Export" : {
+
+    },
+    "User Deleted" : {
+
+    },
+    "User Record ID" : {
+
+    },
+    "Validate Auth (/api/v1/categories)" : {
+
+    },
+    "Validate Content" : {
+
+    },
+    "Validate File" : {
+
+    },
+    "Validate Recipe" : {
+
+    },
+    "Validating CloudKit configuration..." : {
+
+    },
+    "Validating..." : {
+
+    },
+    "Validation Failed" : {
+
+    },
+    "Validation uses GET /api/v1/categories, which is a free authenticated endpoint and does not consume paid credits." : {
+
+    },
+    "Verified Sources" : {
+
+    },
+    "Version" : {
+
+    },
+    "Version %@" : {
+
+    },
+    "Version %@ (%@)" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Version %1$@ (%2$@)"
+          }
+        }
+      }
+    },
+    "Version Debug" : {
+
+    },
+    "Version History" : {
+
+    },
+    "Version history will appear here once entries are added." : {
+
+    },
+    "VersionHistoryService Detection" : {
+
+    },
+    "View & Clean Up" : {
+
+    },
+    "View & delete links" : {
+
+    },
+    "View CloudKit Setup Guide" : {
+
+    },
+    "View Combined Recipe" : {
+
+    },
+    "View Complete Help Guide" : {
+
+    },
+    "View Detailed Analysis" : {
+
+    },
+    "View Detailed Diagnostics" : {
+
+    },
+    "View Diagnostics" : {
+
+    },
+    "View Duplicates" : {
+
+    },
+    "View Error Log (%lld)" : {
+
+    },
+    "View Full Recipe" : {
+
+    },
+    "View Full Report" : {
+
+    },
+    "View in Collection" : {
+
+    },
+    "View License Agreement" : {
+
+    },
+    "View Log File" : {
+
+    },
+    "View Original" : {
+
+    },
+    "View Recipes" : {
+
+    },
+    "View Source" : {
+
+    },
+    "View the FODMAP substitution guide" : {
+
+    },
+    "Visual Content" : {
+
+    },
+    "Warning" : {
+
+    },
+    "We encountered an issue setting up CloudKit." : {
+
+    },
+    "We found some potential issues with the extracted content. Review the suggestions below." : {
+
+    },
+    "We found your recipes in a different database file. This can happen after app updates." : {
+
+    },
+    "Web URL" : {
+
+    },
+    "Welcome to Reczipes!" : {
+
+    },
+    "What is FODMAP?" : {
+
+    },
+    "What would you like to do?" : {
+
+    },
+    "What You'll Need" : {
+
+    },
+    "What's New (from getWhatsNew())" : {
+
+    },
+    "When auto-share is enabled, new recipes/books will be automatically shared with the community under Creative Commons BY 4.0 license (attribution required). Turn off to share items manually or keep them private. You retain full ownership and can stop sharing at any time." : {
+
+    },
+    "When enabled, recipes will show FODMAP ingredient analysis and low FODMAP substitution suggestions based on Monash University guidelines." : {
+
+    },
+    "When enabled, recipes will show glycemic load estimates, carbohydrate counts, and diabetic-friendly substitution suggestions based on evidence-based dietary guidelines from reputable medical sources including the American Diabetes Association (ADA), Mayo Clinic, CDC, and NIH." : {
+
+    },
+    "When you request analysis for a recipe:" : {
+
+    },
+    "Where did you find this recipe?" : {
+
+    },
+    "Who should follow a low FODMAP diet?" : {
+
+    },
+    "Why Substitute?" : {
+
+    },
+    "Will extract %lld of %lld unprocessed recipes" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Will extract %1$lld of %2$lld unprocessed recipes"
+          }
+        }
+      }
+    },
+    "With Images" : {
+
+    },
+    "Would you like to crop this image?" : {
+
+    },
+    "Yield" : {
+
+    },
+    "Yield (e.g. 4 servings)" : {
+
+    },
+    "Yield (High to Low)" : {
+
+    },
+    "Yield (Low to High)" : {
+
+    },
+    "You already have a book with this name. Add the recipes to it instead." : {
+
+    },
+    "You can add your API key later in Settings. Without an API key, you won't be able to extract recipes from images." : {
+
+    },
+    "You can also set up your API key in Settings" : {
+
+    },
+    "You can crop each image individually before extraction, or skip cropping to process images faster." : {
+
+    },
+    "You don't have any recipes yet" : {
+
+    },
+    "You have a diabetic analysis in progress for this recipe. Would you like to resume?" : {
+
+    },
+    "You have an extraction in progress. Would you like to resume where you left off?" : {
+
+    },
+    "You have unsaved changes" : {
+
+    },
+    "You have unsaved changes. Are you sure you want to discard them?" : {
+
+    },
+    "You haven't shared any recipe books yet." : {
+
+    },
+    "You haven't shared any recipes or books yet." : {
+
+    },
+    "You must accept the license agreement to use Reczipes. If you decline, the app will close." : {
+
+    },
+    "You'll be able to crop each image individually" : {
+
+    },
+    "You're offline" : {
+      "comment" : "Error title: no internet connection"
+    },
+    "You're ready to share your recipes with the community and browse recipes shared by others." : {
+
+    },
+    "You've granted limited photo access. To see more photos, go to Settings and change photo access to 'Full Access'." : {
+
+    },
+    "Your Anthropic account doesn't allow this key to do that. Check the key's workspace in your Anthropic account, or paste a different key." : {
+      "comment" : "Error message: key lacks permission"
+    },
+    "Your API key will be tested before saving." : {
+
+    },
+    "Your app is configured to use CloudKit sync (iCloud.com.headydiscy.reczipes), but the container is currently running in local-only mode." : {
+
+    },
+    "Your books" : {
+
+    },
+    "Your Claude account is out of credit" : {
+      "comment" : "Error title: no API credit left"
+    },
+    "Your Claude key was refused" : {
+      "comment" : "Error title: Anthropic rejected the API key (HTTP 401)"
+    },
+    "Your database has %lld recipes, all unique." : {
+
+    },
+    "Your database is now clean and optimized!" : {
+
+    },
+    "Your deletions still to reach everyone" : {
+
+    },
+    "Your Digital Recipe Collection" : {
+
+    },
+    "Your meals" : {
+
+    },
+    "Your Name on What You Share" : {
+
+    },
+    "Your old database has been successfully copied to the current location." : {
+
+    },
+    "Your Personal Recipe Collection" : {
+
+    },
+    "Your photo library appears to be empty or the app doesn't have access to any photos." : {
+
+    },
+    "Your recipe" : {
+
+    },
+    "Your recipes" : {
+
+    },
+    "Your Recipes" : {
+
+    },
+    "Your recipes and books are automatically synced to iCloud across all your devices. This page is for **publicly sharing** specific content with the wider community." : {
+
+    },
+    "Your recipes have been recovered! Please restart the app to see your data." : {
+
+    },
+    "Your recipes will appear after restart" : {
+
+    },
+    "Your recipes, notes, and settings are automatically synced across all your devices signed in with the same iCloud account." : {
+
+    },
+    "Your shared recipes:" : {
+
+    }
+  },
+  "version" : "1.0"
+}

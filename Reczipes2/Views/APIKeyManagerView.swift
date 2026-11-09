@@ -18,10 +18,36 @@ struct APIKeyManagerView: View {
     @State private var isValidating = false
     @State private var isAPIKeyConfigured = APIKeyHelper.isConfigured
     @State private var isRecipeAPIKeyConfigured = APIKeyHelper.isRecipeAPIConfigured
+    @FocusState private var keyFieldFocused: Bool
+    /// Why the user was sent here (e.g. "Your Claude key was refused"); shown at the top.
+    let reason: String?
+
+    init(reason: String? = nil) {
+        self.reason = reason
+    }
     
     var body: some View {
         NavigationStack {
             Form {
+                if let reason {
+                    Section {
+                        Label {
+                            VStack(alignment: .leading, spacing: 4) {
+                                Text(reason).font(.headline)
+                                Text("Paste a current key from your Anthropic account below, then tap Update API Key.",
+                                     comment: "Shown on the API key screen when an error sent the user here")
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                                Link(String(localized: "Open Anthropic API Keys", comment: "Link to the Anthropic console key page"),
+                                     destination: URL(string: "https://console.anthropic.com/settings/keys")!)
+                                    .font(.subheadline)
+                            }
+                        } icon: {
+                            Image(systemName: "key.fill").foregroundStyle(Color.appWarning)
+                        }
+                    }
+                }
+
                 Section {
                     if isAPIKeyConfigured {
                         HStack {
@@ -61,6 +87,7 @@ struct APIKeyManagerView: View {
                             .font(.caption)
                             .foregroundStyle(.secondary)
                         SecureField("Enter new API key", text: $newAPIKey)
+                            .focused($keyFieldFocused)
                             .textContentType(.password)
                             .labelsHidden()
                             .platformTextInputAutocapitalization(.never)
@@ -122,6 +149,8 @@ struct APIKeyManagerView: View {
                 // Refresh the API key status when the view appears
                 isAPIKeyConfigured = APIKeyHelper.isConfigured
                 isRecipeAPIKeyConfigured = APIKeyHelper.isRecipeAPIConfigured
+                // Sent here by an error: the key field is ready to paste into.
+                if reason != nil { keyFieldFocused = true }
             }
         }
     }

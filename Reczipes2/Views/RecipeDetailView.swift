@@ -44,6 +44,7 @@ struct RecipeDetailView: View {
     // Diabetic analysis
     @State private var diabeticInfo: DiabeticInfo?
     @State private var isLoadingDiabeticInfo = false
+    @State private var claudeIssue: ClaudeServiceIssue?
     @State private var analysisProgress: Double = 0.0
     @State private var showPendingAnalysisAlert = false
 
@@ -1051,6 +1052,9 @@ struct RecipeDetailView: View {
         }
         // Shared by Reminders export, Add Tips and Diabetic analysis: without it a failed
         // analysis reset to the Analyze button with no message.
+        .claudeIssueAlert($claudeIssue) {
+            Task { await rerunDiabeticAnalysis() }
+        }
         .alert("Reczipes", isPresented: $showingRemindersAlert) {
             Button("OK", role: .cancel) { }
         } message: {
@@ -1174,8 +1178,13 @@ struct RecipeDetailView: View {
         } catch {
             // Handle error - show alert to user
             AppLog.error("Diabetic analysis failed: \(error)", category: .recipe)
-            remindersAlertMessage = "Failed to analyze recipe: \(error.localizedDescription)"
-            showingRemindersAlert = true
+            if let issue = ClaudeServiceIssue(error) {
+                claudeIssue = issue
+            } else {
+                remindersAlertMessage = String(localized: "The diabetic analysis couldn't be completed. Try again; if it keeps happening, the Diagnostic Log in Settings has the details.",
+                                               comment: "Alert: diabetic analysis failed for an unrecognised reason")
+                showingRemindersAlert = true
+            }
         }
     }
     
