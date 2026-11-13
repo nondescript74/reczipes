@@ -135,10 +135,11 @@ class CloudKitSyncMonitor: ObservableObject {
             // Clear warnings when account changes so we get fresh feedback
             hasWarnedAboutStatus.removeAll()
             await checkAccountStatus()
-            
-            // Notify the container manager to potentially recreate the container
-            // The manager will decide if recreation is actually needed
-            await ModelContainerManager.shared.recreateContainer()
+            // No container recreation here. ModelContainerManager observes the same
+            // notification and recreates only when iCloud availability really changed.
+            // Recreating here on every notice (delivered as the app comes back to the
+            // foreground) tore the whole library down under the user and opened a second
+            // CloudKit container on the same store while the first was still in use.
         }
     }
     

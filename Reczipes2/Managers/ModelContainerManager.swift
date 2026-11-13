@@ -630,7 +630,14 @@ class ModelContainerManager: ObservableObject {
         Task {
             // Check new account status
             let wasCloudKitEnabled = isCloudKitEnabled
-            let nowAvailable = await checkCurrentCloudKitStatus()
+            // Only a definite answer may switch the store. "Could not determine",
+            // "temporarily unavailable" and a failed check are common for a moment
+            // around wake and app activation; treating them as "iCloud is off" swapped
+            // the library to local-only and back under the user.
+            guard let nowAvailable = await definiteCloudKitAvailability() else {
+                AppLog.info("✓ iCloud status not definite right now - keeping the current store", category: .storage)
+                return
+            }
             
             // Only recreate if status actually changed
             if wasCloudKitEnabled != nowAvailable {
@@ -665,6 +672,29 @@ class ModelContainerManager: ObservableObject {
             } else {
                 AppLog.info("✓ CloudKit status unchanged, no container recreation needed", category: .storage)
             }
+        }
+    }
+    
+    /// True / false only for a definite iCloud answer; nil when the status is transient
+    /// or the check failed, so the caller leaves the store as it is.
+    private func definiteCloudKitAvailability() async -> Bool? {
+        do {
+            let status = try await CKContainer.default().accountStatus()
+            AppLog.info("   iCloud account status after change notice: \(status.rawValue)", category: .storage)
+            return Self.definiteAvailability(for: status)
+        } catch {
+            AppLog.warning("⚠️ iCloud status check failed after change notice: \(error.localizedDescription)", category: .storage)
+            return nil
+        }
+    }
+
+    /// The decision, separate so it can be tested: available → true; no account or
+    /// restricted → false; could not determine / temporarily unavailable → nil (no change).
+    nonisolated static func definiteAvailability(for status: CKAccountStatus) -> Bool? {
+        switch status {
+        case .available: return true
+        case .noAccount, .restricted: return false
+        default: return nil
         }
     }
     
