@@ -3,7 +3,7 @@
 // placed into the page with textContent (via h()), never as HTML.
 
 import { t, tn, lang, language, setLang, LANGUAGES } from './i18n.js';
-import { toMetric, unitWord } from './units.js';
+import { toMetric, unitWord, metricPhrase } from './units.js';
 
 const main = document.getElementById('main');
 const banner = document.getElementById('banner');
@@ -288,12 +288,16 @@ async function showRecipe(id) {
   };
   drawIngredients();
 
+  // The FODMAP panel shows the same amounts, so it follows the Metric switch too.
+  const fodmap = health ? fodmapPanel(health.fodmap, r, metric) : null;
+
   const metricBtn = hasMetric
     ? h('button', { class: 'btn', type: 'button', 'aria-pressed': String(metric), onclick: () => {
         metric = !metric;
         store(metricKey(), metric ? '1' : '0');
         metricBtn.setAttribute('aria-pressed', String(metric));
         drawIngredients();
+        fodmap?.setMetric(metric);
       } }, t('Metric'))
     : null;
   const wakeBtn = 'wakeLock' in navigator
@@ -315,7 +319,7 @@ async function showRecipe(id) {
       h('div', { class: 'toolbar' },
         metricBtn, wakeBtn,
         h('button', { class: 'btn', type: 'button', onclick: () => window.print() }, t('Print'))),
-      health ? h('div', { class: 'health-area' }, fodmapPanel(health.fodmap, r), diabetesPanel(health)) : null,
+      health ? h('div', { class: 'health-area' }, fodmap, diabetesPanel(health)) : null,
       h('div', { class: 'recipe-body' },
         ingPanel,
         h('section', { class: 'panel', 'aria-labelledby': 'steps-h' },
@@ -367,18 +371,24 @@ function fodmapFlag(key) {
   }, t('⇄ FODMAP substitute'));
 }
 
-// The flagged ingredient as the recipe page shows it (translated recipes line up by key).
+// The flagged ingredient as the recipe page shows it, looked up by key: it carries the
+// app's own metric amount, and a translated recipe's words (both line up item for item).
 function flaggedIngredient(g, r) {
-  if (!r?.translated) return { ing: g.ingredient, section: g.sectionTitle };
   const [si, ii] = String(g.key).split('.').map(Number);
-  const s = r.ingredientSections[si];
-  return { ing: s?.ingredients[ii] ?? g.ingredient, section: s ? s.title : g.sectionTitle };
+  const s = r?.ingredientSections?.[si];
+  const ing = s?.ingredients?.[ii];
+  if (!ing) return { ing: g.ingredient, section: g.sectionTitle };
+  return { ing, section: r.translated ? s.title : g.sectionTitle };
 }
+const ingLabel = (ing, metric) => [qtyText(ing, metric), ing.name].filter(Boolean).join(' ');
+const subQty = (q, metric) => (metric ? metricPhrase(q, lang()) : q);
 
-function fodmapPanel(f, r) {
+function fodmapPanel(f, r, metric = false) {
   if (!f?.hasSubstitutions) return null; // the app shows this section only when there is something to swap
   const n = f.substitutions.length;
-  return rememberedDetails('reczipes.panel.fodmap', 'health health--fodmap', true,
+  const amounts = []; // [element, text-for(metric)] redrawn when Metric is switched
+  const amount = (el, textFor) => { el.textContent = textFor(metric); amounts.push([el, textFor]); return el; };
+  const panel = rememberedDetails('reczipes.panel.fodmap', 'health health--fodmap', true,
     [h('span', { class: 'health__title' }, t('FODMAP Friendly Options')), chip(f.overallLevel, LEVEL_TONE[f.overallLevel])],
     f.isSafeWithoutSubstitutions
       ? h('p', { class: 'callout callout--ok' }, t('✓ This recipe is already low FODMAP!'))
@@ -387,7 +397,7 @@ function fodmapPanel(f, r) {
       h('summary', {},
         h('span', { class: 'sub-card__warn', 'aria-hidden': 'true' }, '⚠'),
         h('span', { class: 'sub-card__ing' },
-          h('b', {}, [ing.quantity, ing.unit, ing.name].filter(Boolean).join(' ')),
+          amount(h('b', {}), (m) => ingLabel(ing, m)),
           section ? h('span', { class: 'muted' }, ` · ${section}`) : null,
           h('span', { class: 'sub-card__cats' }, g.substitution.fodmapCategories.map((c) => `${FODMAP_ICON[c] ?? ''} ${t(c)}`).join('   ')))),
       h('div', { class: 'sub-card__body' },
@@ -396,8 +406,10 @@ function fodmapPanel(f, r) {
         h('p', { class: 'sub-card__with' }, t('Substitute with:')),
         h('ul', { class: 'sub-options' }, g.substitution.substitutes.map((o) => h('li', {},
           h('span', { class: 'sub-options__name' }, o.name, ' ', chip(o.confidence, CONFIDENCE_TONE[o.confidence] ?? 'warn')),
-          o.quantity ? h('span', { class: 'sub-options__qty' }, o.quantity) : null,
+          o.quantity ? amount(h('span', { class: 'sub-options__qty' }), (m) => subQty(o.quantity, m)) : null,
           o.notes ? h('span', { class: 'sub-options__notes' }, o.notes) : null)))))));
+  panel.setMetric = (m) => { metric = m; amounts.forEach(([el, textFor]) => { el.textContent = textFor(m); }); };
+  return panel;
 }
 
 const SUIT_TONE = { Excellent: 'ok', Good: 'ok', Moderate: 'warn', Caution: 'caution', Avoid: 'bad' };

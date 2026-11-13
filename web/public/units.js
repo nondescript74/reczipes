@@ -74,6 +74,21 @@ export function toMetric(quantity, unit, locale = 'fr') {
   return { quantity: scaled.map((v) => fmt(v, locale)).join('–'), unit: base };
 }
 
+// A free-text amount from the substitution guide ("⅔ cup", "½ cup (75g)", "Up to 1 cup",
+// "½ cup, rinsed") in metric. A weight the text already gives in brackets wins; otherwise
+// leading cups, ounces or pounds are converted. Anything else ("2-3 tbsp", "1:1 ratio",
+// "Equal amount") comes back as written.
+const PHRASE = /^(up to\s+)?([\d¼½¾⅓⅔⅛⅜⅝⅞][\d¼½¾⅓⅔⅛⅜⅝⅞.,\/ \-–]*?)\s*(fl\.? oz\.?|fluid ounces?|cups?|pints?|quarts?|gallons?|ounces?|oz\.?|lbs?\.?|pounds?)(?=[\s,(]|$)(?:\s*\((\d+(?:[.,]\d+)?)\s*(g|ml)\))?(.*)$/i;
+export function metricPhrase(text, locale = 'fr') {
+  if (typeof text !== 'string') return text;
+  const m = text.match(PHRASE);
+  if (!m) return text;
+  const [, upTo = '', amount, unit, given, givenUnit, rest] = m;
+  if (given) return `${upTo}${fmt(Number(given.replace(',', '.')), locale)} ${givenUnit.toLowerCase()}${rest}`;
+  const conv = toMetric(amount.trim(), unit.toLowerCase(), locale);
+  return conv ? `${upTo}${conv.quantity} ${conv.unit}${rest}` : text;
+}
+
 // A unit word in the reader's language, where there is one; otherwise as written.
 export function unitWord(unit, lang) {
   if (!unit) return unit;

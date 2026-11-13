@@ -1,7 +1,7 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
 import { decodeSharedRecipe, summarize } from '../lib/decode.js';
-import { toMetric, parseAmount, unitWord } from '../public/units.js';
+import { toMetric, parseAmount, unitWord, metricPhrase } from '../public/units.js';
 
 const english = {
   id: '3A79BC31-EA99-46D3-A1DF-FDE65E2EB505',
@@ -98,4 +98,16 @@ test('unit words in French; English untouched', () => {
   assert.equal(unitWord('pinch', 'fr'), 'pincée');
   assert.equal(unitWord('tbsp', 'en'), 'tbsp');
   assert.equal(unitWord('handful', 'fr'), 'handful');
+});
+
+test('FODMAP substitute amounts follow Metric: bracketed weight wins, else cups/oz/lb converted', () => {
+  assert.equal(metricPhrase('½ cup (75g)', 'en'), '75 g');
+  assert.equal(metricPhrase('Up to ⅔ cup (160g)', 'en'), 'Up to 160 g');
+  assert.equal(metricPhrase('1 cup', 'en'), '240 ml');
+  assert.equal(metricPhrase('Up to 1 cup', 'en'), 'Up to 240 ml');
+  assert.equal(metricPhrase('½ cup, rinsed well', 'en'), '120 ml, rinsed well');
+  assert.equal(metricPhrase('⅔ cup', 'fr'), '160 ml');
+  for (const asIs of ['1:1 ratio', 'Equal amount', '2-3 tbsp chopped', '⅛ tsp per clove', '32 nuts', '½ cob or ⅓ cup kernels', 'Use sparingly']) {
+    assert.equal(metricPhrase(asIs, 'en'), asIs);
+  }
 });
