@@ -423,6 +423,10 @@ class CloudKitDuplicateMonitor: ObservableObject {
                     ($0.dateCreated ?? .distantFuture) < ($1.dateCreated ?? .distantFuture)
                 }
                 let canonical = sorted[0]
+                // Never delete a copy that is open on screen (OpenBooks); it runs later.
+                if OpenBooks.shared.holdsBack(Array(sorted.dropFirst()), operation: "Same-ID book merge") {
+                    continue
+                }
                 var mergedRecipeIDs = canonical.recipeIDs ?? []
 
                 for extra in sorted.dropFirst() {

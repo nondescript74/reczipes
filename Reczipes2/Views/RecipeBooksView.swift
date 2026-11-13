@@ -131,6 +131,7 @@ struct RecipeBooksView: View {
             .sheet(isPresented: $showingEditor) {
                 BookEditorView(book: editingBook)
                     .macOSSheetFrame()
+                    .holdsBookOpen(editingBook)
                     .onDisappear {
                         editingBook = nil
                         refreshID = UUID()
@@ -144,6 +145,7 @@ struct RecipeBooksView: View {
             }
             .sheet(item: $selectedBook) { book in
                 BookDetailView(book: book).macOSSheetFrame()
+                    .holdsBookOpen(book)
             }
             .onChange(of: refreshID) { oldValue, newValue in
                 // Check if selected book still exists after refresh

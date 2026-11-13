@@ -96,6 +96,11 @@ enum BookMerger {
         var merged = 0
         for group in duplicateGroups(in: context) {
             for step in BookDuplicates.unattendedMerges(group) {
+                // Never delete a book that is open on screen (OpenBooks); it runs later.
+                let extras = ownBooks(in: context).filter { book in
+                    book.id.map { step.extras.contains($0) && $0 != step.keep } ?? false
+                }
+                if OpenBooks.shared.holdsBack(extras, operation: "Same-name book merge") { continue }
                 merged += merge(keepID: step.keep, extraIDs: step.extras, in: context)
             }
         }
