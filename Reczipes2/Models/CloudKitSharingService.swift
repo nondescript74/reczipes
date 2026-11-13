@@ -680,7 +680,7 @@ class CloudKitSharingService: ObservableObject {
             predicate: #Predicate<CachedDiabeticAnalysis> { $0.recipeId == recipeID },
             sortBy: [SortDescriptor(\.cachedAt, order: .reverse)]
         )
-        guard let cached = try? modelContext.fetch(descriptor).first,
+        guard let cached = try? modelContext.fetch(descriptor).first(where: { !$0.isBatchClaim }),
               !cached.isIngredientsOutdated(recipe: recipe),
               cached.analysisData.count <= Self.diabeticInfoByteBudget,
               let json = String(data: cached.analysisData, encoding: .utf8) else { return nil }

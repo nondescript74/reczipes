@@ -413,6 +413,8 @@ extension CloudKitSharingService {
         lastPublishPass = Date()
         // Then put what was published into every app language (runs on, not awaited).
         startLocalizationPass(modelContext: modelContext)
+        // And give every public recipe its Diabetic-Friendly Analysis (runs on, not awaited).
+        startDiabeticBackfillPass(modelContext: modelContext)
     }
 
     private func performPublishPass(modelContext: ModelContext) async {

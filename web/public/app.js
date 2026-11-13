@@ -446,8 +446,10 @@ function diabetesPanel(health) {
           h('s', {}, x.originalIngredient), ' → ', h('b', {}, x.substitute),
           x.reason ? h('span', { class: 'muted alts__why' }, x.reason) : null)))) : null,
       h('details', { class: 'dsources' },
-        h('summary', {}, tn(info.sources.length, 'Based on {n} verified source', 'Based on {n} verified sources'),
+        h('summary', {}, tn(info.sources.length, 'Based on {n} unverified source', 'Based on {n} unverified sources'),
           info.lastUpdated ? h('span', { class: 'muted' }, t(' · Last updated: {date}', { date: fmtDate(info.lastUpdated) })) : null),
+        // Claude names these from memory, without web access (operator 2026-11-13: say so).
+        h('p', { class: 'muted dsources__note' }, t('Suggested by Claude from memory, not looked up. Check a source before relying on it.')),
         info.sources.length ? h('ul', {}, info.sources.map((src) => h('li', {},
           src.url ? h('a', { href: src.url, rel: 'noopener noreferrer', target: '_blank' }, src.title) : src.title,
           src.organization ? h('span', { class: 'muted' }, ` — ${src.organization}`) : null,
@@ -455,7 +457,7 @@ function diabetesPanel(health) {
     ];
   } else {
     analysis = h('p', { class: 'muted dnone' },
-      t('No Claude analysis has been published for this recipe yet. It appears here after someone taps “Analyze for Diabetic-Friendly Info” on this recipe in the Reczipes app.'));
+      t('No Claude analysis has been published for this recipe yet. The Reczipes app adds one automatically, usually within a day.'));
   }
 
   return rememberedDetails('reczipes.panel.diabetes', 'health health--diabetes', true,

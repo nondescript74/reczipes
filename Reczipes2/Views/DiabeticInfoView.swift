@@ -499,9 +499,13 @@ struct SourceVerificationFooter: View {
                     .foregroundStyle(.secondary)
                 
                 VStack(alignment: .leading, spacing: 2) {
-                    Text("Based on \(sources.count) verified source\(sources.count == 1 ? "" : "s")")
+                    Text("Based on \(sources.count) unverified source\(sources.count == 1 ? "" : "s")")
                         .font(.caption)
                         .fontWeight(.medium)
+                    
+                    Text(SourcesDetailSheet.unverifiedNote)
+                        .font(.caption2)
+                        .foregroundStyle(.secondary)
                     
                     Text("Last updated: \(lastUpdated, style: .date)")
                         .font(.caption2)
@@ -527,39 +531,51 @@ struct SourcesDetailSheet: View {
     let sources: [VerifiedSource]
     @Environment(\.dismiss) private var dismiss
     
+    /// Claude names these sources from memory, without web access (operator 2026-11-13: say so).
+    static var unverifiedNote: String {
+        String(localized: "Suggested by Claude from memory, not looked up. Check a source before relying on it.",
+               bundle: .appLanguage, comment: "Diabetic analysis: sources are unverified")
+    }
+    
     var body: some View {
         NavigationStack {
-            List(sources) { source in
-                VStack(alignment: .leading, spacing: 8) {
-                    Text(source.title)
-                        .font(.headline)
+            List {
+                Section {
+                    ForEach(sources) { source in
+                        VStack(alignment: .leading, spacing: 8) {
+                            Text(source.title)
+                                .font(.headline)
                     
-                    if let organization = source.organization {
-                        Text(organization)
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
-                    }
+                            if let organization = source.organization {
+                                Text(organization)
+                                    .font(.subheadline)
+                                    .foregroundStyle(.secondary)
+                            }
                     
-                    if let url = source.url {
-                        Link(destination: url) {
-                            HStack {
-                                Text("View Source")
-                                    .font(.caption)
-                                Image(systemName: "arrow.up.forward.square")
-                                    .font(.caption)
+                            if let url = source.url {
+                                Link(destination: url) {
+                                    HStack {
+                                        Text("View Source")
+                                            .font(.caption)
+                                        Image(systemName: "arrow.up.forward.square")
+                                            .font(.caption)
+                                    }
+                                }
+                            }
+                    
+                            if let publishDate = source.publishDate {
+                                Text("Published: \(publishDate, style: .date)")
+                                    .font(.caption2)
+                                    .foregroundStyle(.tertiary)
                             }
                         }
+                        .padding(.vertical, 4)
                     }
-                    
-                    if let publishDate = source.publishDate {
-                        Text("Published: \(publishDate, style: .date)")
-                            .font(.caption2)
-                            .foregroundStyle(.tertiary)
-                    }
+                } footer: {
+                    Text(Self.unverifiedNote)
                 }
-                .padding(.vertical, 4)
             }
-            .navigationTitle("Verified Sources")
+            .navigationTitle("Sources (Not Checked)")
             .platformNavigationBarTitleDisplayMode(.inline)
             .toolbar {
                 ToolbarItem(placement: .confirmationAction) {

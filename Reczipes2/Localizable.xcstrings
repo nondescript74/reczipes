@@ -4178,6 +4178,42 @@
         }
       }
     },
+    "Based on %lld unverified source%@" : {
+      "localizations" : {
+        "en" : {
+          "stringUnit" : {
+            "state" : "new",
+            "value" : "Based on %1$lld unverified source%2$@"
+          }
+        },
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "D'après %1$lld source%2$@ non vérifiée(s)"
+          }
+        }
+      }
+    },
+    "Sources (Not Checked)" : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Sources (non vérifiées)"
+          }
+        }
+      }
+    },
+    "Suggested by Claude from memory, not looked up. Check a source before relying on it." : {
+      "localizations" : {
+        "fr" : {
+          "stringUnit" : {
+            "state" : "translated",
+            "value" : "Suggérées de mémoire par Claude, sans recherche. Vérifiez une source avant de vous y fier."
+          }
+        }
+      }
+    },
     "Based on American Diabetes Association guidelines" : {
       "localizations" : {
         "fr" : {

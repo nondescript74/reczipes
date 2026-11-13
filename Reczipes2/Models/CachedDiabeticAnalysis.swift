@@ -62,6 +62,25 @@ final class CachedDiabeticAnalysis {
         return false
     }
     
+    /// Prefix of `ingredientsHash` on a batch claim (DiabeticBackfill).
+    static let batchClaimPrefix = "batch:"
+
+    /// A marker that this recipe is in a DiabeticBackfill batch on some device, so another
+    /// device does not pay for it again. It holds no analysis and is never published: its
+    /// hash never matches a recipe's, so it always reads as outdated.
+    var isBatchClaim: Bool { ingredientsHash.hasPrefix(Self.batchClaimPrefix) }
+
+    /// The batch a claim belongs to (nil for a real analysis).
+    var claimBatchID: String? {
+        isBatchClaim ? String(ingredientsHash.dropFirst(Self.batchClaimPrefix.count)) : nil
+    }
+
+    static func batchClaim(recipeId: UUID, batchID: String, at date: Date = Date()) -> CachedDiabeticAnalysis {
+        CachedDiabeticAnalysis(recipeId: recipeId, analysisData: Data(), cachedAt: date,
+                               recipeVersion: -1, ingredientsHash: batchClaimPrefix + batchID,
+                               recipeLastModified: date)
+    }
+
     /// Check if cache is still valid (not stale and ingredients haven't changed)
     func isValid(for recipe: RecipeX) -> Bool {
         return !isStale && !isIngredientsOutdated(recipe: recipe)

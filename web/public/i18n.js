@@ -94,11 +94,13 @@ const FR = {
   'Fiber': 'Fibres',
   'Tips:': 'Astuces :',
   'Healthier Alternatives': 'Alternatives plus saines',
-  'Based on {n} verified source': 'D’après {n} source vérifiée',
-  'Based on {n} verified sources': 'D’après {n} sources vérifiées',
+  'Based on {n} unverified source': 'D’après {n} source non vérifiée',
+  'Based on {n} unverified sources': 'D’après {n} sources non vérifiées',
+  'Suggested by Claude from memory, not looked up. Check a source before relying on it.':
+    'Suggérées de mémoire par Claude, sans recherche. Vérifiez une source avant de vous y fier.',
   ' · Last updated: {date}': ' · Dernière mise à jour : {date}',
-  'No Claude analysis has been published for this recipe yet. It appears here after someone taps “Analyze for Diabetic-Friendly Info” on this recipe in the Reczipes app.':
-    'Aucune analyse Claude n’a encore été publiée pour cette recette. Elle apparaîtra ici dès que quelqu’un touchera « Analyser pour le diabète » sur cette recette dans l’app Reczipes.',
+  'No Claude analysis has been published for this recipe yet. The Reczipes app adds one automatically, usually within a day.':
+    'Aucune analyse Claude n’a encore été publiée pour cette recette. L’app Reczipes en ajoute une automatiquement, en général dans la journée.',
   // books
   '{n} book': '{n} livre',
   '{n} books': '{n} livres',

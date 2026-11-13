@@ -49,9 +49,11 @@ actor DiabeticAnalysisModelActor {
     /// Fetch cached analysis from SwiftData and return sendable data
     func fetchCachedAnalysis(recipeId: UUID) throws -> CachedData? {
         let fetchDescriptor = FetchDescriptor<CachedDiabeticAnalysis>(
-            predicate: #Predicate { $0.recipeId == recipeId }
+            predicate: #Predicate { $0.recipeId == recipeId },
+            sortBy: [SortDescriptor(\.cachedAt, order: .reverse)]
         )
-        guard let cached = try modelContext.fetch(fetchDescriptor).first else {
+        // Newest real analysis; a batch claim (DiabeticBackfill) is a marker, not an analysis.
+        guard let cached = try modelContext.fetch(fetchDescriptor).first(where: { !$0.isBatchClaim }) else {
             return nil
         }
         
@@ -253,8 +255,10 @@ actor DiabeticAnalysisService {
     
     // MARK: - Private Methods
     
+    /// The prompt for one recipe. Also used by DiabeticBackfill, so a batch analysis is
+    /// identical to one started from the recipe page.
     @MainActor
-    private func buildAnalysisPrompt(_ recipe: RecipeX) -> String {
+    func buildAnalysisPrompt(_ recipe: RecipeX) -> String {
         // Extract all ingredients with details
         let ingredientsList = recipe.ingredientSections
             .flatMap { section -> [String] in
@@ -288,10 +292,11 @@ actor DiabeticAnalysisService {
         CRITICAL GUIDELINES (Medical Compliance):
         
         **Source Quality Control:**
-        - ONLY cite sources from: ADA (American Diabetes Association), Mayo Clinic, CDC, NIH, peer-reviewed medical journals
-        - Sources MUST be published between 2023-2025
+        - ONLY name sources from: ADA (American Diabetes Association), Mayo Clinic, CDC, NIH, peer-reviewed medical journals
         - EXCLUDE: blogs, forums, commercial diet sites, non-medical sources
-        - Cite URL for EVERY claim
+        - You have NO web access in this request. You cannot look anything up, so name only guidance you are confident exists.
+        - Never invent a URL, title or date. Give a "url" only for a stable page you are confident of (an organization's standing guidance page); otherwise use null. Give "publishDate" only if you are sure of it; otherwise null.
+        - Readers are told these sources were suggested from memory and have not been checked.
         - If sources conflict, explicitly note the disagreement with neutral language
         
         **Glycemic Calculations:**
@@ -385,8 +390,8 @@ actor DiabeticAnalysisService {
             {
               "title": "<string: source title>",
               "organization": "<string: ADA, Mayo Clinic, CDC, NIH, etc.>",
-              "url": "<string: full URL>",
-              "publishDate": "<string: YYYY-MM-DD format>",
+              "url": "<string: full URL, or null if you are not confident it exists>",
+              "publishDate": "<string: YYYY-MM-DD, or null if you are not sure>",
               "credibilityScore": "<high|medium|low>"
             }
           ],
@@ -398,7 +403,7 @@ actor DiabeticAnalysisService {
         2. Identify ALL ingredients with significant glycemic impact (GI > 55)
         3. Provide 3-5 guidance items covering: blood sugar impact, timing, portion control, pairing strategies
         4. Suggest 2-4 ingredient substitutions to lower glycemic load
-        5. Cite 3-5 authoritative sources (ADA, Mayo Clinic, CDC, NIH, peer-reviewed journals)
+        5. Name 2-4 authoritative sources (ADA, Mayo Clinic, CDC, NIH, peer-reviewed journals) — never invent one
         6. Note any conflicting information between sources
         7. Indicate confidence level based on source agreement
         
@@ -485,8 +490,9 @@ actor DiabeticAnalysisService {
         return text
     }
     
+    /// Claude's reply → DiabeticInfo. Also used by DiabeticBackfill.
     @MainActor
-    private func parseAndValidate(_ response: String, recipeId: UUID) throws -> DiabeticInfo {
+    func parseAndValidate(_ response: String, recipeId: UUID) throws -> DiabeticInfo {
         // Extract JSON from response (Claude might wrap in markdown)
         let jsonString = extractJSON(from: response)
         
