@@ -70,6 +70,14 @@ enum DiabeticBackfillPlan {
         return .analyze
     }
 
+    /// Whether a public recipe's JSON carries an analysis, without decoding the whole recipe
+    /// (the pass asks this of every public recipe, on the main thread). JSONEncoder leaves a nil
+    /// optional out and writes `"key":"…"` with no spaces; inside any other string value the
+    /// quotes are escaped, so a title or note that mentions the key cannot match.
+    static func recipeDataHasDiabeticInfo(_ text: String) -> Bool {
+        text.contains(#""diabeticInfoJSON":""#)
+    }
+
     /// POST /v1/messages/batches body: one request per recipe, custom_id = recipe id.
     static func requestBody(_ prompts: [(id: UUID, prompt: String)]) throws -> Data {
         let requests: [[String: Any]] = prompts.map { item in
@@ -291,7 +299,7 @@ extension CloudKitSharingService {
                     AppLog.info("🩺 Diabetic batch \(batchID): Claude is still working on \(state.snapshots.count) recipe(s)", category: .sharing)
                 case .ended(let url):
                     let outcomes = DiabeticBackfillPlan.outcomes(fromResults: try await backfill.results(url))
-                    collectDiabeticBatch(outcomes, state: &state, modelContext: modelContext)
+                    await collectDiabeticBatch(outcomes, state: &state, modelContext: modelContext)
                     endDiabeticBatch(batchID, state: &state, modelContext: modelContext)
                 case .gone:
                     AppLog.warning("🩺 Diabetic batch \(batchID) is no longer known to Claude; its recipes will be asked again", category: .sharing)
@@ -309,31 +317,59 @@ extension CloudKitSharingService {
         let deleted = index.deleted
         let now = Date()
         var claimed = Set<UUID>()
-        for row in (try? modelContext.fetch(FetchDescriptor<CachedDiabeticAnalysis>())) ?? [] where row.isBatchClaim {
-            if now.timeIntervalSince(row.cachedAt) > DiabeticBackfillPlan.claimLifetime {
-                modelContext.delete(row)      // a batch that never came back
+        var newestReal: [UUID: CachedDiabeticAnalysis] = [:]   // one fetch, not one per recipe
+        for row in (try? modelContext.fetch(FetchDescriptor<CachedDiabeticAnalysis>())) ?? [] {
+            if row.isBatchClaim {
+                if now.timeIntervalSince(row.cachedAt) > DiabeticBackfillPlan.claimLifetime {
+                    modelContext.delete(row)      // a batch that never came back
+                } else {
+                    claimed.insert(row.recipeId)
+                }
+            } else if let seen = newestReal[row.recipeId], seen.cachedAt >= row.cachedAt {
+                continue
             } else {
-                claimed.insert(row.recipeId)
+                newestReal[row.recipeId] = row
             }
         }
         var toPublish: [(recipe: RecipeX, recordName: String)] = []
         var toAnalyze: [RecipeX] = []
         var undated = 0
+        var looked = 0
         for recipe in (try? modelContext.fetch(FetchDescriptor<RecipeX>())) ?? [] {
+            looked += 1
+            await letTheScreenBreathe(looked)
             guard let id = recipe.id, !recipe.isDeleted, deleted[id] == nil, let live = index.live[id],
                   !OwnerDeletedStore.shared.isPendingTombstone(.recipe, id) else { continue }
-            let record = index.liveRecords[id]?.first { $0.recordID.recordName == live.recordName }
-            let current = currentDiabeticAnalysis(for: recipe, modelContext: modelContext)
+            let current = newestReal[id].flatMap { $0.isIngredientsOutdated(recipe: recipe) ? nil : $0 }
             let hasStoredDate = recipe.lastModified != nil || recipe.dateAdded != nil
-            let hasIngredients = recipe.ingredientSections.contains { !$0.ingredients.isEmpty }
+            let cachedIsPublishable = (current?.analysisData.count ?? .max) <= Self.diabeticInfoByteBudget
+            let isClaimed = claimed.contains(id)
+            // Cheapest first: decode the ingredients and read the public copy only where the
+            // answer depends on them — the same answers as checking everything, far less work.
+            var hasIngredients = true
+            var unusableHere = false
+            let publicMatters: Bool
+            if current != nil {
+                publicMatters = cachedIsPublishable
+            } else {
+                hasIngredients = recipe.ingredientSections.contains { !$0.ingredients.isEmpty }
+                unusableHere = state.unusable[id.uuidString].map {
+                    $0 == DiabeticBackfillPlan.Snapshot(recipe: recipe).fingerprint
+                } ?? false
+                publicMatters = hasIngredients && hasStoredDate && !isClaimed && !unusableHere
+            }
+            let publicHasAnalysis = publicMatters
+                && (index.liveRecords[id]?.first { $0.recordID.recordName == live.recordName })
+                    .flatMap { $0["recipeData"] as? String }
+                    .map(DiabeticBackfillPlan.recipeDataHasDiabeticInfo) == true
             let need = DiabeticBackfillPlan.need(
                 hasIngredients: hasIngredients,
                 hasStoredDate: hasStoredDate,
-                publicHasAnalysis: record.flatMap(Self.publishedDiabeticInfoJSON(in:)) != nil,
+                publicHasAnalysis: publicHasAnalysis,
                 cachedIsCurrent: current != nil,
-                cachedIsPublishable: (current?.analysisData.count ?? .max) <= Self.diabeticInfoByteBudget,
-                claimed: claimed.contains(id),
-                unusableForTheseIngredients: state.unusable[id.uuidString] == DiabeticBackfillPlan.Snapshot(recipe: recipe).fingerprint)
+                cachedIsPublishable: cachedIsPublishable,
+                claimed: isClaimed,
+                unusableForTheseIngredients: unusableHere)
             switch need {
             case .nothing:
                 if !hasStoredDate && hasIngredients && current == nil { undated += 1 }
@@ -358,8 +394,15 @@ extension CloudKitSharingService {
             AppLog.info("🩺 Diabetic analysis: every public recipe that can have one has one", category: .sharing)
             return
         }
-        let chosen = Array(toAnalyze.shuffled().prefix(DiabeticBackfillPlan.maxPerBatch))
-        let prompts = chosen.map { (id: $0.safeID, prompt: DiabeticAnalysisService.shared.buildAnalysisPrompt($0)) }
+        var chosen: [RecipeX] = []
+        var prompts: [(id: UUID, prompt: String)] = []
+        for recipe in toAnalyze.shuffled().prefix(DiabeticBackfillPlan.maxPerBatch) {
+            await letTheScreenBreathe(prompts.count, every: 10)
+            guard !recipe.isDeleted else { continue }
+            chosen.append(recipe)
+            prompts.append((id: recipe.safeID, prompt: DiabeticAnalysisService.shared.buildAnalysisPrompt(recipe)))
+        }
+        guard !prompts.isEmpty else { return }
         do {
             let batchID = try await backfill.submit(prompts)
             state.batchID = batchID
@@ -376,22 +419,17 @@ extension CloudKitSharingService {
         }
     }
 
-    /// The newest real cached analysis that still matches the recipe's ingredients — the one
-    /// publishableDiabeticInfoJSON would publish (before its size check).
-    private func currentDiabeticAnalysis(for recipe: RecipeX, modelContext: ModelContext) -> CachedDiabeticAnalysis? {
-        let recipeID = recipe.safeID
-        let descriptor = FetchDescriptor<CachedDiabeticAnalysis>(
-            predicate: #Predicate<CachedDiabeticAnalysis> { $0.recipeId == recipeID },
-            sortBy: [SortDescriptor(\.cachedAt, order: .reverse)]
-        )
-        guard let newest = try? modelContext.fetch(descriptor).first(where: { !$0.isBatchClaim }),
-              !newest.isIngredientsOutdated(recipe: recipe) else { return nil }
-        return newest
+    /// Lets the screen draw and scroll between chunks of this pass's main-thread work (it runs
+    /// after every publish pass). A short sleep rather than Task.yield, so touches and frames
+    /// get a turn of the run loop, not just other main-actor jobs.
+    private func letTheScreenBreathe(_ done: Int, every n: Int = 20) async {
+        guard done > 0, done % n == 0 else { return }
+        try? await Task.sleep(for: .milliseconds(8))
     }
 
     /// Caches each usable answer against the ingredients it was asked about.
     private func collectDiabeticBatch(_ outcomes: [UUID: DiabeticBackfillPlan.Outcome],
-                                      state: inout DiabeticBackfill.State, modelContext: ModelContext) {
+                                      state: inout DiabeticBackfill.State, modelContext: ModelContext) async {
         var recipes: [UUID: RecipeX] = [:]
         for recipe in (try? modelContext.fetch(FetchDescriptor<RecipeX>())) ?? [] {
             if let id = recipe.id { recipes[id] = recipe }
@@ -399,7 +437,8 @@ extension CloudKitSharingService {
         let encoder = JSONEncoder()
         encoder.dateEncodingStrategy = .iso8601
         var cached = 0, unusable = 0, again = 0
-        for sent in state.snapshots {
+        for (n, sent) in state.snapshots.enumerated() {
+            await letTheScreenBreathe(n, every: 10)
             guard let recipe = recipes[sent.id], !recipe.isDeleted else { continue }
             let now = DiabeticBackfillPlan.Snapshot(recipe: recipe)
             // Edited while Claude worked: the answer is about other ingredients. Ask again.
@@ -453,7 +492,10 @@ extension CloudKitSharingService {
         while let running = publishTask { await running.value }
         let work = Task { @MainActor () -> (Int, Int) in
             var ok = 0, bad = 0
-            for item in items where !item.recipe.isDeleted {
+            for item in items {
+                // Spaced out: each refresh encodes a recipe on the main thread.
+                if ok + bad > 0 { try? await Task.sleep(for: .milliseconds(250)) }
+                guard !item.recipe.isDeleted else { continue }
                 do {
                     _ = try await self.shareRecipe(item.recipe, modelContext: modelContext, refreshExisting: true,
                                                    knownRecordName: item.recordName, scanForDuplicates: false)

@@ -138,4 +138,30 @@ struct DiabeticBackfillTests {
         #expect(!real.isBatchClaim)
         #expect(real.claimBatchID == nil)
     }
+
+    // MARK: Reading the public copy cheaply
+
+    @Test("The public copy's analysis is seen in its JSON without decoding the recipe")
+    func publicAnalysisSeenInText() throws {
+        func json(title: String = "Rice", analysis: String?) throws -> String {
+            var r = CloudKitRecipe(
+                id: UUID(), title: title, headerNotes: nil, yield: nil,
+                ingredientSections: [], instructionSections: [], notes: [],
+                reference: nil, imageName: nil, additionalImageNames: nil,
+                sharedByUserID: "u", sharedByUserName: "Z",
+                sharedDate: Date(timeIntervalSinceReferenceDate: 1_000))
+            r.diabeticInfoJSON = analysis
+            return String(decoding: try JSONEncoder().encode(r), as: UTF8.self)
+        }
+        #expect(DiabeticBackfillPlan.recipeDataHasDiabeticInfo(try json(analysis: #"{"carbCount":{"netCarbs":41}}"#)))
+        #expect(DiabeticBackfillPlan.recipeDataHasDiabeticInfo(try json(analysis: "")))
+        #expect(!DiabeticBackfillPlan.recipeDataHasDiabeticInfo(try json(analysis: nil)))
+        // A title that mentions the key is escaped inside its own string: no false match.
+        #expect(!DiabeticBackfillPlan.recipeDataHasDiabeticInfo(try json(title: #"Rice "diabeticInfoJSON":"x""#, analysis: nil)))
+        // Same answer as decoding the whole recipe.
+        for text in [try json(analysis: "{}"), try json(analysis: nil)] {
+            let decoded = try JSONDecoder().decode(CloudKitRecipe.self, from: Data(text.utf8))
+            #expect(DiabeticBackfillPlan.recipeDataHasDiabeticInfo(text) == (decoded.diabeticInfoJSON != nil))
+        }
+    }
 }
